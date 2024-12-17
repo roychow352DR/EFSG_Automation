@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="All Test Suite">
+    
+    <listeners>
+        <listener class-name="utils.Listeners"/>
+        
+    </listeners>
+    <test verbose="2" preserve-order="true" name="/Users/roychow/IdeaProjects/web_auto">
+        <classes>
+            <class name="Onboarding.loginSuccess">
+                <methods>
+                    <include name="loginETE"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

@@ -1,0 +1,62 @@
+package StepDefinitions;
+
+import PageObject.LoginPage;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.testng.Assert;
+import utils.BaseTest;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+
+public class stepDefinition extends BaseTest {
+    public LoginPage loginPage;
+    @Given("the user lands on Admin Portal login page")
+    public void the_user_lands_on_Admin_Portal_login_page() throws IOException {
+        loginPage =  launchApplication();
+    }
+
+    @Given("^the user fills in with username (.+) and password (.+)$")
+    public void the_user_fills_in_with_username_and_password(String username,String password) throws IOException, InterruptedException {
+        login.loginApplication(username,password);
+        Thread.sleep(3000);
+    }
+
+    @Given("the user input nothing as username and password")
+    public void the_user_input_nothing_as_username_and_password()
+    {
+        login.loginApplication(" "," ");
+    }
+
+    @When("the user clicks Sign In button")
+    public void the_user_clicks_Sign_In_button()
+    {
+        loginPage.clickSignIn();
+    }
+
+    @Then("the user sees Menu display on the screen")
+    public void the_user_sees_Menu_display_on_the_screen()
+    {
+        Assert.assertTrue(applicationPage().menuTitle().isDisplayed());
+        driver.quit();
+
+    }
+
+    @Then("the user sees {string} message pop up")
+    public void the_user_sees_message_pop_up(String string)
+    {
+        Assert.assertTrue(loginPage.errorValidation().equalsIgnoreCase(string));
+        driver.quit();
+
+    }
+
+    @Then("the user sees the Sign In button is unclickable")
+    public void the_user_sees_the_Sign_In_button_is_unclickable()
+    {
+        Assert.assertTrue(unclickableCTA(login.ctaButton()));
+        driver.quit();
+
+    }
+}
