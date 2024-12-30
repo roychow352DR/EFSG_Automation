@@ -51,6 +51,12 @@ public class AbstractComponents {
         ele.sendKeys(text);
     }
 
+    public void waitUtilElementClickable(WebElement ele)
+    {
+        WebDriverWait w2 = new WebDriverWait(driver, Duration.ofSeconds(5));
+        w2.until(ExpectedConditions.elementToBeClickable(ele));
+    }
+
 
 
 }

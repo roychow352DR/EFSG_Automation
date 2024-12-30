@@ -51,9 +51,11 @@ public class LoginPage {
         signInButton.click();
     }
 
-    public void ctaButtonStatus()
+    public boolean ctaButtonStatus()
     {
-        signInButton.isEnabled();
+        AbstractComponents abs = new AbstractComponents(driver);
+        abs.waitUtilElementClickable(signInButton);
+        return signInButton.isEnabled();
     }
 
     public WebElement ctaButton()

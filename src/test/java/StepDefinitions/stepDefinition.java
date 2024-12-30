@@ -21,7 +21,7 @@ public class stepDefinition extends BaseTest {
     @Given("^the user fills in with username (.+) and password (.+)$")
     public void the_user_fills_in_with_username_and_password(String username,String password) throws IOException, InterruptedException {
         login.loginApplication(username,password);
-        Thread.sleep(3000);
+       //Thread.sleep(3000);
     }
 
     @Given("the user input nothing as username and password")
@@ -33,7 +33,9 @@ public class stepDefinition extends BaseTest {
     @When("the user clicks Sign In button")
     public void the_user_clicks_Sign_In_button()
     {
-        loginPage.clickSignIn();
+        if(loginPage.ctaButtonStatus()) {
+            loginPage.clickSignIn();
+        }
     }
 
     @Then("the user sees Menu display on the screen")
