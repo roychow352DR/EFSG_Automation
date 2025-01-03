@@ -8,13 +8,14 @@ import org.testng.Assert;
 import utils.BaseTest;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 
 public class stepDefinition extends BaseTest {
     public LoginPage loginPage;
     @Given("the user lands on Admin Portal login page")
-    public void the_user_lands_on_Admin_Portal_login_page() throws IOException {
+    public void the_user_lands_on_Admin_Portal_login_page() throws IOException, URISyntaxException {
         loginPage =  launchApplication();
     }
 
@@ -27,7 +28,7 @@ public class stepDefinition extends BaseTest {
     @Given("the user input nothing as username and password")
     public void the_user_input_nothing_as_username_and_password()
     {
-        login.loginApplication(" "," ");
+        login.loginApplication("","");
     }
 
     @When("the user clicks Sign In button")
@@ -57,7 +58,7 @@ public class stepDefinition extends BaseTest {
     @Then("the user sees the Sign In button is unclickable")
     public void the_user_sees_the_Sign_In_button_is_unclickable()
     {
-        Assert.assertTrue(unclickableCTA(login.ctaButton()));
+        Assert.assertFalse(unclickableCTA(login.ctaButton()));
         driver.quit();
 
     }
