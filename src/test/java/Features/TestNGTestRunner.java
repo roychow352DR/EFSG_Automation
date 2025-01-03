@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 import utils.Retry;
 
 @CucumberOptions(features = "src/test/java/Features",glue = "StepDefinitions",monochrome = true
-,/*plugin={"pretty","json:target/cucumber.json"},*/tags = "@Regression")
+,plugin={"json:target/cucumber/cucumber.json"},tags = "@Regression")
 public class TestNGTestRunner extends AbstractTestNGCucumberTests {
 
 
