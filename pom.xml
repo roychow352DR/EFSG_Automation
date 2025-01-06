@@ -48,9 +48,36 @@
                             <parallel>methods</parallel>
                             <useUnlimitedThreads>true</useUnlimitedThreads>
                             <includes>
-                                <include>**/TestNGTestRunner.java</include>
+                                <include>**/*TestNGTestRunner.java</include>
                             </includes>
                         </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>net.masterthought</groupId>
+                        <artifactId>maven-cucumber-reporting</artifactId>
+                        <version>${maven.cucumber.reporting.version}</version>
+
+                        <executions>
+                            <execution>
+                                <id>generate-cucumber-report</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                                <configuration>
+                                    <projectName>Cucumber Reporting Example</projectName>
+                                    <outputDirectory>target/cucumber-html-reports</outputDirectory>
+                                    <inputDirectory>target</inputDirectory>
+                                    <jsonFiles>
+                                        <!-- Include both main and rerun JSON reports -->
+                                        <param>target/cucumber-reports/cucumber-report.json</param>
+                                        <param>**/*.json</param>
+                                    </jsonFiles>
+                                    <reportTargetDirectory>target/cucumber-reports</reportTargetDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </pluginManagement>
@@ -137,6 +164,12 @@
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-testng</artifactId>
             <version>7.20.1</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/net.masterthought/cucumber-reporting -->
+        <dependency>
+            <groupId>net.masterthought</groupId>
+            <artifactId>cucumber-reporting</artifactId>
+            <version>5.8.4</version>
         </dependency>
 
 

@@ -21,7 +21,7 @@ public class loginSuccess extends BaseTest {
 
 
     @Test (retryAnalyzer = Retry.class)
-    public void loginETE() throws IOException {
+    public void loginETE() throws IOException, InterruptedException {
         List<HashMap<String,String>> data = getJsonDataToMap();
         login.loginApplication(data.getFirst().get("email"),data.getFirst().get("password"));
         Assert.assertTrue(applicationPage().menuTitle().isDisplayed());

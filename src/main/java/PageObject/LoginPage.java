@@ -27,10 +27,12 @@ public class LoginPage {
     WebElement loginErrorText;
 
 
-    public void loginApplication(String username, String password)
-    {
+    public void loginApplication(String username, String password) throws InterruptedException {
+        userName.click();
         userName.sendKeys(username);
+        userPassword.click();
         userPassword.sendKeys(password);
+
        // signInButton.click();
     }
 

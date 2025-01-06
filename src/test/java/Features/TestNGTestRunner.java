@@ -5,12 +5,16 @@ import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
 import io.cucumber.testng.FeatureWrapper;
 import io.cucumber.testng.PickleWrapper;
+import org.junit.runner.RunWith;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import utils.Retry;
 
+
 @CucumberOptions(features = "src/test/java/Features",glue = "StepDefinitions",monochrome = true
-,/*plugin={"json:target/cucumber/cucumber.json"},*/tags = "@Regression")
+,  plugin= {"pretty",
+            "html:target/cucumber-reports/cucumber-report.html",
+            "json:target/cucumber-reports/cucumber-report.json"}, tags = "@Regression")
 public class TestNGTestRunner extends AbstractTestNGCucumberTests {
 
 
