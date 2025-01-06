@@ -61,17 +61,15 @@
                         <executions>
                             <execution>
                                 <id>generate-cucumber-report</id>
-                                <phase>verify</phase>
+                                <phase>test</phase>
                                 <goals>
                                     <goal>generate</goal>
                                 </goals>
                                 <configuration>
-                                    <projectName>Cucumber Reporting Example</projectName>
-                                    <outputDirectory>target/cucumber-html-reports</outputDirectory>
-                                    <inputDirectory>target</inputDirectory>
+                                    <outputDirectory>${project.build.directory}/cucumber-html-reports</outputDirectory>
+                                    <inputDirectory>${project.build.directory}/cucumber-reports</inputDirectory>
                                     <jsonFiles>
                                         <!-- Include both main and rerun JSON reports -->
-                                        <param>target/cucumber-reports/cucumber-report.json</param>
                                         <param>**/*.json</param>
                                     </jsonFiles>
                                     <reportTargetDirectory>target/cucumber-reports</reportTargetDirectory>
