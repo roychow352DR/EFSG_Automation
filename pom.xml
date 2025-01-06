@@ -72,7 +72,6 @@
                                         <!-- Include both main and rerun JSON reports -->
                                         <param>**/*.json</param>
                                     </jsonFiles>
-                                    <reportTargetDirectory>target/cucumber-reports</reportTargetDirectory>
                                 </configuration>
                             </execution>
                         </executions>
