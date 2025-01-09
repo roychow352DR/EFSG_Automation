@@ -47,7 +47,6 @@ public class BaseTest {
        if (browserName.contains("chrome")) {
            caps = new DesiredCapabilities();
            caps.setCapability(CapabilityType.BROWSER_NAME,"chrome");
-           caps.setCapability(CapabilityType.PLATFORM_NAME, Platform.MAC);
            caps.setCapability(CapabilityType.ACCEPT_INSECURE_CERTS,true);
            ChromeOptions options = new ChromeOptions();
            options.addArguments("--disable-dev-shm-usage");
