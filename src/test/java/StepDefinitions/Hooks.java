@@ -86,8 +86,8 @@ public class Hooks extends BaseTest {
     public static String getTestPlanId(String testType, String path) throws IOException {
         BaseTest base = new BaseTest();
         return switch (testType) {
-            case "regression" -> base.getProperty(path,"qase.regression.testPlanId");
-            case "smoke" -> base.getProperty(path,"qase.regression.testPlanId");
+            case "Regression" -> base.getProperty(path,"qase.regression.testPlanId");
+            case "Smoke" -> base.getProperty(path,"qase.regression.testPlanId");
             default -> "";
         };
     }
