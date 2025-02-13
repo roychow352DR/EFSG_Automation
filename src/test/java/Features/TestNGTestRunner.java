@@ -14,7 +14,7 @@ import utils.Retry;
 @CucumberOptions(features = "src/test/java/Features",glue = "StepDefinitions",monochrome = true
 ,  plugin= {"pretty",
             /*"html:target/cucumber-reports/cucumber-report.html",*/
-            "json:target/cucumber-reports/cucumber-report.json"})
+            "json:target/cucumber-reports/cucumber-report.json"}, tags = "@Smoke")
 public class TestNGTestRunner extends AbstractTestNGCucumberTests {
 
 
