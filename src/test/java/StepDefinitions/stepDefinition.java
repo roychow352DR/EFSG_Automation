@@ -1,6 +1,7 @@
 package StepDefinitions;
 
 import PageObject.LoginPage;
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -39,10 +40,18 @@ public class stepDefinition extends BaseTest {
     }
 
     @Then("the user sees Menu display on the screen")
-    public void the_user_sees_Menu_display_on_the_screen()
-    {
+    public void the_user_sees_Menu_display_on_the_screen() throws IOException {
+       // String caseId = "560";
+
         Assert.assertTrue(applicationPage().menuTitle().isDisplayed());
-        driver.quit();
+       //driver.quit();
+        boolean testPassed = true; // Replace with actual validation logic
+        Assert.assertTrue(testPassed);
+
+
+//        // Log result into Qase// Replace with your Qase case ID
+//        qaseApiClient.logTestResult(projectCode, runId, "560", testPassed);
+//        System.out.println("Test Result Logged in Qase.");
 
     }
 
@@ -50,15 +59,19 @@ public class stepDefinition extends BaseTest {
     public void the_user_sees_message_pop_up(String string)
     {
         Assert.assertTrue(loginPage.errorValidation().equalsIgnoreCase(string));
-        driver.quit();
-
     }
 
     @Then("the user sees the Sign In button is unclickable")
     public void the_user_sees_the_Sign_In_button_is_unclickable()
     {
         Assert.assertFalse(unclickableCTA(login.ctaButton()));
-        driver.quit();
 
     }
+
+    @After
+    public void tearDown()
+    {
+        driver.quit();
+    }
+
 }

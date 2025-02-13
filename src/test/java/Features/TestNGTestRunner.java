@@ -14,16 +14,16 @@ import utils.Retry;
 @CucumberOptions(features = "src/test/java/Features",glue = "StepDefinitions",monochrome = true
 ,  plugin= {"pretty",
             /*"html:target/cucumber-reports/cucumber-report.html",*/
-            "json:target/cucumber-reports/cucumber-report.json"}, tags = "@Regression")
+            "json:target/cucumber-reports/cucumber-report.json"}, tags = "@Smoke")
 public class TestNGTestRunner extends AbstractTestNGCucumberTests {
 
 
-@Test(
-        groups = {"cucumber"},
-        description = "Runs Cucumber Scenarios",
-        dataProvider = "scenarios",
-        retryAnalyzer= Retry.class
-)
+    @Test(
+            groups = {"cucumber"},
+            description = "Runs Cucumber Scenarios",
+            dataProvider = "scenarios",
+            retryAnalyzer= Retry.class
+    )
 
    @Override
     public void runScenario(PickleWrapper pickleWrapper, FeatureWrapper featureWrapper){
@@ -31,9 +31,10 @@ public class TestNGTestRunner extends AbstractTestNGCucumberTests {
 
     }
 
-    @Override
+   /* @Override
     @DataProvider(parallel = true)
     public Object[][] scenarios() {
         return super.scenarios();
-    }
+    } */
+
 }

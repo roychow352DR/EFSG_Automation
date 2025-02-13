@@ -11,4 +11,4 @@ Feature: Admin Portal login
 
     Examples:
       | name       | password |
-      | roychowsit | Test1234@@|
+      | qaauto | Test1234@@|
