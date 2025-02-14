@@ -18,12 +18,12 @@ import utils.Retry;
 public class TestNGTestRunner extends AbstractTestNGCucumberTests {
 
 
-    @Test(
-            groups = {"cucumber"},
-            description = "Runs Cucumber Scenarios",
-            dataProvider = "scenarios",
-            retryAnalyzer= Retry.class
-    )
+//    @Test(
+//            groups = {"cucumber"},
+//            description = "Runs Cucumber Scenarios",
+//            dataProvider = "scenarios",
+//            retryAnalyzer= Retry.class
+//    )
 
    @Override
     public void runScenario(PickleWrapper pickleWrapper, FeatureWrapper featureWrapper){
