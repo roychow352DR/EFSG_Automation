@@ -1,15 +1,16 @@
 package StepDefinitions;
 
-import io.cucumber.java.After;
-import io.cucumber.java.BeforeAll;
-import io.cucumber.java.Scenario;
-import org.jsoup.Connection;
+import io.cucumber.java.*;
+import org.monte.screenrecorder.ScreenRecorder;
 import utils.BaseTest;
 import utils.QaseApiClient;
+import utils.VideoRecorder;
 
-import java.io.FileInputStream;
+import java.awt.*;
+import java.io.File;
 import java.io.IOException;
-import java.util.Properties;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 public class Hooks extends BaseTest {
 
@@ -20,17 +21,30 @@ public class Hooks extends BaseTest {
     public static String testPlanId;
     public static String testType;
     public static String apiToken;
+    public static BaseTest base;
+    public static ScreenRecorder screenRecorder;
+    //public static  VideoRecorder videoRecorder;
+    public static File videoFile;
+    private static String VIDEO_DIRECTORY;
+    public static String qasePropertyPath;
+    public static String videoName;
+    public static boolean removeVideoFlag = true;
+
+    public Hooks() throws IOException, AWTException {
+
+    }
 
     @BeforeAll
     public static void createQaseTestRun() throws IOException {
 
         try {
-            String path = "//src//main//java//DataResources//qase-adminportal.properties";
-            BaseTest base = new BaseTest();
-            apiToken = base.getProperty(path,"qase.api.token");
-            projectCode = base.getProperty(path,"qase.project.code");;
-            testType = System.getProperty("testtype") != null ? System.getProperty("testtype") : base.getProperty(path,"testtype");;
-            testPlanId = getTestPlanId(testType,path);
+            qasePropertyPath = "//src//main//java//DataResources//qase-adminportal.properties";
+            VIDEO_DIRECTORY = "/Users/roychow/Desktop/Docker_Selenium_Grid/Video";
+          //  base = new BaseTest();
+            apiToken = BaseTest.getProperty(qasePropertyPath,"qase.api.token");
+            projectCode = BaseTest.getProperty(qasePropertyPath,"qase.project.code");;
+            testType = System.getProperty("testtype") != null ? System.getProperty("testtype") : BaseTest.getProperty(qasePropertyPath,"testtype");;
+            testPlanId = BaseTest.getTestPlanId(testType,qasePropertyPath);
 
             //Initialize Qase API client
             qaseApiClient = new QaseApiClient(apiToken, projectCode);
@@ -39,57 +53,46 @@ public class Hooks extends BaseTest {
 
             // Create a test run in Qase
             runId = qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId), runTitle);
-            System.out.println("Test Run Created: " + runTitle + " " + runId);
-            System.out.println("Tag: " + testPlanId );
         }
         catch(IOException e) {
             e.getStackTrace();
             System.out.println("Failed to create test run");
         }
 
-       //runId = qaseApiClient.getTestRunID();
-       // System.out.println("Test Run Created for Tag " + tag + " with ID: " + runId);
-        // Extract runId from API response (you can use a JSON parser here)
-        //  runId = 1; // Replace with actual extraction logic
-
-//        String response2 = qaseApiClient.getAllTestCases(projectCode);
-//        System.out.println(response2);
-//        try {
-//      //   Fetch all test cases from the test plan
-//        Map<Integer, JsonNull> testCaseMap = qaseApiClient.getTestCasesFromPlan(projectCode, testPlanId);
-//
-//        // Print the mapped test cases
-//        System.out.println("Test Case Mapping:");
-//        for (Map.Entry<Integer, JsonNull> entry : testCaseMap.entrySet()) {
-//            System.out.println("Title: " + entry.getKey() + ", ID: " + entry.getValue());
-//        }
-//
-//        // Example: Assert that a specific test case exists
-//        Assert.assertTrue(testCaseMap.containsKey("Sample Test Case Title"), "Test case not found!");
-//
-//    } catch (IOException e) {
-//        e.printStackTrace();
-//    }
-
-
     }
 
     @After
-    public void logQaseTestResult(Scenario scenario) throws IOException {
-        // Extract test case metadata
-        String caseId = qaseApiClient. getFeatureFileName(scenario,projectCode);
+    public void logQaseTestResult(Scenario scenario) throws Exception {
+        //wait until video creation fully complete
+        Thread.sleep(5000);
+        String caseId = qaseApiClient.getCaseId(scenario,projectCode);
         boolean isPassed = !scenario.isFailed();
-        // Log result into Qase// Replace with your Qase case ID
-        qaseApiClient.logTestResult(projectCode, runId, caseId, isPassed);
+        try {
+            String hash = qaseApiClient.uploadVideo(projectCode, BaseTest.actualVideoFileName(scenario.getName()));
+            qaseApiClient.uploadVideoToTestCaseResult(runId,projectCode,hash,isPassed,caseId);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    public static String getTestPlanId(String testType, String path) throws IOException {
-        BaseTest base = new BaseTest();
-        return switch (testType) {
-            case "Regression" -> base.getProperty(path,"qase.regression.testPlanId");
-            case "Smoke" -> base.getProperty(path,"qase.regression.testPlanId");
-            default -> "";
-        };
+    /*@Before
+    public void startVideoRecording(Scenario scenario) {
+        try {
+            // Start recording with the scenario name
+            screenRecorder = VideoRecorder.startRecording(scenario.getName());
+            System.out.println("Test case "+scenario.getName() + " is recording");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }*/
+
+    @AfterAll
+    public static void removeVideoFile()
+    {
+        if (removeVideoFlag) {
+            VideoRecorder.deleteRecords(VIDEO_DIRECTORY);
+        }
     }
+
 
 }

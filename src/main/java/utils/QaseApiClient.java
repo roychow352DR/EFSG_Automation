@@ -1,18 +1,29 @@
 package utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.*;
 import io.cucumber.java.Scenario;
+import io.qase.client.ApiClient;
+import io.qase.client.Configuration;
+import io.qase.client.api.AttachmentsApi;
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.client5.http.fluent.Content;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.client5.http.fluent.Request;
+import org.apache.hc.core5.http.io.entity.FileEntity;
+import org.apache.hc.core5.util.Timeout;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Date;
-import java.util.Properties;
+import java.util.*;
 
 public class QaseApiClient {
 
@@ -22,6 +33,11 @@ public class QaseApiClient {
     private static String body;
     public String response;
     public String testPlanId;
+    public String request;
+    public String hash;
+    public AttachmentsApi attachmentsApi;
+    public ApiClient qaseApi = Configuration.getDefaultApiClient();
+
     //public static String tag;
 
 
@@ -32,71 +48,8 @@ public class QaseApiClient {
         QaseApiClient.body = String.format("{\"title\":\"%s\"}", "Automated Test Run");
     }
 
-    public String createTestRun() throws IOException {
 
-        // Prepare the request payload
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("title", "Automated Test Run");
-       // requestBody.addProperty("tag",tag);
-
-        response = Request.post(endpoint)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Token", apiToken)
-                .bodyString(requestBody.toString(), ContentType.APPLICATION_JSON)
-                .execute()
-                .returnContent()
-                .asString(StandardCharsets.UTF_8);
-
-        return response;
-    }
-
-    public int getTestRunID() throws IOException {
-
-        // Send POST request to create the test run
-
-        // Parse the JSON response to retrieve the test run ID
-        JsonObject jsonResponse = JsonParser.parseString(response).getAsJsonObject();
-        if (jsonResponse.get("status").getAsBoolean()) {
-            return jsonResponse.getAsJsonObject("result").get("id").getAsInt();
-        } else {
-            throw new RuntimeException("Failed to create a test run: " + response);
-        }
-    }
-
-    public String logTestResult(String projectCode, int runId, String caseId, boolean success) throws IOException {
-        String endpoint = BASE_URL + "result/" + projectCode + "/" + runId;
-        String body = String.format("{\"case_id\":%s,\"status\":\"%s\"}", caseId, success ? "passed" : "failed");
-
-        return Request.post(endpoint)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Token", apiToken)
-                .bodyString(body, ContentType.APPLICATION_JSON)
-                .execute()
-                .returnContent()
-                .asString(StandardCharsets.UTF_8);
-    }
-
-    public String getAllTestCases(String projectCode) throws IOException {
-        HashMap<String,String> testCases = new HashMap<String,String>();
-        String endpoint = BASE_URL + "case/" + projectCode;
-        response = Request.get(endpoint)
-                .addHeader("accept", "application/json")
-                .addHeader("Token", apiToken)
-                .bodyString(body, ContentType.APPLICATION_JSON)
-                .execute()
-                .returnContent()
-                .asString(StandardCharsets.UTF_8);
-            // Map Cucumber scenario names or tags to Qase case IDs
-            testCases.put("Test Scenario 1", "1");
-            testCases.put("Test Scenario 2", "2");
-            testCases.put("@Smoke", "3");
-
-            return response;
-
-
-    }
-
-    public Map<Integer, JsonNull> getTestCasesFromPlan(String projectCode, int planId) throws IOException {
+ /*   public Map<Integer, JsonNull> getTestCasesFromPlan(String projectCode, int planId) throws IOException {
         String endpoint = BASE_URL + "plan/" + projectCode + "/" + planId;
 
         // Make the API request
@@ -128,9 +81,9 @@ public class QaseApiClient {
         }
 
         return testCaseMap;
-    }
+    }*/
 
-    public String getFeatureFileName(Scenario scenario,String projectCode)
+    public String getCaseId(Scenario scenario,String projectCode)
     {
         String uri = scenario.getUri().toString(); // Get the URI of the scenario
         String[] caseId =  uri.substring(uri.lastIndexOf("/") + 1).split(".feature");
@@ -190,6 +143,162 @@ public class QaseApiClient {
         return testPlanId;
     }
 
+    public void uploadVideoToTestCaseResult(int testRunId, String projectCode,String hash, boolean status, String caseId) throws IOException {
+            // Build the endpoint URL for Create test run result
+           endpoint = BASE_URL + "result/" + projectCode + "/" + testRunId;
+
+        // Create the full payload as a Map
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("status", status? "passed" : "failed");
+        payload.put("case_id", caseId);
+        payload.put("attachments",List.of(hash));
+
+        // Serialize the payload to JSON
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonPayload = objectMapper.writeValueAsString(payload);
+      //  System.out.println("Generated JSON Payload: " + jsonPayload);
+
+    try{
+    // Send the request using Apache HttpClient
+        response = Request.post(endpoint)
+            .addHeader("accept", "application/json")
+            .addHeader("content-type", "application/json")
+            .addHeader("Token", apiToken) // Replace with your token
+            .bodyString(jsonPayload, ContentType.APPLICATION_JSON)
+            .execute()
+            .returnContent()
+            .asString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Failed to upload video to Qase, Error: " + e );
+        }
     }
+
+    public String getVideoHash(File videoFile,String projectCode) throws Exception {
+        // Endpoint for uploading attachments
+        String endpoint = BASE_URL + "attachment/" + projectCode ;
+
+        FileEntity fileEntity = new FileEntity(videoFile, ContentType.MULTIPART_FORM_DATA);
+
+        Content responseContent = Request.post(endpoint)
+                .addHeader("Token", apiToken)
+                .addHeader("accept", "application/json")
+                .addHeader("content-type", "multipart/form-data; boundary=---011000010111000001101001")// Add Authorization header
+                .body(fileEntity) // Attach the file as the request body
+                .execute()
+                .returnContent();
+
+        // Build the multipart request for the file
+        var multipartEntity = MultipartEntityBuilder.create()
+                .addBinaryBody("file", videoFile, ContentType.DEFAULT_BINARY, videoFile.getName())
+                .build();
+
+        // Send the POST request
+        response = Request.post(endpoint)
+                .addHeader("Token", apiToken)
+                .addHeader("accept", "application/json")
+                .addHeader("content-type", "multipart/form-data; boundary=---011000010111000001101001")
+                .body(multipartEntity)
+                .connectTimeout(Timeout.ofSeconds(30))
+                .responseTimeout(Timeout.ofSeconds(30))
+                .execute()
+                .returnContent()
+                .asString();
+
+        JsonObject jsonResponse = JsonParser.parseString(response).getAsJsonObject();
+        JsonArray results = jsonResponse.getAsJsonArray("result");
+        return responseContent.asString();
+    }
+
+    public String uploadVideo(String projectCode,String scenarioName) throws IOException, InterruptedException {
+        // Qase API endpoint
+        String endpoint = BASE_URL + "attachment/" + projectCode;
+
+        // Generate a random boundary for multipart encoding
+        String boundary = "Boundary-" + System.currentTimeMillis();
+
+        // Path to the video file
+        Path filePath = Path.of("/Users/roychow/Desktop/Docker_Selenium_Grid/Video/"+ scenarioName);
+        String fileName = filePath.getFileName().toString();
+
+
+        // Verify the file exists and is complete
+        if (!Files.exists(filePath) || Files.size(filePath) == 0) {
+            throw new IOException("Video file does not exist or is empty: " + filePath);
+        }
+
+        // Read the file content
+        byte[] fileContent;
+        try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(filePath))) {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            byte[] chunk = new byte[8192]; // Read in 8 KB chunks
+            int bytesRead;
+            while ((bytesRead = inputStream.read(chunk)) != -1) {
+                buffer.write(chunk, 0, bytesRead);
+            }
+            fileContent = buffer.toByteArray();
+        }
+
+
+        // Construct the multipart body
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            // Add the boundary and headers for the file part
+            outputStream.write(("--" + boundary + "\r\n").getBytes());
+            outputStream.write(("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"\r\n").getBytes());
+            outputStream.write("Content-Type: video/mp4\r\n\r\n".getBytes());
+
+            // Add the binary file content
+            outputStream.write(fileContent);
+
+            // Add the closing boundary
+            outputStream.write(("\r\n--" + boundary + "--\r\n").getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException("Error constructing multipart body", e);
+        }
+        // Create the HttpRequest
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header("accept", "application/json")
+                .header("content-type", "multipart/form-data; boundary=" + boundary)
+                .header("Token", apiToken)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(outputStream.toByteArray()))
+                .build();
+
+        // Send the request and get the response
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+
+        // Parse the response
+        JsonObject rootObject = JsonParser.parseString(response.body()).getAsJsonObject();
+        JsonArray resultArray = rootObject.getAsJsonArray("result");
+        if (!resultArray.isEmpty()) {
+            // Extract the first object in the "result" array and get the "hash" value
+            JsonObject firstResult = resultArray.get(0).getAsJsonObject();
+            hash = firstResult.get("hash").getAsString();
+        }
+
+        return hash;
+
+    }
+        private static byte[] joinByteArrays ( byte[]...arrays){
+            int totalLength = 0;
+            for (byte[] array : arrays) {
+                totalLength += array.length;
+            }
+
+            byte[] result = new byte[totalLength];
+            int currentIndex = 0;
+            for (byte[] array : arrays) {
+                System.arraycopy(array, 0, result, currentIndex, array.length);
+                currentIndex += array.length;
+            }
+
+            return result;
+        }
+
+    }
+
 
 

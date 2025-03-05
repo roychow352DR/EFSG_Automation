@@ -5,8 +5,8 @@ Feature: Admin Portal login
 
    @Smoke
   Scenario Outline: Login End to End flow
-    Given the user fills in with username <name> and password <password>
-    When  the user clicks Sign In button
+    When the user fills in with username <name> and password <password>
+    And  the user clicks Sign In button
     Then  the user sees Menu display on the screen
 
     Examples:

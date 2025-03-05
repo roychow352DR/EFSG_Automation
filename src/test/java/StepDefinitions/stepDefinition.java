@@ -2,6 +2,7 @@ package StepDefinitions;
 
 import PageObject.LoginPage;
 import io.cucumber.java.After;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -20,18 +21,18 @@ public class stepDefinition extends BaseTest {
         loginPage =  launchApplication();
     }
 
-    @Given("^the user fills in with username (.+) and password (.+)$")
+    @When("^the user fills in with username (.+) and password (.+)$")
     public void the_user_fills_in_with_username_and_password(String username,String password) throws IOException, InterruptedException {
         login.loginApplication(username,password);
        //Thread.sleep(3000);
     }
 
-    @Given("the user input nothing as username and password")
+    @When("the user input nothing as username and password")
     public void the_user_input_nothing_as_username_and_password() throws InterruptedException {
         login.loginApplication("","");
     }
 
-    @When("the user clicks Sign In button")
+    @And("the user clicks Sign In button")
     public void the_user_clicks_Sign_In_button()
     {
         if(loginPage.ctaButtonStatus()) {
