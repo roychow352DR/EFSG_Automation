@@ -27,7 +27,7 @@ public class stepDefinition extends BaseTest {
        //Thread.sleep(3000);
     }
 
-    @When("the user input nothing as username and password")
+    @Given("the user input nothing as username and password")
     public void the_user_input_nothing_as_username_and_password() throws InterruptedException {
         login.loginApplication("","");
     }

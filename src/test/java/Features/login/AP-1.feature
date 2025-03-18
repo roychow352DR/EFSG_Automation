@@ -5,8 +5,8 @@ Feature: Admin Portal login
 
    @Regression
   Scenario Outline: Login with empty value
-    When the user input nothing as username and password
-    Then  the user sees the Sign In button is unclickable
+    Given the user input nothing as username and password
+    Then the user sees the Sign In button is unclickable
 
     Examples:
       | name       | password |

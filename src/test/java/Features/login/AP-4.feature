@@ -3,7 +3,7 @@ Feature: Admin Portal login
   Background:
     Given the user lands on Admin Portal login page
 
-   @Smoke
+   @Regression
   Scenario Outline: Login with unauthorized account credentials - valid username but incorrect password
     When the user fills in with username <name> and password <password>
     And  the user clicks Sign In button
