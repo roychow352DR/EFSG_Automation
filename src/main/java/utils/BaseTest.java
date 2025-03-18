@@ -256,6 +256,7 @@ public class BaseTest {
                     // Delete each file
                     if (file.isFile() && file.delete()) {
                         System.out.println("Deleted file: " + file.getName());
+                        System.out.println(file.getAbsolutePath());
                     } else {
                         System.out.println("Failed to delete file: " + file.getName());
                     }
