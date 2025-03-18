@@ -212,15 +212,25 @@ public class BaseTest {
 
     public static void takeScreenshot(String screenShotName)
     {
-        File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+/*        File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+        String screenshotPath = System.getProperty("user.dir") + "/screenshots/";
 
         //Copy the file to a location and use try catch block to handle exception
         try {
-            String screenshotPath = System.getProperty("user.dir") + "/screenshots/";
             FileUtils.copyFile(screenshot, new File(screenshotPath + screenShotName + ".png"));
         } catch (IOException e) {
             System.out.println(e.getMessage());
+        }*/
+        String screenshotPath = System.getProperty("user.dir") + "/screenshots/";
+        try {
+            TakesScreenshot screenshot = (TakesScreenshot) driver;
+            File sourceFile = screenshot.getScreenshotAs(OutputType.FILE);
+            File destinationFile = new File(screenshotPath + screenShotName + ".png");
+            Files.copy(sourceFile.toPath(), destinationFile.toPath());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
     }
 
     public static Map<String, Object> stepsPayload(boolean isPassed, int position, String stepAction, String hash )

@@ -1,0 +1,19 @@
+-------------------------------------------------------------------------------
+Test set: TestSuite
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 1, Errors: 0, Skipped: 2, Time elapsed: 48.04 s <<< FAILURE! -- in TestSuite
+Features.TestNGTestRunner.runScenario["Login End to End flow", "Admin Portal login"](3) -- Time elapsed: 11.90 s <<< FAILURE!
+org.openqa.selenium.TimeoutException: 
+Expected condition failed: waiting for element to be clickable: [[RemoteWebDriver: chrome on mac (1ec8de3d3ed141c21207aa36f045b8bd)] -> css selector: button[class*='MuiButtonBase-root MuiButton-root']] (tried for 5 second(s) with 500 milliseconds interval)
+Build info: version: '4.25.0', revision: '8a8aea2337'
+System info: os.name: 'Mac OS X', os.arch: 'aarch64', os.version: '13.3', java.version: '21.0.1'
+Driver info: org.openqa.selenium.remote.RemoteWebDriver
+Capabilities {acceptInsecureCerts: true, browserName: chrome, browserVersion: 131.0.6778.205, chrome: {chromedriverVersion: 131.0.6778.204 (52183f9e99a..., userDataDir: /var/folders/pm/t2bqw7cj31b...}, fedcm:accounts: true, goog:chromeOptions: {debuggerAddress: localhost:64170}, networkConnectionEnabled: false, pageLoadStrategy: normal, platformName: mac, proxy: Proxy(), se:bidiEnabled: false, se:cdp: ws://10.139.1.107:4444/sess..., se:cdpVersion: 131.0.6778.205, setWindowRect: true, strictFileInteractability: false, timeouts: {implicit: 0, pageLoad: 300000, script: 30000}, unhandledPromptBehavior: dismiss and notify, webauthn:extension:credBlob: true, webauthn:extension:largeBlob: true, webauthn:extension:minPinLength: true, webauthn:extension:prf: true, webauthn:virtualAuthenticators: true}
+Session ID: 1ec8de3d3ed141c21207aa36f045b8bd
+	at org.openqa.selenium.support.ui.WebDriverWait.timeoutException(WebDriverWait.java:84)
+	at org.openqa.selenium.support.ui.FluentWait.until(FluentWait.java:228)
+	at AbstractComponent.AbstractComponents.waitUtilElementClickable(AbstractComponents.java:57)
+	at PageObject.LoginPage.ctaButtonStatus(LoginPage.java:57)
+	at StepDefinitions.stepDefinition.the_user_clicks_Sign_In_button(stepDefinition.java:36)
+	at ✽.the user clicks Sign In button(file:///Users/roychow/IdeaProjects/web_auto/src/test/java/Features/login/AP-560.feature:9)
+
