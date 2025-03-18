@@ -46,7 +46,7 @@ public class Hooks extends BaseTest {
 
         position = 0;
         VIDEO_DIRECTORY = getProperty(filePropertyPath, "video_directory");
-        SCREENSHOT_DIRECTORY = getProperty(filePropertyPath, "screenshot_directory");
+        SCREENSHOT_DIRECTORY = System.getProperty("user.dir") + "/screenshots/";
 
 
     }
