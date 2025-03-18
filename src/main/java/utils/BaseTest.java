@@ -216,7 +216,8 @@ public class BaseTest {
 
         //Copy the file to a location and use try catch block to handle exception
         try {
-            FileUtils.copyFile(screenshot, new File("./screenshots/" + screenShotName + ".png"));
+            String screenshotPath = System.getProperty("user.dir") + "/screenshots/";
+            FileUtils.copyFile(screenshot, new File(screenshotPath + screenShotName + ".png"));
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
