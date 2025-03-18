@@ -128,7 +128,7 @@ public class Hooks extends BaseTest {
         if (position > 0) {
         String stepAction =  qaseApiClient.getCaseStepAction(projectCode,Integer.parseInt(caseId),position);
         String screenShotName = stepAction + ".png";
-        BaseTest.takeScreenshot(stepAction);
+        takeScreenshot(stepAction);
         try {
             hash = qaseApiClient.uploadAttachment(projectCode, screenShotName, SCREENSHOT_DIRECTORY);
             steps.add(BaseTest.stepsPayload(isPassed, position, stepAction, hash));
