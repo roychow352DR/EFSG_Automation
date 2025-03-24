@@ -1,6 +1,7 @@
 package StepDefinitions;
 
 import io.cucumber.java.*;
+import org.jsoup.Connection;
 import org.monte.screenrecorder.ScreenRecorder;
 import org.openqa.selenium.WebDriver;
 import utils.BaseTest;
@@ -14,6 +15,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class Hooks extends BaseTest {
 
@@ -26,7 +28,6 @@ public class Hooks extends BaseTest {
     public static String apiToken;
     public static String hash = "";
     public static String caseId;
-   // public static BaseTest base;
     public static WebDriver driver;
     public static ScreenRecorder screenRecorder;
     //public static  VideoRecorder videoRecorder;
@@ -53,12 +54,11 @@ public class Hooks extends BaseTest {
 
     @BeforeAll
     public static void createQaseTestRun() throws IOException {
-        browserType = System.getProperty("browser")!=null?System.getProperty("browser"):getProperty(globalPropertyPath,"browser");
         apiToken = getProperty(qasePropertyPath, "qase.api.token");
         projectCode = getProperty(qasePropertyPath, "qase.project.code");
-        testType = System.getProperty("testtype") != null ? System.getProperty("testtype") : getProperty(qasePropertyPath, "testtype");
         try {
-            testPlanId = BaseTest.getTestPlanId(testType, qasePropertyPath);
+           // emptyFolder("screenshots");
+            testPlanId = BaseTest.getTestPlanId(getProperty(qasePropertyPath,"testtype"), qasePropertyPath);
 
             //Initialize Qase API client
             qaseApiClient = new QaseApiClient(apiToken, projectCode);
@@ -66,7 +66,9 @@ public class Hooks extends BaseTest {
             runTitle = qaseApiClient.getTestPlanTitle(Integer.parseInt(testPlanId), projectCode);
 
             // Create a test run in Qase
-            runId = qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId), runTitle,browserType);
+            runId = qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId),
+                    runTitle,getProperty(globalPropertyPath,"browser"),
+                    getProperty(globalPropertyPath,"env"));
         } catch (IOException e) {
             e.getStackTrace();
             System.out.println("Failed to create test run");
@@ -75,8 +77,10 @@ public class Hooks extends BaseTest {
     }
 
     @Before
-    public void getCaseId(Scenario scenario) {
+    public void getCaseId(Scenario scenario) throws InterruptedException {
         caseId = qaseApiClient.getCaseId(scenario, projectCode);
+        steps.clear();
+
     }
 
 
@@ -85,19 +89,39 @@ public class Hooks extends BaseTest {
         //wait until video creation fully complete
         Thread.sleep(5000);
 
-        //   String path = "/Users/roychow/Desktop/Docker_Selenium_Grid/Video/";
-        System.out.println(steps);
         boolean isPassed = !scenario.isFailed();
+
         if (BaseTest.actualVideoFileName(scenario.getName()).exists()) {
             hash = qaseApiClient.uploadAttachment(projectCode, BaseTest.actualVideoFileName(scenario.getName()).getName(), VIDEO_DIRECTORY);
         }
 
         try {
-            qaseApiClient.uploadVideoToTestCaseResult(runId, projectCode, hash, isPassed, caseId, steps);
-            //    qaseApiClient.updateStepsResult(projectCode,hash,Integer.parseInt(caseId),runId,isPassed,steps);
+            qaseApiClient.createTestCaseResult(runId, projectCode, hash, isPassed, caseId, steps);
         } catch (Exception e) {
             e.printStackTrace();
+
         }
+        if (removeScreenShotFlag) {
+            try {
+                emptyFolder("screenshots");
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+                System.out.println("No screenshots is deleted");
+            }
+        }
+        if (removeVideoFlag) {
+            try {
+                VideoRecorder.deleteRecords(VIDEO_DIRECTORY);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+                System.out.println("No video is deleted");
+            }
+        }
+
     }
 
     /*@Before
@@ -113,12 +137,6 @@ public class Hooks extends BaseTest {
 
     @AfterAll
     public static void removeVideoFile() {
-        if (removeVideoFlag) {
-            VideoRecorder.deleteRecords(VIDEO_DIRECTORY);
-        }
-        if (removeScreenShotFlag) {
-            emptyFolder("screenshots");
-        }
 
     }
 
@@ -126,19 +144,26 @@ public class Hooks extends BaseTest {
     public void prepareStepResult(Scenario scenario) throws IOException, InterruptedException {
         boolean isPassed = !scenario.isFailed();
         if (position > 0) {
-        String stepAction =  qaseApiClient.getCaseStepAction(projectCode,Integer.parseInt(caseId),position);
-        String screenShotName = stepAction + ".png";
-        takeScreenshot(stepAction);
-        try {
-            hash = qaseApiClient.uploadAttachment(projectCode, screenShotName, SCREENSHOT_DIRECTORY);
-            steps.add(BaseTest.stepsPayload(isPassed, position, stepAction, hash));
-        }
-        catch (Exception e){
-            e.printStackTrace();
+            String stepAction = qaseApiClient.getCaseStepAction(projectCode, Integer.parseInt(caseId), position);
+            String screenShotName = stepAction + ".png";
+            if (!isPassed) {
+                takeScreenshot(stepAction);
+                hash = qaseApiClient.uploadAttachment(projectCode, screenShotName, SCREENSHOT_DIRECTORY);
             }
+                try {
+                    steps.add(BaseTest.stepsPayload(isPassed, position, stepAction, hash));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
         }
         position ++;
     }
+
+/*    @BeforeStep
+    public void stepsWait() throws InterruptedException {
+        Thread.sleep(5000);
+    }*/
 
 
 }

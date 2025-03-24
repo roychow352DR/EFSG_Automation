@@ -5,10 +5,10 @@ Feature: Admin Portal login
 
    @Regression
   Scenario Outline: Login End to End flow
-    When the user fills in with username <name> and password <password>
-    And  the user clicks Sign In button
+    Given the user fills in with username <name> and password <password>
+    When  the user clicks Sign In button
     Then  the user sees Menu display on the screen
 
     Examples:
       | name       | password |
-      | qaauto | Test1234@|
+      | qaauto | Test1234@@|

@@ -8,10 +8,7 @@ import io.cucumber.java.Scenario;
 import org.apache.commons.io.FileUtils;
 import org.jsoup.Connection;
 import org.monte.screenrecorder.ScreenRecorder;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.edge.EdgeDriver;
@@ -21,6 +18,10 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Wait;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,17 +45,17 @@ public class BaseTest {
     public static String browserType;
 
 
-    public WebDriver initializeDriver() throws IOException, URISyntaxException {
+    public WebDriver initializeDriver() throws IOException, InterruptedException {
         String path = "//src//main//java//DataResources//GlobalData.properties";
         browserType = System.getProperty("browser")!=null?System.getProperty("browser"):getProperty(path,"browser");
         driver = setBrowserDriver(browserType);
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
-        driver.get(setDomain(getProperty(path,"env")));
+        driver.get(setDomain(System.getProperty("env")!=null?System.getProperty("env"):getProperty(path,"env")));
         return driver;
     }
 
 
-    public LoginPage launchApplication() throws IOException, URISyntaxException {
+    public LoginPage launchApplication() throws IOException, InterruptedException {
         WebDriver driver = initializeDriver();
         login = new LoginPage(driver);
         //   login.landOnLoginPage();
@@ -92,20 +93,12 @@ public class BaseTest {
         };
     }
 
-/*    public Properties getPropertiesFile(String path) throws IOException {
-        Properties prop = new Properties();
-        FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + path);
-        prop.load(fis);
-
-        return prop;
-    }*/
-
     public static String getProperty(String path, String propertyItem) throws IOException {
         Properties prop = new Properties();
         FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + path);
         prop.load(fis);
 
-        return prop.getProperty(propertyItem);
+        return (System.getProperty(propertyItem)!=null?System.getProperty(propertyItem):prop.getProperty(propertyItem));
     }
 
     public static File actualVideoFileName(String scenarioName) throws IOException {
@@ -212,34 +205,32 @@ public class BaseTest {
 
     public static void takeScreenshot(String screenShotName)
     {
-/*        File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-        String screenshotPath = System.getProperty("user.dir") + "/screenshots/";
-
-        //Copy the file to a location and use try catch block to handle exception
-        try {
-            FileUtils.copyFile(screenshot, new File(screenshotPath + screenShotName + ".png"));
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }*/
         String screenshotPath = System.getProperty("user.dir") + "/screenshots/";
         try {
             TakesScreenshot screenshot = (TakesScreenshot) driver;
+            Thread.sleep(5000);
             File sourceFile = screenshot.getScreenshotAs(OutputType.FILE);
             File destinationFile = new File(screenshotPath + screenShotName + ".png");
             Files.copy(sourceFile.toPath(), destinationFile.toPath());
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     public static Map<String, Object> stepsPayload(boolean isPassed, int position, String stepAction, String hash )
     {
         Map<String, Object> step = new HashMap<>();
-        step.put("status", isPassed ? "passed" : "failed");
-        step.put("position", position);
-        step.put("action", stepAction);
-        step.put("attachments",List.of(hash));
+        if (!isPassed) {
+            step.put("status", "failed");
+            step.put("position", position);
+            step.put("action", stepAction);
+            step.put("attachments", List.of(hash));
+        }
+        else{
+            step.put("status", "passed");
+            step.put("position", position);
+            step.put("action", stepAction);
+        }
         return step;
     }
 
@@ -256,7 +247,6 @@ public class BaseTest {
                     // Delete each file
                     if (file.isFile() && file.delete()) {
                         System.out.println("Deleted file: " + file.getName());
-                        System.out.println(file.getAbsolutePath());
                     } else {
                         System.out.println("Failed to delete file: " + file.getName());
                     }
@@ -267,6 +257,12 @@ public class BaseTest {
         } else {
             System.out.println("Screenshots folder does not exist.");
         }
+    }
+
+    public static void waitElementFound(By element)
+    {
+        WebDriverWait w = new WebDriverWait(driver,Duration.ofSeconds(5));
+        w.until(ExpectedConditions.visibilityOfElementLocated(element)).isDisplayed();
     }
 
 }

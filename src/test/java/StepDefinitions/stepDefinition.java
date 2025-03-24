@@ -17,11 +17,11 @@ import java.util.List;
 public class stepDefinition extends BaseTest {
     public LoginPage loginPage;
     @Given("the user lands on Admin Portal login page")
-    public void the_user_lands_on_Admin_Portal_login_page() throws IOException, URISyntaxException {
+    public void the_user_lands_on_Admin_Portal_login_page() throws IOException, URISyntaxException, InterruptedException {
         loginPage =  launchApplication();
     }
 
-    @When("^the user fills in with username (.+) and password (.+)$")
+    @Given("^the user fills in with username (.+) and password (.+)$")
     public void the_user_fills_in_with_username_and_password(String username,String password) throws IOException, InterruptedException {
         login.loginApplication(username,password);
        //Thread.sleep(3000);
@@ -32,27 +32,19 @@ public class stepDefinition extends BaseTest {
         login.loginApplication("","");
     }
 
-    @And("the user clicks Sign In button")
-    public void the_user_clicks_Sign_In_button()
-    {
+    @When("the user clicks Sign In button")
+    public void the_user_clicks_Sign_In_button() throws InterruptedException {
         if(loginPage.ctaButtonStatus()) {
-            loginPage.clickSignIn();
+           loginPage.clickSignIn();
         }
     }
 
     @Then("the user sees Menu display on the screen")
     public void the_user_sees_Menu_display_on_the_screen() throws IOException {
-       // String caseId = "560";
 
         Assert.assertTrue(applicationPage().menuTitle().isDisplayed());
-       //driver.quit();
-        boolean testPassed = true; // Replace with actual validation logic
-        Assert.assertTrue(testPassed);
-
-
-//        // Log result into Qase// Replace with your Qase case ID
-//        qaseApiClient.logTestResult(projectCode, runId, "560", testPassed);
-//        System.out.println("Test Result Logged in Qase.");
+       /* boolean testPassed = true; // Replace with actual validation logic
+        Assert.assertTrue(testPassed);*/
 
     }
 
@@ -68,10 +60,9 @@ public class stepDefinition extends BaseTest {
         Assert.assertFalse(unclickableCTA(login.ctaButton()));
 
     }
-
     @After
-    public void tearDown()
-    {
+    public void tearDown() throws InterruptedException {
+        Thread.sleep(5000);
         driver.quit();
     }
 

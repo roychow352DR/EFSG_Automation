@@ -100,13 +100,13 @@ public class QaseApiClient {
         return actualCaseId[1];// Extract the file name
     }
 
-    public int createTestRunByTestPlan(int planId, String runTitle,String browserType) throws IOException {
+    public int createTestRunByTestPlan(int planId, String runTitle,String browserType,String env) throws IOException {
         // Prepare the request payload
         SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd");
         String str = ft.format(new Date());
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("title", "["+browserType+"]" + str + " - " + runTitle);
+        requestBody.addProperty("title", "["+browserType+"]" + "["+env+"]" + str + " - " + runTitle);
         requestBody.addProperty("plan_id", planId);
 
         response = Request.post(endpoint)
@@ -153,7 +153,7 @@ public class QaseApiClient {
         return testPlanId;
     }
 
-    public void uploadVideoToTestCaseResult(int testRunId, String projectCode, String hash, boolean status, String caseId,List<Map<String, Object>> steps) throws IOException {
+    public void createTestCaseResult(int testRunId, String projectCode, String hash, boolean status, String caseId,List<Map<String, Object>> steps) throws IOException {
         // Build the endpoint URL for Create test run result
         endpoint = BASE_URL + "result/" + projectCode + "/" + testRunId;
 
@@ -190,7 +190,7 @@ public class QaseApiClient {
                     .asString();
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("Failed to upload video to Qase, Error: " + e);
+            System.out.println("Failed to upload Qase result, Error: " + e);
         }
     }
 
@@ -239,13 +239,12 @@ public class QaseApiClient {
 
         // Path to the video file
         Path filePath = Path.of(path + scenarioName);
-      //  Path filePath2 = Path.of("/Users/roychow/IdeaProjects/web_auto/screenshots/GIVEN the user input invalid username and password.png");
         String fileName = filePath.getFileName().toString();
 
 
         // Verify the file exists and is complete
         if (!Files.exists(filePath) || Files.size(filePath) == 0) {
-            throw new IOException("Video file does not exist or is empty: " + filePath);
+            throw new IOException("Attached file does not exist or is empty: " + filePath);
         }
 
         // Read the file content
@@ -263,19 +262,37 @@ public class QaseApiClient {
 
         // Construct the multipart body
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            // Add the boundary and headers for the file part
-            outputStream.write(("--" + boundary + "\r\n").getBytes());
-            outputStream.write(("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"\r\n").getBytes());
-            outputStream.write("Content-Type: video/mp4\r\n\r\n".getBytes());
+        if (path.contains("Video")) {
+            try {
+                // Add the boundary and headers for the file part
+                outputStream.write(("--" + boundary + "\r\n").getBytes());
+                outputStream.write(("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"\r\n").getBytes());
+                outputStream.write("Content-Type: video/mp4\r\n\r\n".getBytes());
 
-            // Add the binary file content
-            outputStream.write(fileContent);
+                // Add the binary file content
+                outputStream.write(fileContent);
 
-            // Add the closing boundary
-            outputStream.write(("\r\n--" + boundary + "--\r\n").getBytes());
-        } catch (IOException e) {
-            throw new RuntimeException("Error constructing multipart body", e);
+                // Add the closing boundary
+                outputStream.write(("\r\n--" + boundary + "--\r\n").getBytes());
+            } catch (IOException e) {
+                throw new RuntimeException("Error constructing multipart body", e);
+            }
+        }
+        else if (path.contains("screenshots")){
+            try {
+                // Add the boundary and headers for the file part
+                outputStream.write(("--" + boundary + "\r\n").getBytes());
+                outputStream.write(("Content-Disposition: form-data; name=\"file\"; filename=\"" + fileName + "\"\r\n").getBytes());
+                outputStream.write("Content-Type: image/png\r\n\r\n".getBytes());
+
+                // Add the binary file content
+                outputStream.write(fileContent);
+
+                // Add the closing boundary
+                outputStream.write(("\r\n--" + boundary + "--\r\n").getBytes());
+            } catch (IOException e) {
+                throw new RuntimeException("Error constructing multipart body", e);
+            }
         }
         // Create the HttpRequest
         HttpRequest request = HttpRequest.newBuilder()
