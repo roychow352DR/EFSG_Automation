@@ -49,7 +49,6 @@ public class Hooks extends BaseTest {
         VIDEO_DIRECTORY = getProperty(filePropertyPath, "video_directory");
         SCREENSHOT_DIRECTORY = System.getProperty("user.dir") + "/screenshots/";
 
-
     }
 
     @BeforeAll
@@ -57,7 +56,6 @@ public class Hooks extends BaseTest {
         apiToken = getProperty(qasePropertyPath, "qase.api.token");
         projectCode = getProperty(qasePropertyPath, "qase.project.code");
         try {
-           // emptyFolder("screenshots");
             testPlanId = BaseTest.getTestPlanId(getProperty(qasePropertyPath,"testtype"), qasePropertyPath);
 
             //Initialize Qase API client
@@ -135,11 +133,6 @@ public class Hooks extends BaseTest {
         }
     }*/
 
-    @AfterAll
-    public static void removeVideoFile() {
-
-    }
-
     @AfterStep
     public void prepareStepResult(Scenario scenario) throws IOException, InterruptedException {
         boolean isPassed = !scenario.isFailed();
@@ -159,11 +152,5 @@ public class Hooks extends BaseTest {
         }
         position ++;
     }
-
-/*    @BeforeStep
-    public void stepsWait() throws InterruptedException {
-        Thread.sleep(5000);
-    }*/
-
 
 }

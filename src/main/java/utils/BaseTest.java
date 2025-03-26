@@ -6,7 +6,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cucumber.java.Scenario;
 import org.apache.commons.io.FileUtils;
-import org.jsoup.Connection;
 import org.monte.screenrecorder.ScreenRecorder;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -18,16 +17,11 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.Wait;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -128,15 +122,21 @@ public class BaseTest {
 
     public DesiredCapabilities setBrowserCap(String browserName)
     {
-            caps = new DesiredCapabilities();
-            caps.setCapability(CapabilityType.BROWSER_NAME, browserName);
-            //caps.setCapability(CapabilityType.PLATFORM_NAME, Platform.MAC);
-            caps.setCapability(CapabilityType.ACCEPT_INSECURE_CERTS, true);
-            caps.setCapability("se:recordVideo", true);
-            caps.setCapability("se:name", "Test");
+        caps = new DesiredCapabilities();
+        if (browserName.contains("headless"))
+        {
+            caps.setCapability("se:options", "--headless");
+        }
 
-            return caps;
+        caps.setCapability(CapabilityType.BROWSER_NAME, browserName);
+        //caps.setCapability(CapabilityType.PLATFORM_NAME, Platform.MAC);
+        caps.setCapability(CapabilityType.ACCEPT_INSECURE_CERTS, true);
+        caps.setCapability("se:recordVideo", true);
+        caps.setCapability("se:name", "Test");
+
+        return caps;
     }
+
 
 
     public WebDriver setBrowserDriver(String browserName) {
@@ -147,14 +147,13 @@ public class BaseTest {
             options.addArguments("--disable-gpu");
             options.addArguments("--start-maximized");
 
-
             if (browserName.contains("headless")) {
                 options.addArguments("--headless=new");
             }
-            setBrowserCap(browserName).setCapability(ChromeOptions.CAPABILITY, options);
-            // driver = new ChromeDriver(options);//global max timeout
+            DesiredCapabilities chromeCaps = setBrowserCap(browserName);
+            chromeCaps.setCapability(ChromeOptions.CAPABILITY, options);
             try {
-                driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), setBrowserCap(browserName));
+                driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), chromeCaps);
             } catch (Exception e) {
                 driver = new ChromeDriver(options);
                 System.out.printf(String.valueOf(e));
@@ -171,10 +170,10 @@ public class BaseTest {
             if (browserName.contains("headless")) {
                 options.addArguments("--headless=new");
             }
-            setBrowserCap(browserName).setCapability(ChromeOptions.CAPABILITY, options);
-            // driver = new ChromeDriver(options);//global max timeout
+            DesiredCapabilities firefoxCaps = setBrowserCap(browserName);
+            firefoxCaps.setCapability(FirefoxOptions.FIREFOX_OPTIONS, options);
             try {
-                driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), setBrowserCap(browserName));
+                driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), firefoxCaps);
             } catch (Exception e) {
                 driver = new FirefoxDriver(options);
                 System.out.printf(String.valueOf(e));
@@ -191,10 +190,10 @@ public class BaseTest {
             if (browserName.contains("headless")) {
                 options.addArguments("--headless=new");
             }
-            setBrowserCap(browserName).setCapability(ChromeOptions.CAPABILITY, options);
-            // driver = new ChromeDriver(options);//global max timeout
+            DesiredCapabilities edgeCaps = setBrowserCap(browserName);
+            edgeCaps.setCapability(EdgeOptions.CAPABILITY, options);
             try {
-                driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), setBrowserCap(browserName));
+                driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), edgeCaps);
             } catch (Exception e) {
                 driver = new EdgeDriver(options);
                 System.out.printf(String.valueOf(e));
@@ -207,11 +206,9 @@ public class BaseTest {
     {
         String screenshotPath = System.getProperty("user.dir") + "/screenshots/";
         try {
-            TakesScreenshot screenshot = (TakesScreenshot) driver;
-            Thread.sleep(5000);
-            File sourceFile = screenshot.getScreenshotAs(OutputType.FILE);
-            File destinationFile = new File(screenshotPath + screenShotName + ".png");
-            Files.copy(sourceFile.toPath(), destinationFile.toPath());
+            File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            File destFile = new File(screenshotPath + screenShotName + ".png");
+            Files.copy(srcFile.toPath(), destFile.toPath());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -258,11 +255,4 @@ public class BaseTest {
             System.out.println("Screenshots folder does not exist.");
         }
     }
-
-    public static void waitElementFound(By element)
-    {
-        WebDriverWait w = new WebDriverWait(driver,Duration.ofSeconds(5));
-        w.until(ExpectedConditions.visibilityOfElementLocated(element)).isDisplayed();
-    }
-
 }

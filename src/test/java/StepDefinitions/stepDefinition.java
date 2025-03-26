@@ -24,7 +24,6 @@ public class stepDefinition extends BaseTest {
     @Given("^the user fills in with username (.+) and password (.+)$")
     public void the_user_fills_in_with_username_and_password(String username,String password) throws IOException, InterruptedException {
         login.loginApplication(username,password);
-       //Thread.sleep(3000);
     }
 
     @Given("the user input nothing as username and password")
@@ -43,8 +42,7 @@ public class stepDefinition extends BaseTest {
     public void the_user_sees_Menu_display_on_the_screen() throws IOException {
 
         Assert.assertTrue(applicationPage().menuTitle().isDisplayed());
-       /* boolean testPassed = true; // Replace with actual validation logic
-        Assert.assertTrue(testPassed);*/
+
 
     }
 
@@ -62,7 +60,7 @@ public class stepDefinition extends BaseTest {
     }
     @After
     public void tearDown() throws InterruptedException {
-        Thread.sleep(5000);
+       // Thread.sleep(5000);
         driver.quit();
     }
 
