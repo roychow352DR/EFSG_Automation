@@ -1,0 +1,8 @@
+ info.put("email","autoeblsit11@yopmail.com");
+        info.put("phoneNumber","1234567890010");
+        info.put("promoCode","Test");
+        info.put("referCode","Test123");
+        info.put("countryCode","+852");
+        info.put("lastName","Chow");
+        info.put("firstName","Roy");
+        info.put("country","HKG");

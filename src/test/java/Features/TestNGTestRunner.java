@@ -7,10 +7,10 @@ import io.cucumber.testng.FeatureWrapper;
 import io.cucumber.testng.PickleWrapper;
 
 
-@CucumberOptions(features = "src/test/java/Features",glue = "StepDefinitions",monochrome = true
-,  plugin= {"pretty",
-            /*"html:target/cucumber-reports/cucumber-report.html",*/
-            "json:target/cucumber-reports/cucumber-report.json"}, tags = "@Smoke")
+@CucumberOptions(features = "src/test/java/Features", glue = "StepDefinitions", monochrome = true
+        , plugin = {"pretty",
+        /*"html:target/cucumber-reports/cucumber-report.html",*/
+        "json:target/cucumber-reports/cucumber-report.json"}, tags = "@Smoke")
 public class TestNGTestRunner extends AbstractTestNGCucumberTests {
 
 
@@ -21,9 +21,9 @@ public class TestNGTestRunner extends AbstractTestNGCucumberTests {
            retryAnalyzer= Retry.class
    )*/
 
-   @Override
-    public void runScenario(PickleWrapper pickleWrapper, FeatureWrapper featureWrapper){
-        super.runScenario(pickleWrapper,featureWrapper);
+    @Override
+    public void runScenario(PickleWrapper pickleWrapper, FeatureWrapper featureWrapper) {
+        super.runScenario(pickleWrapper, featureWrapper);
 
     }
 

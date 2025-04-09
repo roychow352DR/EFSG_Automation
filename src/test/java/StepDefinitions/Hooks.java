@@ -28,7 +28,6 @@ public class Hooks extends BaseTest {
     public static String apiToken;
     public static String hash = "";
     public static String caseId;
-    public static WebDriver driver;
     public static ScreenRecorder screenRecorder;
     //public static  VideoRecorder videoRecorder;
     public static File videoFile;
@@ -56,7 +55,7 @@ public class Hooks extends BaseTest {
         apiToken = getProperty(qasePropertyPath, "qase.api.token");
         projectCode = getProperty(qasePropertyPath, "qase.project.code");
         try {
-            testPlanId = BaseTest.getTestPlanId(getProperty(qasePropertyPath,"testtype"), qasePropertyPath);
+            testPlanId = BaseTest.getTestPlanId(getProperty(qasePropertyPath, "testtype"), qasePropertyPath);
 
             //Initialize Qase API client
             qaseApiClient = new QaseApiClient(apiToken, projectCode);
@@ -65,8 +64,8 @@ public class Hooks extends BaseTest {
 
             // Create a test run in Qase
             runId = qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId),
-                    runTitle,getProperty(globalPropertyPath,"browser"),
-                    getProperty(globalPropertyPath,"env"));
+                    runTitle, getProperty(globalPropertyPath, "browser"),
+                    getProperty(globalPropertyPath, "env"));
         } catch (IOException e) {
             e.getStackTrace();
             System.out.println("Failed to create test run");
@@ -84,6 +83,7 @@ public class Hooks extends BaseTest {
 
     @After
     public void logQaseTestResult(Scenario scenario) throws Exception {
+        driver.quit();
         //wait until video creation fully complete
         Thread.sleep(5000);
 
@@ -102,9 +102,7 @@ public class Hooks extends BaseTest {
         if (removeScreenShotFlag) {
             try {
                 emptyFolder("screenshots");
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("No screenshots is deleted");
             }
@@ -112,13 +110,12 @@ public class Hooks extends BaseTest {
         if (removeVideoFlag) {
             try {
                 VideoRecorder.deleteRecords(VIDEO_DIRECTORY);
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("No video is deleted");
             }
         }
+
 
     }
 
@@ -143,14 +140,20 @@ public class Hooks extends BaseTest {
                 takeScreenshot(stepAction);
                 hash = qaseApiClient.uploadAttachment(projectCode, screenShotName, SCREENSHOT_DIRECTORY);
             }
-                try {
-                    steps.add(BaseTest.stepsPayload(isPassed, position, stepAction, hash));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            try {
+                steps.add(BaseTest.stepsPayload(isPassed, position, stepAction, hash));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
         }
-        position ++;
+        position++;
+    }
+
+    @After
+    public void teardown() throws InterruptedException {
+        Thread.sleep(5000);
+        driver.quit();
     }
 
 }

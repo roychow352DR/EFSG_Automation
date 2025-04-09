@@ -35,16 +35,16 @@ public class BaseTest {
     public DesiredCapabilities caps;
     public Scenario scenario;
     private static ScreenRecorder screenRecorder;
-    public static File newFile,oldFile;
+    public static File newFile, oldFile;
     public static String browserType;
 
 
     public WebDriver initializeDriver() throws IOException, InterruptedException {
         String path = "//src//main//java//DataResources//GlobalData.properties";
-        browserType = System.getProperty("browser")!=null?System.getProperty("browser"):getProperty(path,"browser");
+        browserType = System.getProperty("browser") != null ? System.getProperty("browser") : getProperty(path, "browser");
         driver = setBrowserDriver(browserType);
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
-        driver.get(setDomain(System.getProperty("env")!=null?System.getProperty("env"):getProperty(path,"env")));
+        driver.get(setDomain(System.getProperty("env") != null ? System.getProperty("env") : getProperty(path, "env")));
         return driver;
     }
 
@@ -76,13 +76,10 @@ public class BaseTest {
         return ctaButton.isEnabled();
     }
 
-    public String setDomain(String env)
-    {
+    public String setDomain(String env) {
         return switch (env) {
-            case "mf4sit" -> "https://d3lyp6p86bdjbb.cloudfront.net/login";
-            case "mf4uat" -> "https://mf4-uat-aocm-ap.empfs.net/login";
-            case "bausit" -> "https://mf4-uat-aocm-ap.empfs.net/login";
-            case "bauuat" -> "https://mf4-uat-aocm-ap.empfs.net/login";
+            case "bausit" -> "https://d13ckj22o5rgah.cloudfront.net/login";
+            case "bauuat" -> "https://uat-aocm-ap.empfs.net/login";
             default -> "";
         };
     }
@@ -92,12 +89,12 @@ public class BaseTest {
         FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + path);
         prop.load(fis);
 
-        return (System.getProperty(propertyItem)!=null?System.getProperty(propertyItem):prop.getProperty(propertyItem));
+        return (System.getProperty(propertyItem) != null ? System.getProperty(propertyItem) : prop.getProperty(propertyItem));
     }
 
     public static File actualVideoFileName(String scenarioName) throws IOException {
         String path = "//src//main//java//DataResources//FileDirectory.properties";
-        String VIDEO_DIRECTORY = getProperty(path,"video_directory");
+        String VIDEO_DIRECTORY = getProperty(path, "video_directory");
         String actualFileName = "";
         newFile = new File(VIDEO_DIRECTORY, scenarioName + ".mp4");
         oldFile = new File(VIDEO_DIRECTORY, "Test.mp4");
@@ -107,24 +104,21 @@ public class BaseTest {
         return newFile;
     }
 
-    public File videoFile()
-    {
+    public File videoFile() {
         return newFile;
     }
 
     public static String getTestPlanId(String testType, String path) throws IOException {
         return switch (testType) {
-            case "Regression" -> getProperty(path,"qase.regression.testPlanId");
-            case "Smoke" -> getProperty(path,"qase.regression.testPlanId");
+            case "Regression" -> getProperty(path, "qase.regression.testPlanId");
+            case "Smoke" -> getProperty(path, "qase.smoke.testPlanId");
             default -> "";
         };
     }
 
-    public DesiredCapabilities setBrowserCap(String browserName)
-    {
+    public DesiredCapabilities setBrowserCap(String browserName) {
         caps = new DesiredCapabilities();
-        if (browserName.contains("headless"))
-        {
+        if (browserName.contains("headless")) {
             caps.setCapability("se:options", "--headless");
         }
 
@@ -136,7 +130,6 @@ public class BaseTest {
 
         return caps;
     }
-
 
 
     public WebDriver setBrowserDriver(String browserName) {
@@ -152,14 +145,13 @@ public class BaseTest {
             }
             DesiredCapabilities chromeCaps = setBrowserCap(browserName);
             chromeCaps.setCapability(ChromeOptions.CAPABILITY, options);
-            try {
+           try {
                 driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), chromeCaps);
             } catch (Exception e) {
                 driver = new ChromeDriver(options);
                 System.out.printf(String.valueOf(e));
             }
-        }
-        else if (browserName.contains("firefox")) {
+        } else if (browserName.contains("firefox")) {
             FirefoxOptions options = new FirefoxOptions();
             options.addArguments("--disable-dev-shm-usage");
             options.addArguments("--no-sandbox");
@@ -178,8 +170,7 @@ public class BaseTest {
                 driver = new FirefoxDriver(options);
                 System.out.printf(String.valueOf(e));
             }
-        }
-        else if (browserName.contains("edge")) {
+        } else if (browserName.contains("edge")) {
             EdgeOptions options = new EdgeOptions();
             options.addArguments("--disable-dev-shm-usage");
             options.addArguments("--no-sandbox");
@@ -202,8 +193,7 @@ public class BaseTest {
         return driver;
     }
 
-    public static void takeScreenshot(String screenShotName)
-    {
+    public static void takeScreenshot(String screenShotName) {
         String screenshotPath = System.getProperty("user.dir") + "/screenshots/";
         try {
             File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
@@ -214,16 +204,14 @@ public class BaseTest {
         }
     }
 
-    public static Map<String, Object> stepsPayload(boolean isPassed, int position, String stepAction, String hash )
-    {
+    public static Map<String, Object> stepsPayload(boolean isPassed, int position, String stepAction, String hash) {
         Map<String, Object> step = new HashMap<>();
         if (!isPassed) {
             step.put("status", "failed");
             step.put("position", position);
             step.put("action", stepAction);
             step.put("attachments", List.of(hash));
-        }
-        else{
+        } else {
             step.put("status", "passed");
             step.put("position", position);
             step.put("action", stepAction);
@@ -231,8 +219,7 @@ public class BaseTest {
         return step;
     }
 
-    public static void emptyFolder(String folderName)
-    {
+    public static void emptyFolder(String folderName) {
         File screenshotsFolder = new File(folderName);
         // Check if the folder exists
         if (screenshotsFolder.exists() && screenshotsFolder.isDirectory()) {

@@ -1,8 +1,6 @@
-package StepDefinitions;
+package StepDefinitions.login;
 
 import PageObject.LoginPage;
-import io.cucumber.java.After;
-import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -11,10 +9,8 @@ import utils.BaseTest;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.List;
 
-public class stepDefinition extends BaseTest {
+public class loginStepsDefinition extends BaseTest {
     public LoginPage loginPage;
     @Given("the user lands on Admin Portal login page")
     public void the_user_lands_on_Admin_Portal_login_page() throws IOException, URISyntaxException, InterruptedException {
@@ -49,7 +45,15 @@ public class stepDefinition extends BaseTest {
     @Then("the user sees {string} message pop up")
     public void the_user_sees_message_pop_up(String string)
     {
-        Assert.assertTrue(loginPage.errorValidation().equalsIgnoreCase(string));
+        if (string.equalsIgnoreCase("User account is suspended! Please contact administration"))
+        {
+            Assert.assertTrue(loginPage.suspendErrorValidation().equalsIgnoreCase(string));
+        }
+        else if (string.equalsIgnoreCase("Invalid username or password"))
+        {
+            Assert.assertTrue(loginPage.loginErrorValidation().equalsIgnoreCase(string));
+        }
+
     }
 
     @Then("the user sees the Sign In button is unclickable")
@@ -58,10 +62,12 @@ public class stepDefinition extends BaseTest {
         Assert.assertFalse(unclickableCTA(login.ctaButton()));
 
     }
-    @After
+
+
+  /*  @After
     public void tearDown() throws InterruptedException {
        // Thread.sleep(5000);
         driver.quit();
-    }
+    }*/
 
 }

@@ -15,6 +15,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.client5.http.fluent.Request;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+
 import java.io.*;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -56,13 +57,13 @@ public class QaseApiClient {
         return actualCaseId[1];// Extract the file name
     }
 
-    public int createTestRunByTestPlan(int planId, String runTitle,String browserType,String env) throws IOException {
+    public int createTestRunByTestPlan(int planId, String runTitle, String browserType, String env) throws IOException {
         // Prepare the request payload
         SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd");
         String str = ft.format(new Date());
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("title", "["+browserType+"]" + "["+env+"]" + str + " - " + runTitle);
+        requestBody.addProperty("title", "[" + browserType + "]" + "[" + env + "]" + str + " - " + runTitle);
         requestBody.addProperty("plan_id", planId);
 
         response = Request.post(endpoint)
@@ -109,7 +110,7 @@ public class QaseApiClient {
         return testPlanId;
     }
 
-    public void createTestCaseResult(int testRunId, String projectCode, String hash, boolean status, String caseId,List<Map<String, Object>> steps) throws IOException {
+    public void createTestCaseResult(int testRunId, String projectCode, String hash, boolean status, String caseId, List<Map<String, Object>> steps) throws IOException {
         // Build the endpoint URL for Create test run result
         endpoint = BASE_URL + "result/" + projectCode + "/" + testRunId;
 
@@ -151,7 +152,7 @@ public class QaseApiClient {
     }
 
 
-    public String uploadAttachment(String projectCode, String scenarioName,String path) throws IOException, InterruptedException {
+    public String uploadAttachment(String projectCode, String scenarioName, String path) throws IOException, InterruptedException {
         // Qase API endpoint
         String endpoint = BASE_URL + "attachment/" + projectCode;
 
@@ -198,8 +199,7 @@ public class QaseApiClient {
             } catch (IOException e) {
                 throw new RuntimeException("Error constructing multipart body", e);
             }
-        }
-        else if (path.contains("screenshots")){
+        } else if (path.contains("screenshots")) {
             try {
                 // Add the boundary and headers for the file part
                 outputStream.write(("--" + boundary + "\r\n").getBytes());
@@ -306,7 +306,7 @@ public class QaseApiClient {
         return stepsMap.get(stepPosition);
     }
 
-    }
+}
 
 
 
