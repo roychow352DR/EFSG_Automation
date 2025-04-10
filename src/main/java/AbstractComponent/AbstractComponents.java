@@ -23,7 +23,7 @@ public class AbstractComponents {
         int randomEmailSeed = (int) (Math.random() * 10001);
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
-        info.put("email", "qaauto" + randomEmailSeed + "@yopmail.com");
+         info.put("email", "qaauto" + randomEmailSeed + "@yopmail.com");
         info.put("phoneNumber", Integer.toString(randomPhoneNo));
         info.put("entity", "EIEHK");
         info.put("promoCode", "Test");
