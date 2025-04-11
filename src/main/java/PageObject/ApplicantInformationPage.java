@@ -47,21 +47,11 @@ public class ApplicantInformationPage {
     @FindBy(id = "mui-component-select-mobileCountryCode")
     WebElement countryCodeDropdown;
 
-    @FindBy(xpath = "//span[text()='This email address is already in use']")
-    WebElement emailInUseText;
-
-
-    @FindBy(xpath = "//span[text()='This mobile number is already in use']")
-    WebElement phoneInUseText;
-
     @FindBy(css = "button[class*='MuiButtonBase-root MuiButton-root MuiButton-contained']")
     WebElement nextButton;
 
     @FindBy(xpath = "//div[@class='Toastify__toast-body']/div[2]")
     WebElement toast;
-
-    @FindBy(xpath = "//span[contains(@class,'css-1wercf4')]")
-    WebElement phoneNumberInUse;
 
     public void clickEntityDropdown() {
         entityDropdown.click();
@@ -73,7 +63,7 @@ public class ApplicantInformationPage {
         emailField.sendKeys(email);
     }
 
-    public void selectCountryCode() throws InterruptedException {
+    public void selectCountryCode()  {
         countryCodeDropdown.click();
         abs.staleElementRefExceptionHandle(dropdownItems,"",abs.userinfoList().get("countryCode"));
     }
@@ -89,7 +79,7 @@ public class ApplicantInformationPage {
         return toast.getText();
     }
 
-    public void fillInApplicantInfo() throws InterruptedException {
+    public void fillInApplicantInfo()  {
 
         clickEntityDropdown();
         fillEmailAddress();
