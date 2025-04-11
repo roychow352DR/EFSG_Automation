@@ -65,7 +65,7 @@ public class ApplicantInformationPage {
 
     public void clickEntityDropdown() {
         entityDropdown.click();
-        abs.selectDropdownItemsByText(dropdownItems, abs.userinfoList().get("entity"));
+        abs.staleElementRefExceptionHandle(dropdownItems,"",abs.userinfoList().get("entity"));
     }
 
     public void fillEmailAddress() {
@@ -75,8 +75,7 @@ public class ApplicantInformationPage {
 
     public void selectCountryCode() throws InterruptedException {
         countryCodeDropdown.click();
-        Thread.sleep(5000);
-        abs.selectDropdownItemsByText(dropdownItems, abs.userinfoList().get("countryCode"));
+        abs.staleElementRefExceptionHandle(dropdownItems,"",abs.userinfoList().get("countryCode"));
     }
 
     public void fillPhoneNumber() {
