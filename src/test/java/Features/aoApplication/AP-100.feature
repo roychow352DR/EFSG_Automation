@@ -15,7 +15,7 @@ Feature: AO Application List
     Then the user sees a record in "Pending Verification" status is created on the application list
 
     Examples:
-      | name      | password   |
+      | name      | password  |
       | aoadmin01 | P@ssw0rd! |
 
 
