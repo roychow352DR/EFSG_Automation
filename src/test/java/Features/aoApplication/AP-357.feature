@@ -16,5 +16,5 @@ Feature: AO Application List
 
     Examples:
       | name      | password  |
-      | aoadmin02 | Pssw0rd! |
+      | aoadmin02 | P@ssw0rd! |
 
