@@ -1,4 +1,4 @@
-package PageObject;
+package PageObject.AdminPortal;
 
 import AbstractComponent.AbstractComponents;
 import org.openqa.selenium.WebDriver;
@@ -8,7 +8,7 @@ import org.openqa.selenium.support.PageFactory;
 
 public class LoginPage {
     WebDriver driver;
-    public ApplicationPage applicationPage;
+    public ApplicationListPage applicationPage;
 
     public LoginPage(WebDriver driver) {
         this.driver = driver;
@@ -49,9 +49,9 @@ public class LoginPage {
         return suspendText.getText();
     }
 
-    public ApplicationPage clickSignIn() {
+    public ApplicationListPage clickSignIn() {
         signInButton.click();
-        applicationPage = new ApplicationPage(driver);
+        applicationPage = new ApplicationListPage(driver);
         return applicationPage;
     }
 

@@ -42,7 +42,7 @@ public class Hooks extends BaseTest {
     public static int position;
     public static List<Map<String, Object>> steps = new ArrayList<>();
 
-    public Hooks() throws IOException, AWTException, URISyntaxException {
+    public Hooks() throws IOException{
 
         position = 0;
         VIDEO_DIRECTORY = getProperty(filePropertyPath, "video_directory");
@@ -74,7 +74,7 @@ public class Hooks extends BaseTest {
     }
 
     @Before
-    public void getCaseId(Scenario scenario) throws InterruptedException {
+    public void getCaseId(Scenario scenario) {
         caseId = qaseApiClient.getCaseId(scenario, projectCode);
         steps.clear();
 
@@ -150,10 +150,10 @@ public class Hooks extends BaseTest {
         position++;
     }
 
-    @After
-    public void teardown() throws InterruptedException {
-        Thread.sleep(5000);
-        driver.quit();
-    }
+//    @After
+//    public void teardown() throws InterruptedException {
+//        Thread.sleep(5000);
+//        driver.quit();
+//    }
 
 }

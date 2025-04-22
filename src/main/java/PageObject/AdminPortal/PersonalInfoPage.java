@@ -1,15 +1,11 @@
-package PageObject;
+package PageObject.AdminPortal;
 
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import AbstractComponent.AbstractComponents;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
-import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 
 public class PersonalInfoPage {
     WebDriver driver;
@@ -65,6 +61,9 @@ public class PersonalInfoPage {
     @FindBy(xpath = "//button[contains(@class,'css-1vcqvsc')]")
     List<WebElement> days;
 
+    @FindBy(css = ".css-wmickx")
+    List<WebElement> ctaButtons;
+
 
     public void fillInPersonalInfo() throws InterruptedException {
 
@@ -117,6 +116,10 @@ public class PersonalInfoPage {
         yearDropdown.click();
         abs.staleElementRefExceptionHandle(yearDropdownItems, "", abs.userinfoList().get("dateOfBirthYear"));
         abs.selectDropdownItemsByText(days, abs.userinfoList().get("dateOfBirthDay"));
-   }
+    }
+
+    public void clickCTA(String buttonName) {
+        abs.clickButtonByText(ctaButtons, buttonName);
+    }
 
 }

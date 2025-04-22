@@ -1,4 +1,4 @@
-package PageObject;
+package PageObject.AdminPortal;
 
 import AbstractComponent.AbstractComponents;
 import org.openqa.selenium.WebDriver;
@@ -42,6 +42,9 @@ public class EmployeeFinancialPage {
 
     @FindBy(xpath = "//button[contains(@class,'css-1m4mrb3-root-contained-root-contained')]")
     WebElement nextButton;
+
+    @FindBy(css = ".css-wmickx")
+    List<WebElement> ctaButtons;
 
     public void fillEmployeeFinancial() {
         selectEmployeeStatus();
@@ -89,6 +92,10 @@ public class EmployeeFinancialPage {
         nextButton.click();
         tradingExperiencePage = new TradingExperiencePage(driver);
         return tradingExperiencePage;
+    }
+
+    public void clickCTA(String buttonName) {
+        abs.clickButtonByText(ctaButtons,buttonName);
     }
 
 }
