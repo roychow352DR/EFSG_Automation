@@ -1,11 +1,9 @@
 Feature: AO Application List
 
-  Background:
-    Given the user logged in to Admin Portal
-
-  @Smoke
-  Scenario: Create Individual Account with status in Pending Verification
-    Given the user clicks "Create Account" button on the application page
+  @Smoke @L3Creation
+  Scenario Outline: Create Individual Account with status in Pending Verification
+    Given the user logged in to Admin Portal as username <name> and password <password>
+    And the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up
     And the user clicks "submit" button on the create account pop up
     And the user fills application information page
@@ -16,5 +14,8 @@ Feature: AO Application List
     When the user clicks "submit" button on the trading experience page
     Then the user sees a record in "Pending Verification" status is created on the application list
 
+    Examples:
+      | name      | password  |
+      | aoadmin01 | P@ssw0rd! |
 
 

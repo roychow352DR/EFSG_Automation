@@ -1,4 +1,4 @@
-package PageObject;
+package PageObject.AdminPortal;
 
 import AbstractComponent.AbstractComponents;
 import org.openqa.selenium.WebDriver;
@@ -34,6 +34,18 @@ public class TradingExperiencePage {
     @FindBy(xpath = "//span[contains(@class,'css-wmickx')]")
     List<WebElement> ctaButtons;
 
+    @FindBy(xpath = "//button[contains(@class,'css-1amqxls-root-outlined-root-outlined')]")
+    WebElement approveButton;
+
+    @FindBy(id = "mui-component-select-verify")
+    WebElement approvalDropdown;
+
+    @FindBy(xpath = "//h3[contains(@class,'css-25mri5')]")
+    WebElement approvalLabel;
+
+    @FindBy(css = ".css-1u8h5t9 button")
+    List<WebElement> buttonsOnVerify;
+
 
     public void selectTradeEXP() {
         tradeEXP.click();
@@ -52,6 +64,20 @@ public class TradingExperiencePage {
 
     public void submitTradeExperience(String ctaButtonName) {
         submitButton.click();
+    }
+
+    public void clickApprove() {
+        approveButton.click();
+    }
+
+    public void selectReason(String reason) {
+        abs.waitUtilElementFind(approvalLabel);
+        approvalDropdown.click();
+        abs.staleElementRefExceptionHandle(dropdownItems, "data-value", reason);
+    }
+
+    public void clickButtonOnVerify(String buttonName) {
+        abs.clickButtonByText(buttonsOnVerify, buttonName);
     }
 
 

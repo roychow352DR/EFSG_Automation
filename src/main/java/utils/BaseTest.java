@@ -1,7 +1,7 @@
 package utils;
 
-import PageObject.ApplicationPage;
-import PageObject.LoginPage;
+import PageObject.AdminPortal.ApplicationListPage;
+import PageObject.AdminPortal.LoginPage;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cucumber.java.Scenario;
@@ -52,7 +52,6 @@ public class BaseTest {
     public LoginPage launchApplication() throws IOException, InterruptedException {
         WebDriver driver = initializeDriver();
         login = new LoginPage(driver);
-        //   login.landOnLoginPage();
         return login;
     }
 
@@ -66,8 +65,8 @@ public class BaseTest {
 
     }
 
-    public ApplicationPage applicationPage() {
-        ApplicationPage ap = new ApplicationPage(driver);
+    public ApplicationListPage applicationPage() {
+        ApplicationListPage ap = new ApplicationListPage(driver);
         return ap;
     }
 
