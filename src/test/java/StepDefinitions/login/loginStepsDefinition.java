@@ -1,6 +1,6 @@
 package StepDefinitions.login;
 
-import PageObject.LoginPage;
+import PageObject.AdminPortal.LoginPage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -62,12 +62,5 @@ public class loginStepsDefinition extends BaseTest {
         Assert.assertFalse(unclickableCTA(login.ctaButton()));
 
     }
-
-
-  /*  @After
-    public void tearDown() throws InterruptedException {
-       // Thread.sleep(5000);
-        driver.quit();
-    }*/
 
 }

@@ -98,6 +98,14 @@ public class AbstractComponents {
         }
     }
 
+    public void clickButtonByText(List<WebElement> itemList, String itemText) {
+        for (WebElement ele : itemList) {
+            if (ele.getText().equalsIgnoreCase(itemText)) {
+                ele.click();
+            }
+        }
+    }
+
     public void staleElementRefExceptionHandle(List<WebElement> eleList,String attribute,String item){
         int attempts = 0;
         while (attempts < 3) {
@@ -113,6 +121,13 @@ public class AbstractComponents {
                 attempts++;
             }
         }
+    }
+    public WebElement findRecordBasedOnElement(List<WebElement> listOfElement, String ele,By locator)
+    {
+        WebElement rec = listOfElement.stream().filter(record->record.findElement(locator).getText().equals(ele)).findFirst().orElse(null);
+        assert rec != null;
+        return rec;
+
     }
 
 

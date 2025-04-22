@@ -1,10 +1,12 @@
-package PageObject;
+package PageObject.AdminPortal;
 
 import AbstractComponent.AbstractComponents;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+
+import java.util.List;
 
 public class ContactInfoPage {
     WebDriver driver;
@@ -27,6 +29,9 @@ public class ContactInfoPage {
     @FindBy (xpath = "//button[contains(@class,'css-1m4mrb3-root-contained-root-contained')]")
     WebElement nextButton;
 
+    @FindBy(css = ".css-wmickx")
+    List<WebElement> ctaButtons;
+
     public void fillContactInformation()
     {
         addressLine1.sendKeys(abs.userinfoList().get("addressLine1"));
@@ -38,6 +43,9 @@ public class ContactInfoPage {
         nextButton.click();
         employeeFinance = new EmployeeFinancialPage(driver);
         return employeeFinance;
+    }
 
+    public void clickCTA(String buttonName) {
+        abs.clickButtonByText(ctaButtons,buttonName);
     }
 }
