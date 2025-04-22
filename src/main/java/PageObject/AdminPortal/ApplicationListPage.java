@@ -1,6 +1,7 @@
-package PageObject;
+package PageObject.AdminPortal;
 
 import AbstractComponent.AbstractComponents;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -8,13 +9,14 @@ import org.openqa.selenium.support.PageFactory;
 
 import java.util.List;
 
-public class ApplicationPage {
+public class ApplicationListPage {
 
     WebDriver driver;
-    public PersonalInfoPage personalInfo;
+    public ApplicantInformationPage applicantInformationPage;
     AbstractComponents abs;
+    public String email;
 
-    public ApplicationPage(WebDriver driver) {
+    public ApplicationListPage(WebDriver driver) {
         this.driver = driver;
         PageFactory.initElements(driver, this);
         this.abs = new AbstractComponents(driver);
@@ -103,6 +105,26 @@ public class ApplicationPage {
 
     public String getNewRecordStatus() {
         return statusValidation.getText();
+    }
+
+    public ApplicantInformationPage clickActionButtonBasedOnStatus(String status) {
+        WebElement rec = abs.findRecordBasedOnElement(applicationRecords, status, By.cssSelector("span"));
+        email = rec.findElement(By.cssSelector("td:nth-child(2)")).getText();
+        rec.findElement(By.cssSelector("td:nth-child(8)")).click();
+        applicantInformationPage = new ApplicantInformationPage(driver);
+        return applicantInformationPage;
+    }
+
+    public String getStatusChangeEmail()
+    {
+       return email;
+    }
+
+    public String getEmailStatus()
+    {
+        abs.waitUtilElementFind(menu);
+        return abs.findRecordBasedOnElement(applicationRecords,getStatusChangeEmail(),By.cssSelector("td:nth-child(2)")).findElement(By.cssSelector("td:nth-child(6)")).getText();
+
     }
 
 

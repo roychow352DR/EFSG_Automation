@@ -1,4 +1,4 @@
-package PageObject;
+package PageObject.AdminPortal;
 
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
@@ -9,9 +9,7 @@ import AbstractComponent.AbstractComponents;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public class ApplicantInformationPage {
@@ -123,6 +121,13 @@ public class ApplicantInformationPage {
 
     public String retrieveSubmittedEmail() {
         return email;
+    }
+
+    public PersonalInfoPage clickNext()
+    {
+        nextButton.click();
+        personalInfo = new PersonalInfoPage(driver);
+        return personalInfo;
     }
 
 }
