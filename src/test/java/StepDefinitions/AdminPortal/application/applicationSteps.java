@@ -1,4 +1,4 @@
-package StepDefinitions.application;
+package StepDefinitions.AdminPortal.application;
 
 import PageObject.AdminPortal.*;
 import io.cucumber.java.en.And;
@@ -11,7 +11,7 @@ import utils.BaseTest;
 import java.io.IOException;
 
 public class applicationSteps extends BaseTest {
-    public LoginPage login;
+    public AdminLoginPage login;
     public ApplicationListPage applicationPage;
     public ApplicantInformationPage applicationInfoPage;
     public PersonalInfoPage personalInfoPage;

@@ -33,7 +33,8 @@ public class Hooks extends BaseTest {
     public static File videoFile;
     private static String VIDEO_DIRECTORY;
     private static String SCREENSHOT_DIRECTORY;
-    public static String qasePropertyPath = "//src//main//java//DataResources//qase-adminportal.properties";
+    private static String product;
+    public static String qasePropertyPath ;
     public static String filePropertyPath = "//src//main//java//DataResources//FileDirectory.properties";
     public static String globalPropertyPath = "//src//main//java//DataResources//GlobalData.properties";
     public static String videoName;
@@ -52,6 +53,8 @@ public class Hooks extends BaseTest {
 
     @BeforeAll
     public static void createQaseTestRun() throws IOException {
+        product = System.getProperty("product") != null? System.getProperty("product") : getProperty(globalPropertyPath, "product");
+        qasePropertyPath = getPropertyPath(product);
         apiToken = getProperty(qasePropertyPath, "qase.api.token");
         projectCode = getProperty(qasePropertyPath, "qase.project.code");
         try {
@@ -150,10 +153,10 @@ public class Hooks extends BaseTest {
         position++;
     }
 
-//    @After
-//    public void teardown() throws InterruptedException {
-//        Thread.sleep(5000);
-//        driver.quit();
-//    }
+/*    @After
+    public void teardown() throws InterruptedException {
+        Thread.sleep(5000);
+        driver.quit();
+    }*/
 
 }

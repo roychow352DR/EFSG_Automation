@@ -1,5 +1,5 @@
 /Users/roychow/IdeaProjects/web_auto/src/test/java/Features/TestNGTestRunner.java
-/Users/roychow/IdeaProjects/web_auto/src/test/java/Onboarding/createApplication.java
-/Users/roychow/IdeaProjects/web_auto/src/test/java/Onboarding/loginSuccess.java
+/Users/roychow/IdeaProjects/web_auto/src/test/java/StepDefinitions/AdminPortal/application/applicationSteps.java
+/Users/roychow/IdeaProjects/web_auto/src/test/java/StepDefinitions/AdminPortal/login/loginStepsDefinition.java
 /Users/roychow/IdeaProjects/web_auto/src/test/java/StepDefinitions/Hooks.java
-/Users/roychow/IdeaProjects/web_auto/src/test/java/StepDefinitions/stepDefinition.java
+/Users/roychow/IdeaProjects/web_auto/src/test/java/StepDefinitions/MIO/login/loginSteps.java
