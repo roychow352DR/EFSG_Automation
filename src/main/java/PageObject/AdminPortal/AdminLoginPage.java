@@ -35,8 +35,10 @@ public class AdminLoginPage {
     public void loginApplication(String username, String password) throws InterruptedException {
         userName.click();
         userName.sendKeys(username);
+        Thread.sleep(2000);
         userPassword.click();
         userPassword.sendKeys(password);
+        Thread.sleep(2000);
     }
 
     public String loginErrorValidation() {

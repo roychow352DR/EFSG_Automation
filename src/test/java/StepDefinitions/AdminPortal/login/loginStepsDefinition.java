@@ -15,6 +15,7 @@ public class loginStepsDefinition extends BaseTest {
     @Given("the user lands on Admin Portal login page")
     public void the_user_lands_on_Admin_Portal_login_page() throws IOException, URISyntaxException, InterruptedException {
         loginPage =  launchApplication();
+        Thread.sleep(2000);
     }
 
     @Given("^the user fills in with username (.+) and password (.+)$")
