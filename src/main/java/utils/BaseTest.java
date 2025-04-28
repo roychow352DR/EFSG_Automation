@@ -1,7 +1,8 @@
 package utils;
 
 import PageObject.AdminPortal.ApplicationListPage;
-import PageObject.AdminPortal.LoginPage;
+import PageObject.AdminPortal.AdminLoginPage;
+import PageObject.MIOadmin.MIOLoginPage;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cucumber.java.Scenario;
@@ -30,7 +31,8 @@ import java.util.*;
 
 public class BaseTest {
     public static WebDriver driver;
-    public LoginPage login;
+    public AdminLoginPage login;
+    public MIOLoginPage mioLogin;
     public WebElement ctaButton;
     public DesiredCapabilities caps;
     public Scenario scenario;
@@ -44,15 +46,21 @@ public class BaseTest {
         browserType = System.getProperty("browser") != null ? System.getProperty("browser") : getProperty(path, "browser");
         driver = setBrowserDriver(browserType);
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
-        driver.get(setDomain(System.getProperty("env") != null ? System.getProperty("env") : getProperty(path, "env")));
+        driver.get(setDomain(getProperty(path, "env"),getProperty(path,"product")));
         return driver;
     }
 
 
-    public LoginPage launchApplication() throws IOException, InterruptedException {
+    public AdminLoginPage launchApplication() throws IOException, InterruptedException {
         WebDriver driver = initializeDriver();
-        login = new LoginPage(driver);
+        login = new AdminLoginPage(driver);
         return login;
+    }
+
+    public MIOLoginPage launchMIOApplication() throws IOException, InterruptedException {
+        WebDriver driver = initializeDriver();
+        mioLogin = new MIOLoginPage(driver);
+        return mioLogin;
     }
 
     public List<HashMap<String, String>> getJsonDataToMap() throws IOException {
@@ -75,12 +83,23 @@ public class BaseTest {
         return ctaButton.isEnabled();
     }
 
-    public String setDomain(String env) {
-        return switch (env) {
-            case "bausit" -> "https://d13ckj22o5rgah.cloudfront.net/login";
-            case "bauuat" -> "https://uat-aocm-ap.empfs.net/login";
-            default -> "";
-        };
+    public String setDomain(String env,String product) {
+        if (product.equalsIgnoreCase("adminPortal")) {
+            return switch (env) {
+                case "bausit" -> "https://d13ckj22o5rgah.cloudfront.net/login";
+                case "bauuat" -> "https://uat-aocm-ap.empfs.net/login";
+                default -> "";
+            };
+        }
+        else if (product.equalsIgnoreCase("mio"))
+        {
+            return switch (env) {
+                case "bausit" -> "https://d27ekljjcs6mcs.cloudfront.net/login";
+                case "bauuat" -> "https://d27ekljjcs6mcs.cloudfront.net/login";
+                default -> "";
+            };
+        }
+        return env;
     }
 
     public static String getProperty(String path, String propertyItem) throws IOException {
@@ -144,8 +163,8 @@ public class BaseTest {
             }
             DesiredCapabilities chromeCaps = setBrowserCap(browserName);
             chromeCaps.setCapability(ChromeOptions.CAPABILITY, options);
-           try {
-                driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), chromeCaps);
+            try {
+               driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), chromeCaps);
             } catch (Exception e) {
                 driver = new ChromeDriver(options);
                 System.out.printf(String.valueOf(e));
@@ -240,5 +259,15 @@ public class BaseTest {
         } else {
             System.out.println("Screenshots folder does not exist.");
         }
+    }
+
+    public static String getPropertyPath(String product)
+    {
+        return switch (product) {
+            case "adminPortal" -> "//src//main//java//DataResources//qase-adminportal.properties";
+            case "mio" -> "//src//main//java//DataResources//qase-mioAdminPortal.properties";
+            default -> "";
+        };
+
     }
 }

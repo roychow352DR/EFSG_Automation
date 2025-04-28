@@ -6,13 +6,15 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
-public class LoginPage {
+public class AdminLoginPage {
     WebDriver driver;
     public ApplicationListPage applicationPage;
+    public AbstractComponents abs;
 
-    public LoginPage(WebDriver driver) {
+    public AdminLoginPage(WebDriver driver) {
         this.driver = driver;
         PageFactory.initElements(driver, this);
+        abs = new AbstractComponents(driver);
     }
 
     @FindBy(id = ":Rijakqdal6:")
@@ -56,7 +58,6 @@ public class LoginPage {
     }
 
     public boolean ctaButtonStatus() {
-        AbstractComponents abs = new AbstractComponents(driver);
         abs.waitUtilElementClickable(signInButton);
         return signInButton.isEnabled();
     }

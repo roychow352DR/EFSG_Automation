@@ -3,7 +3,7 @@ Feature: Admin Portal login
   Background:
     Given the user lands on Admin Portal login page
 
-  @Regression
+  @Regression @AdminPortal @Smoke
   Scenario Outline: Login as suspended account
     Given the user fills in with username <name> and password <password>
     When the user clicks Sign In button
