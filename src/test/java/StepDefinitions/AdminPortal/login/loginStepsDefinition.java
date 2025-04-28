@@ -1,6 +1,6 @@
-package StepDefinitions.login;
+package StepDefinitions.AdminPortal.login;
 
-import PageObject.AdminPortal.LoginPage;
+import PageObject.AdminPortal.AdminLoginPage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 public class loginStepsDefinition extends BaseTest {
-    public LoginPage loginPage;
+    public AdminLoginPage loginPage;
     @Given("the user lands on Admin Portal login page")
     public void the_user_lands_on_Admin_Portal_login_page() throws IOException, URISyntaxException, InterruptedException {
         loginPage =  launchApplication();

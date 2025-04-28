@@ -1,11 +1,7 @@
 org/example/Main.class
-PageObject/ApplicationPage.class
 utils/BaseTest$1.class
 utils/BaseTest.class
 DataResources/ExtendReporterNG.class
 utils/Retry.class
-PageObject/ApplicatInformationPage.class
 AbstractComponent/AbstractComponents.class
-PageObject/LoginPage.class
 utils/Listeners.class
-PageObject/PersonalInfoPage.class
