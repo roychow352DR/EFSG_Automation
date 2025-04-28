@@ -10,7 +10,7 @@ import io.cucumber.testng.PickleWrapper;
 @CucumberOptions(features = "src/test/java/Features", glue = "StepDefinitions", monochrome = true
         , plugin = {"pretty",
         /*"html:target/cucumber-reports/cucumber-report.html",*/
-        "json:target/cucumber-reports/cucumber-report.json"}, tags = "@Smoke and @MIO")
+        "json:target/cucumber-reports/cucumber-report.json"}, tags = "@L3Creation")
 public class TestNGTestRunner extends AbstractTestNGCucumberTests {
 
 
