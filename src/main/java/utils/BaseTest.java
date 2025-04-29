@@ -212,10 +212,11 @@ public class BaseTest {
     }
 
     public static void takeScreenshot(String screenShotName) {
-        String screenshotPath = System.getProperty("user.dir") + "/screenshots/";
+        File screenshotFile = createFolder("screenshots");
+        String screenshotPath = screenshotFile.getAbsolutePath();
         try {
             File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-            File destFile = new File(screenshotPath + screenShotName + ".png");
+            File destFile = new File(screenshotPath + "/"+ screenShotName + ".png");
             Files.copy(srcFile.toPath(), destFile.toPath());
         } catch (Exception e) {
             e.printStackTrace();
@@ -239,7 +240,6 @@ public class BaseTest {
 
     public static void emptyFolder(String folderName) {
         File screenshotsFolder = new File(folderName);
-        System.out.println(screenshotsFolder.getAbsolutePath());
         // Check if the folder exists
         if (screenshotsFolder.exists() && screenshotsFolder.isDirectory()) {
             // Get all files in the folder
@@ -271,4 +271,17 @@ public class BaseTest {
         };
 
     }
+
+    public static File createFolder(String folderName)
+    {
+        String screenshotDir = System.getProperty("user.dir") + "/" + folderName;
+        File directory = new File(screenshotDir);
+        if (!directory.exists()) {
+            directory.mkdirs(); // Create the directory if it doesn't exist
+            System.out.println("Screenshot folder created: " + screenshotDir);
+        }
+
+        return directory;
+    }
+
 }
