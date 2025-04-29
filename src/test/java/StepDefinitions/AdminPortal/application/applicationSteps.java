@@ -88,7 +88,7 @@ public class applicationSteps extends BaseTest {
     }
 
     @When("the user clicks {string} button on the trading experience page")
-    public void the_user_clicks_submit_button_on_the_trading_experience_page(String string) {
+    public void the_user_clicks_button_on_the_trading_experience_page(String string) {
         tradingExperiencePage.submitTradeExperience(string);
     }
 
