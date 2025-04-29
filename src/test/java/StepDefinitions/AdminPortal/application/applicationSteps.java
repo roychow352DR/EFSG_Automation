@@ -37,7 +37,7 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user selects {string} radio button on the create account pop up")
-    public void And_the_user_selects_radio_button_on_the_create_account_pop_up(String string) {
+    public void the_user_selects_radio_button_on_the_create_account_pop_up(String string) {
         applicationPage.clickRadioButton(string);
     }
 
