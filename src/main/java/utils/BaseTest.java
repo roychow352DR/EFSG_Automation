@@ -111,8 +111,7 @@ public class BaseTest {
     }
 
     public static File actualVideoFileName(String scenarioName) throws IOException {
-        String path = "//src//main//java//DataResources//FileDirectory.properties";
-        String VIDEO_DIRECTORY = getProperty(path, "video_directory");
+        String VIDEO_DIRECTORY = getProperty(getPropertyPath("filePropertyPath"), "video_directory");
         String actualFileName = "";
         newFile = new File(VIDEO_DIRECTORY, scenarioName + ".mp4");
         oldFile = new File(VIDEO_DIRECTORY, "Test.mp4");
@@ -267,6 +266,8 @@ public class BaseTest {
         return switch (product) {
             case "adminPortal" -> "//src//main//java//DataResources//qase-adminportal.properties";
             case "mio" -> "//src//main//java//DataResources//qase-mioAdminPortal.properties";
+            case "filePropertyPath" -> "//src//main//java//DataResources//FileDirectory.properties";
+            case "globalPropertyPath" -> "//src//main//java//DataResources//GlobalData.properties";
             default -> "";
         };
 
@@ -283,5 +284,6 @@ public class BaseTest {
 
         return directory;
     }
+
 
 }

@@ -24,7 +24,6 @@ public class Hooks extends BaseTest {
     public static String runTitle;
     public static String projectCode;
     public static String testPlanId;
-    public static String testType;
     public static String apiToken;
     public static String hash = "";
     public static String caseId;
@@ -34,26 +33,17 @@ public class Hooks extends BaseTest {
     private static String VIDEO_DIRECTORY;
     private static String SCREENSHOT_DIRECTORY;
     public static String qasePropertyPath ;
-    public static String filePropertyPath = "//src//main//java//DataResources//FileDirectory.properties";
-    public static String globalPropertyPath = "//src//main//java//DataResources//GlobalData.properties";
-    public static String videoName;
     public static boolean removeVideoFlag = true;
     public static boolean removeScreenShotFlag = true;
     public static int position = 0;
     public static List<Map<String, Object>> steps = new ArrayList<>();
 
-    public Hooks() throws IOException{
-//        VIDEO_DIRECTORY = getProperty(filePropertyPath, "video_directory");
-//        SCREENSHOT_DIRECTORY = System.getProperty("user.dir") + "/screenshots/";
-
-    }
 
     @BeforeAll
     public static void createQaseTestRun() throws IOException {
-        VIDEO_DIRECTORY = getProperty(filePropertyPath, "video_directory");
+        VIDEO_DIRECTORY = getProperty(getPropertyPath("filePropertyPath"), "video_directory");
         SCREENSHOT_DIRECTORY = System.getProperty("user.dir") + "/screenshots/";
-
-        String product = System.getProperty("product") != null ? System.getProperty("product") : getProperty(globalPropertyPath, "product");
+        String product = System.getProperty("product") != null ? System.getProperty("product") : getProperty(getPropertyPath("globalPropertyPath"), "product");
         qasePropertyPath = getPropertyPath(product);
         apiToken = getProperty(qasePropertyPath, "qase.api.token");
         projectCode = getProperty(qasePropertyPath, "qase.project.code");
@@ -67,8 +57,8 @@ public class Hooks extends BaseTest {
 
             // Create a test run in Qase
             runId = qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId),
-                    runTitle, getProperty(globalPropertyPath, "browser"),
-                    getProperty(globalPropertyPath, "env"));
+                    runTitle, getProperty(getPropertyPath("globalPropertyPath"), "browser"),
+                    getProperty(getPropertyPath("globalPropertyPath"), "env"));
         } catch (IOException e) {
             e.getStackTrace();
             System.out.println("Failed to create test run");
@@ -93,7 +83,7 @@ public class Hooks extends BaseTest {
         boolean isPassed = !scenario.isFailed();
 
         if (BaseTest.actualVideoFileName(scenario.getName()).exists()) {
-            hash = qaseApiClient.uploadAttachment(projectCode, BaseTest.actualVideoFileName(scenario.getName()).getName(), VIDEO_DIRECTORY);
+            hash = qaseApiClient.uploadAttachment(projectCode, actualVideoFileName(scenario.getName()).getName(), VIDEO_DIRECTORY);
         }
 
         try {
