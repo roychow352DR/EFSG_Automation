@@ -51,7 +51,8 @@ public class Hooks extends BaseTest {
     @BeforeAll
     public static void createQaseTestRun() throws IOException {
         VIDEO_DIRECTORY = getProperty(filePropertyPath, "video_directory");
-        SCREENSHOT_DIRECTORY = System.getProperty("user.dir") + "/screenshots/";
+    //    SCREENSHOT_DIRECTORY = System.getProperty("user.dir") + "/screenshots/";
+        SCREENSHOT_DIRECTORY = "/Users/roychow/IdeaProjects/web_auto/screenshots";
         String product = System.getProperty("product") != null ? System.getProperty("product") : getProperty(globalPropertyPath, "product");
         qasePropertyPath = getPropertyPath(product);
         apiToken = getProperty(qasePropertyPath, "qase.api.token");
