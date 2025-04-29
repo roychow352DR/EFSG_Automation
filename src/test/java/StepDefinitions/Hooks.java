@@ -39,25 +39,25 @@ public class Hooks extends BaseTest {
     public static String videoName;
     public static boolean removeVideoFlag = true;
     public static boolean removeScreenShotFlag = true;
-    public static int position;
+    public static int position = 0;
     public static List<Map<String, Object>> steps = new ArrayList<>();
 
     public Hooks() throws IOException{
-
-        position = 0;
-        VIDEO_DIRECTORY = getProperty(filePropertyPath, "video_directory");
-        SCREENSHOT_DIRECTORY = System.getProperty("user.dir") + "/screenshots/";
+//        VIDEO_DIRECTORY = getProperty(filePropertyPath, "video_directory");
+//        SCREENSHOT_DIRECTORY = System.getProperty("user.dir") + "/screenshots/";
 
     }
 
     @BeforeAll
     public static void createQaseTestRun() throws IOException {
+        VIDEO_DIRECTORY = getProperty(filePropertyPath, "video_directory");
+        SCREENSHOT_DIRECTORY = System.getProperty("user.dir") + "/screenshots/";
         String product = System.getProperty("product") != null ? System.getProperty("product") : getProperty(globalPropertyPath, "product");
         qasePropertyPath = getPropertyPath(product);
         apiToken = getProperty(qasePropertyPath, "qase.api.token");
         projectCode = getProperty(qasePropertyPath, "qase.project.code");
         try {
-            testPlanId = BaseTest.getTestPlanId(getProperty(qasePropertyPath, "testtype"), qasePropertyPath);
+            testPlanId = BaseTest.getTestPlanId(getProperty(qasePropertyPath, "testType"), qasePropertyPath);
 
             //Initialize Qase API client
             qaseApiClient = new QaseApiClient(apiToken, projectCode);

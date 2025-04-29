@@ -239,6 +239,7 @@ public class BaseTest {
 
     public static void emptyFolder(String folderName) {
         File screenshotsFolder = new File(folderName);
+        System.out.println(screenshotsFolder.getAbsolutePath());
         // Check if the folder exists
         if (screenshotsFolder.exists() && screenshotsFolder.isDirectory()) {
             // Get all files in the folder
