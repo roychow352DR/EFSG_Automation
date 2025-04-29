@@ -1,4 +1,4 @@
-package StepDefinitions.AdminPortal.application;
+package StepDefinitions.AdminPortal.aoapplication;
 
 import PageObject.AdminPortal.*;
 import io.cucumber.java.en.And;

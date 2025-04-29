@@ -1,1 +1,3 @@
+StepDefinitions/AdminPortal/login/loginStepsDefinition.class
+StepDefinitions/AdminPortal/aoapplication/applicationSteps.class
 Features/TestNGTestRunner.class
