@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @L3Creation @AdminPortal @Smoke
+  @Regression @L3Creation @AdminPortal @Smoke @Test
   Scenario Outline: Create Individual Account with status in Pending Verification
     Given the user logged in to Admin Portal as username <name> and password <password>
     And the user clicks "Create Account" button on the application page

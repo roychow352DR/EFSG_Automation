@@ -50,7 +50,7 @@ public class Hooks extends BaseTest {
 
     }
 
-    @BeforeAll
+    //@BeforeAll
     public static void createQaseTestRun() throws IOException {
         String product = System.getProperty("product") != null ? System.getProperty("product") : getProperty(globalPropertyPath, "product");
         qasePropertyPath = getPropertyPath(product);
@@ -75,7 +75,7 @@ public class Hooks extends BaseTest {
 
     }
 
-    @Before
+    //@Before
     public void getCaseId(Scenario scenario) {
         caseId = qaseApiClient.getCaseId(scenario, projectCode);
         steps.clear();
@@ -83,7 +83,7 @@ public class Hooks extends BaseTest {
     }
 
 
-    @After
+    //@After
     public void logQaseTestResult(Scenario scenario) throws Exception {
         driver.quit();
         //wait until video creation fully complete
@@ -132,7 +132,7 @@ public class Hooks extends BaseTest {
         }
     }*/
 
-    @AfterStep
+   // @AfterStep
     public void prepareStepResult(Scenario scenario) throws IOException, InterruptedException {
         boolean isPassed = !scenario.isFailed();
         if (position > 0) {
@@ -152,10 +152,10 @@ public class Hooks extends BaseTest {
         position++;
     }
 
-/*    @After
+    @After
     public void teardown() throws InterruptedException {
         Thread.sleep(5000);
         driver.quit();
-    }*/
+    }
 
 }
