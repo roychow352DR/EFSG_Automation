@@ -12,7 +12,7 @@ Feature: AO Application List
     And the user clicks "Approve" button on L2 trading experience page
     And the user selects "Pass eKYC" as verify reason on the verify pop up
     And the user clicks "Confirm" button on the verify pop up
-    Then the user sees a record in "Pending Deposit" status after first approval
+    Then the user sees a record in "Pending Deposit" status after approval
 
     Examples:
       | name      | password  |

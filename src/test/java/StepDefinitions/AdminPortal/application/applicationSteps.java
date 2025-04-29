@@ -37,18 +37,18 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user selects {string} radio button on the create account pop up")
-    public void the_user_selects_radio_button_on_the_create_account_pop_up(String string) {
+    public void the_user_selects_radio_on_the_create_account_pop_up(String string) {
         applicationPage.clickRadioButton(string);
     }
 
     @And("the user clicks {string} button on the create account pop up")
-    public void the_user_clicks_button_on_the_create_account_pop_up(String string) {
+    public void the_user_clicks_cta_on_the_create_account_pop_up(String string) {
         applicationPage.clickSubmitButton();
         applicationInfoPage = new ApplicantInformationPage(driver);
     }
 
     @And("the user fills application information page")
-    public void the_user_fills_application_information_page() throws InterruptedException {
+    public void the_user_fills_application_information() throws InterruptedException {
         applicationInfoPage.fillInApplicantInfo();
         String submitSuccess = applicationInfoPage.submitApplicationInfo();
         while (submitSuccess.contains("in use")) {
@@ -63,32 +63,32 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user fills personal information page")
-    public void the_user_fills_personal_information_page() throws InterruptedException {
+    public void the_user_fills_personal_information() throws InterruptedException {
         personalInfoPage.fillInPersonalInfo();
         contactInfoPage = personalInfoPage.submitPersonalInfo();
 
     }
 
     @And("the user fills contact information page")
-    public void the_user_fills_contact_information_page() {
+    public void the_user_fills_contact_information() {
         contactInfoPage.fillContactInformation();
         employeeFinancialPage = contactInfoPage.submitContactInfo();
     }
 
     @And("the user fills employee & financial information page")
-    public void the_user_fills_employee_financial_information_page() {
+    public void the_user_fills_employee_financial_information() {
         employeeFinancialPage.fillEmployeeFinancial();
         tradingExperiencePage = employeeFinancialPage.submitEmployeeFinancial();
     }
 
     @And("the user fills trading experience page")
-    public void the_user_fills_trading_experience_page() {
+    public void the_user_fills_trading_experience() {
         tradingExperiencePage.fillTradeExperience();
 
     }
 
     @When("the user clicks {string} button on the trading experience page")
-    public void the_user_clicks_button_on_the_trading_experience_page(String string) {
+    public void the_user_clicks_button_on_trading_experience(String string) {
         tradingExperiencePage.submitTradeExperience(string);
     }
 
@@ -100,37 +100,37 @@ public class applicationSteps extends BaseTest {
     }
 
     @When("the user clicks detail button of {string} record on the application page")
-    public void the_user_clicks_button_of_record_on_the_application_page(String status) {
+    public void the_user_clicks_button_of_record_on_application(String status) {
         applicationInfoPage = applicationPage.clickActionButtonBasedOnStatus(status);
     }
 
     @And("the user clicks {string} button on the application information page")
-    public void the_user_clicks_button_on_the_application_information_page(String buttonName) throws InterruptedException {
+    public void the_user_clicks_button_on_application_information(String buttonName) throws InterruptedException {
         Thread.sleep(5000);
         personalInfoPage = applicationInfoPage.clickNext();
     }
 
     @And("the user clicks {string} button on the personal information page")
-    public void the_user_clicks_button_on_the_personal_information_page(String buttonName) {
+    public void the_user_clicks_button_on_personal_information(String buttonName) {
         personalInfoPage.clickCTA(buttonName);
         contactInfoPage = new ContactInfoPage(driver);
 
     }
 
     @And("the user clicks {string} button on the contact information page")
-    public void the_user_clicks_button_on_the_contact_information_page(String buttonName) {
+    public void the_user_clicks_button_on_contact_information(String buttonName) {
         contactInfoPage.clickCTA(buttonName);
         employeeFinancialPage = new EmployeeFinancialPage(driver);
     }
 
     @And("the user clicks {string} button on the employee & financial information page")
-    public void the_user_clicks_button_on_the_employee_financial_information_page(String buttonName) {
+    public void the_user_clicks_button_on_employee_financial_information(String buttonName) {
         employeeFinancialPage.clickCTA(buttonName);
         tradingExperiencePage = new TradingExperiencePage(driver);
     }
 
     @And("the user clicks {string} button on L2 trading experience page")
-    public void the_user_clicks_button_on_L2_trading_experience_page(String buttonName) {
+    public void the_user_clicks_button_on_L2_trading_experience(String buttonName) {
         tradingExperiencePage.clickApprove();
     }
 
@@ -144,8 +144,8 @@ public class applicationSteps extends BaseTest {
         tradingExperiencePage.clickButtonOnVerify(buttonName);
     }
 
-    @Then("the user sees a record in {string} status after first approval")
-    public void the_user_sees_a_record_in_status_after_first_approval(String status) throws InterruptedException {
+    @Then("the user sees a record in {string} status after approval")
+    public void the_user_sees_a_record_with_status_after_first_approval(String status) throws InterruptedException {
         Assert.assertEquals(applicationPage.getEmailStatus(), status);
     }
 
