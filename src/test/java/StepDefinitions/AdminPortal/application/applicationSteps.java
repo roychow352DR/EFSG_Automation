@@ -140,7 +140,7 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user clicks {string} button on the verify pop up")
-    public void the_user_clicks_on_the_verify_pop_up(String buttonName) {
+    public void clicks_on_the_verify_pop_up(String buttonName) {
         tradingExperiencePage.clickButtonOnVerify(buttonName);
     }
 
