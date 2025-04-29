@@ -93,7 +93,7 @@ public class applicationSteps extends BaseTest {
     }
 
     @Then("the user sees a record in {string} status is created on the application list")
-    public void the_user_sees_a_record_in_status_is_created_on_the_application_list(String string) throws InterruptedException {
+    public void the_user_sees_a_record_with_status_is_created_on_the_application_list(String string) throws InterruptedException {
         Thread.sleep(5000);
         Assert.assertEquals(applicationPage.getNewRecordEmail(), applicationInfoPage.retrieveSubmittedEmail());
         Assert.assertEquals(applicationPage.getNewRecordStatus(), string);
