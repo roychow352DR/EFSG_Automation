@@ -20,7 +20,7 @@ public class applicationSteps extends BaseTest {
     public TradingExperiencePage tradingExperiencePage;
 
     @Given("^the user logged in to Admin Portal as username (.+) and password (.+)$")
-    public void the_user_logged_in_to_Admin_Portal(String name, String password) throws IOException, InterruptedException {
+    public void logged_in_to_Admin_Portal(String name, String password) throws IOException, InterruptedException {
         login = launchApplication();
         login.loginApplication(name, password);
         Thread.sleep(2000);
