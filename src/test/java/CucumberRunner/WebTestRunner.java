@@ -1,4 +1,4 @@
-package Features;
+package CucumberRunner;
 
 
 import io.cucumber.testng.AbstractTestNGCucumberTests;
@@ -10,8 +10,8 @@ import io.cucumber.testng.PickleWrapper;
 @CucumberOptions(features = "src/test/java/Features", glue = "StepDefinitions", monochrome = true
         , plugin = {"pretty",
         /*"html:target/cucumber-reports/cucumber-report.html",*/
-        "json:target/cucumber-reports/cucumber-report.json"})
-public class TestNGTestRunner extends AbstractTestNGCucumberTests {
+        "json:target/cucumber-reports/cucumber-report.json","rerun:target/failed_scenarios.txt"},tags = "@Test")
+public class WebTestRunner extends AbstractTestNGCucumberTests {
 
 
 /*    @Test(

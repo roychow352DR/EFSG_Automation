@@ -35,8 +35,13 @@ public class Hooks extends BaseTest {
     public static String qasePropertyPath ;
     public static boolean removeVideoFlag = true;
     public static boolean removeScreenShotFlag = true;
-    public static int position = 0;
+    public static int position;
     public static List<Map<String, Object>> steps = new ArrayList<>();
+
+    public Hooks()
+    {
+        position = 0;
+    }
 
 
     @BeforeAll
