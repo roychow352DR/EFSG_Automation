@@ -11,4 +11,4 @@ Feature: MIO Admin Portal login
 
       Examples:
         | name   | password  |
-        | admin | 123456Aa!! |
+        | admin | 123456Aa! |
