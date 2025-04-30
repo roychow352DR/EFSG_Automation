@@ -46,15 +46,7 @@ public class loginStepsDefinition extends BaseTest {
     @Then("the user sees {string} message pop up")
     public void the_user_sees_message_pop_up(String string)
     {
-        if (string.equalsIgnoreCase("User account is suspended! Please contact administration"))
-        {
-            Assert.assertTrue(loginPage.suspendErrorValidation().equalsIgnoreCase(string));
-        }
-        else if (string.equalsIgnoreCase("Invalid username or password"))
-        {
-            Assert.assertTrue(loginPage.loginErrorValidation().equalsIgnoreCase(string));
-        }
-
+        Assert.assertTrue(loginPage.loginErrorValidation().equalsIgnoreCase(string));
     }
 
     @Then("the user sees the Sign In button is unclickable")

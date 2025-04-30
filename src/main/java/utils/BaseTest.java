@@ -162,12 +162,12 @@ public class BaseTest {
             }
             DesiredCapabilities chromeCaps = setBrowserCap(browserName);
             chromeCaps.setCapability(ChromeOptions.CAPABILITY, options);
-            try {
-               driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), chromeCaps);
-            } catch (Exception e) {
+//            try {
+//               driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), chromeCaps);
+//            } catch (Exception e) {
                 driver = new ChromeDriver(options);
-                System.out.printf(String.valueOf(e));
-            }
+ //               System.out.printf(String.valueOf(e));
+//            }
         } else if (browserName.contains("firefox")) {
             FirefoxOptions options = new FirefoxOptions();
             options.addArguments("--disable-dev-shm-usage");
