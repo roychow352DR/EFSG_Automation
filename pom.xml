@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.example</groupId>
-    <artifactId>web_auto</artifactId>
+    <artifactId>EFSG_auto</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -49,6 +49,52 @@
                             <useUnlimitedThreads>true</useUnlimitedThreads>
                             <includes>
                                 <include>**/*WebTestRunner.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>net.masterthought</groupId>
+                        <artifactId>maven-cucumber-reporting</artifactId>
+                        <version>${maven.cucumber.reporting.version}</version>
+
+                        <executions>
+                            <execution>
+                                <id>generate-cucumber-report</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/cucumber-html-reports</outputDirectory>
+                                    <inputDirectory>${project.build.directory}/cucumber-reports</inputDirectory>
+                                    <jsonFiles>
+                                        <!-- Include both main and rerun JSON reports -->
+                                        <param>**/*.json</param>
+                                    </jsonFiles>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </pluginManagement>
+        </build>
+    </profile>
+
+    <profile>
+        <id>AppTests</id>
+        <build>
+            <pluginManagement>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>3.5.2</version>
+                        <configuration>
+                            <parallel>methods</parallel>
+                            <useUnlimitedThreads>true</useUnlimitedThreads>
+                            <includes>
+                                <include>**/*AppTestRunner.java</include>
                             </includes>
                         </configuration>
                     </plugin>
@@ -266,7 +312,11 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.12.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>io.appium</groupId>
+            <artifactId>java-client</artifactId>
+            <version>9.4.0</version>
+        </dependency>
     </dependencies>
 
 

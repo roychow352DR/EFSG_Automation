@@ -57,13 +57,13 @@ public class QaseApiClient {
         return actualCaseId[1];// Extract the file name
     }
 
-    public int createTestRunByTestPlan(int planId, String runTitle, String browserType, String env) throws IOException {
+    public int createTestRunByTestPlan(int planId, String runTitle, String platform, String env) throws IOException {
         // Prepare the request payload
         SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd");
         String str = ft.format(new Date());
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("title", "[" + browserType + "]" + "[" + env + "]" + str + " - " + runTitle);
+        requestBody.addProperty("title", "[" + platform + "]" + "[" + env + "]" + str + " - " + runTitle);
         requestBody.addProperty("plan_id", planId);
 
         response = Request.post(endpoint)
