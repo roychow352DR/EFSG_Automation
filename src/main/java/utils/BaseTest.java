@@ -3,8 +3,14 @@ package utils;
 import PageObject.AdminPortal.ApplicationListPage;
 import PageObject.AdminPortal.AdminLoginPage;
 import PageObject.MIOadmin.MIOLoginPage;
+import PageObject.NativeApp.WelcomePage;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.appium.java_client.AppiumDriver;
+import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.android.options.UiAutomator2Options;
+import io.appium.java_client.screenrecording.CanRecordScreen;
+import io.appium.java_client.service.local.AppiumDriverLocalService;
 import io.cucumber.java.Scenario;
 import org.apache.commons.io.FileUtils;
 import org.monte.screenrecorder.ScreenRecorder;
@@ -18,10 +24,10 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import utils.app.MobileDriver;
+import utils.app.MobilePlatform;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -38,15 +44,33 @@ public class BaseTest {
     public Scenario scenario;
     private static ScreenRecorder screenRecorder;
     public static File newFile, oldFile;
-    public static String browserType;
-
+    public static String browserType,productType;
+    public AppiumDriverLocalService service;
+    public static UiAutomator2Options options;
+    public MobilePlatform mobilePlatform;
+    public MobileDriver mobileDriver;
 
     public WebDriver initializeDriver() throws IOException, InterruptedException {
+        mobileDriver = new MobileDriver();
+        mobilePlatform = new MobilePlatform();
         String path = "//src//main//java//DataResources//GlobalData.properties";
-        browserType = System.getProperty("browser") != null ? System.getProperty("browser") : getProperty(path, "browser");
-        driver = setBrowserDriver(browserType);
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
-        driver.get(setDomain(getProperty(path, "env"),getProperty(path,"product")));
+        productType = System.getProperty("product") != null ? System.getProperty("product") : getProperty(path, "product");
+
+            if (!productType.equalsIgnoreCase("app")) {
+                browserType = System.getProperty("browser") != null ? System.getProperty("browser") : getProperty(path, "browser");
+                driver = setBrowserDriver(browserType);
+                driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
+                driver.get(setDomain(getProperty(path, "env"), getProperty(path, "product")));
+            } else if (mobilePlatform.getPlatform().equalsIgnoreCase("ANDROID")) {
+                driver = mobileDriver.initializeAndroidDriver();
+                ((CanRecordScreen) driver).startRecordingScreen();
+            }
+            else if (mobilePlatform.getPlatform().equalsIgnoreCase("IOS")) {
+                driver = mobileDriver.initializeiOSDriver();
+            }
+            else{
+                throw new RuntimeException("Invalid Platform");
+            }
         return driver;
     }
 
@@ -123,14 +147,6 @@ public class BaseTest {
 
     public File videoFile() {
         return newFile;
-    }
-
-    public static String getTestPlanId(String testType, String path) throws IOException {
-        return switch (testType) {
-            case "Regression" -> getProperty(path, "qase.regression.testPlanId");
-            case "Smoke" -> getProperty(path, "qase.smoke.testPlanId");
-            default -> "";
-        };
     }
 
     public DesiredCapabilities setBrowserCap(String browserName) {
@@ -222,6 +238,22 @@ public class BaseTest {
         }
     }
 
+    public static File videoFileCreation(String appVideoName, WebDriver driver) throws IOException {
+        File appVideoRecordingFileDir = createFolder("app_Video");
+        File videoFile = new File(appVideoRecordingFileDir, appVideoName + ".mp4");
+
+        String base64Video = ((CanRecordScreen)driver).stopRecordingScreen();
+
+        // Decode and save as MP4 file
+        byte[] data = Base64.getDecoder().decode(base64Video);
+        try (FileOutputStream stream = new FileOutputStream(videoFile)) {
+            stream.write(data);
+        }
+        System.out.println("Video saved: " + videoFile.getAbsolutePath());
+
+        return videoFile;
+    }
+
     public static Map<String, Object> stepsPayload(boolean isPassed, int position, String stepAction, String hash) {
         Map<String, Object> step = new HashMap<>();
         if (!isPassed) {
@@ -266,6 +298,7 @@ public class BaseTest {
         return switch (product) {
             case "adminPortal" -> "//src//main//java//DataResources//qase-adminportal.properties";
             case "mio" -> "//src//main//java//DataResources//qase-mioAdminPortal.properties";
+            case "app" -> "//src//main//java//DataResources//qase-nativeApp.properties";
             case "filePropertyPath" -> "//src//main//java//DataResources//FileDirectory.properties";
             case "globalPropertyPath" -> "//src//main//java//DataResources//GlobalData.properties";
             default -> "";
@@ -284,6 +317,12 @@ public class BaseTest {
 
         return directory;
     }
+
+    public WelcomePage launchApp() throws IOException, InterruptedException {
+        AppiumDriver driver = (AndroidDriver) initializeDriver();
+        return new WelcomePage(driver);
+    }
+
 
 
 }
