@@ -10,16 +10,9 @@ import io.cucumber.testng.PickleWrapper;
 @CucumberOptions(features = "src/test/java/Features", glue = "StepDefinitions", monochrome = true
         , plugin = {"pretty",
         /*"html:target/cucumber-reports/cucumber-report.html",*/
-        "json:target/cucumber-reports/cucumber-report.json","rerun:target/failed_scenarios.txt"},tags = "@Test")
+        "json:target/cucumber-reports/cucumber-report.json","rerun:target/web_failed_scenarios.txt"},tags = "@Test")
 public class WebTestRunner extends AbstractTestNGCucumberTests {
 
-
-/*    @Test(
-           groups = {"cucumber"},
-           description = "Runs Cucumber Scenarios",
-           dataProvider = "scenarios",
-           retryAnalyzer= Retry.class
-   )*/
 
     @Override
     public void runScenario(PickleWrapper pickleWrapper, FeatureWrapper featureWrapper) {

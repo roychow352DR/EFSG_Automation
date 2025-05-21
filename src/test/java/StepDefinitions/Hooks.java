@@ -1,157 +1,215 @@
 package StepDefinitions;
 
+import Data.QASEConfig;
+import Data.GlobalConfig;
 import io.cucumber.java.*;
-import org.jsoup.Connection;
-import org.monte.screenrecorder.ScreenRecorder;
-import org.openqa.selenium.WebDriver;
 import utils.BaseTest;
-import utils.QaseApiClient;
 import utils.VideoRecorder;
-
-import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 public class Hooks extends BaseTest {
 
-    public static QaseApiClient qaseApiClient;
+
     public static int runId;
     public static String runTitle;
     public static String projectCode;
     public static String testPlanId;
     public static String apiToken;
-    public static String hash = "";
+    public static String hash ;
     public static String caseId;
-    public static ScreenRecorder screenRecorder;
     //public static  VideoRecorder videoRecorder;
     public static File videoFile;
-    private static String VIDEO_DIRECTORY;
-    private static String SCREENSHOT_DIRECTORY;
-    public static String qasePropertyPath ;
     public static boolean removeVideoFlag = true;
     public static boolean removeScreenShotFlag = true;
-    public static int position;
+    public static int position ;
     public static List<Map<String, Object>> steps = new ArrayList<>();
-
-    public Hooks()
-    {
-        position = 0;
-    }
-
+    public static GlobalConfig globalConfig;
+    public static QASEConfig qaseConfig;
+    public static String product;
 
     @BeforeAll
     public static void createQaseTestRun() throws IOException {
-        VIDEO_DIRECTORY = getProperty(getPropertyPath("filePropertyPath"), "video_directory");
-        SCREENSHOT_DIRECTORY = System.getProperty("user.dir") + "/screenshots/";
-        String product = System.getProperty("product") != null ? System.getProperty("product") : getProperty(getPropertyPath("globalPropertyPath"), "product");
-        qasePropertyPath = getPropertyPath(product);
-        apiToken = getProperty(qasePropertyPath, "qase.api.token");
-        projectCode = getProperty(qasePropertyPath, "qase.project.code");
-        try {
-            testPlanId = BaseTest.getTestPlanId(getProperty(qasePropertyPath, "testType"), qasePropertyPath);
-
-            //Initialize Qase API client
-            qaseApiClient = new QaseApiClient(apiToken, projectCode);
-
-            runTitle = qaseApiClient.getTestPlanTitle(Integer.parseInt(testPlanId), projectCode);
-
-            // Create a test run in Qase
-            runId = qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId),
-                    runTitle, getProperty(getPropertyPath("globalPropertyPath"), "browser"),
-                    getProperty(getPropertyPath("globalPropertyPath"), "env"));
-        } catch (IOException e) {
-            e.getStackTrace();
-            System.out.println("Failed to create test run");
-        }
-
+        initializeConfigurations();
+        setupQaseTestRun();
     }
+
+    /**
+     * Initializes all necessary configurations
+     */
+    private static void initializeConfigurations() throws IOException {
+        globalConfig = new GlobalConfig();
+        product = GlobalConfig.getProperty(GlobalConfig.getGlobalPropertyPath("globalPropertyPath"), "product");
+        qaseConfig = new QASEConfig(product);
+        apiToken = qaseConfig.getQaseConfig().get("apiToken");
+        projectCode = qaseConfig.getQaseConfig().get("projectCode");
+    }
+
+    /**
+     * Sets up QASE test run based on product type
+     */
+    private static void setupQaseTestRun() {
+        try {
+            testPlanId = qaseConfig.getQaseConfig().get("testPlanId");
+            runTitle = qaseConfig.getQaseConfig().get("runTitle");
+            String runType = product.equalsIgnoreCase("app") ? "platform" : "browser";
+            runId = qaseConfig.getTestRunId(runType, testPlanId, runTitle);
+        } catch (IOException e) {
+            System.err.println("Failed to create test run: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Initializes test case and gets case ID
+     */
 
     @Before
-    public void getCaseId(Scenario scenario) {
-        caseId = qaseApiClient.getCaseId(scenario, projectCode);
+    public void initializeTestCase(Scenario scenario) throws IOException {
+        caseId = qaseConfig.getCaseId(scenario);
         steps.clear();
+        position = 0;
 
     }
 
+    /**
+     * Handles test cleanup and reporting
+     */
 
     @After
-    public void logQaseTestResult(Scenario scenario) throws Exception {
-        driver.quit();
-        //wait until video creation fully complete
+    public void cleanupAndReport(Scenario scenario) throws Exception {
+        handleVideoRecording(scenario);
+        cleanupDriver();
+        waitForVideoProcessing();
+        reportTestResult(scenario);
+        cleanupMediaFiles();
+    }
+    /**
+     * Waits for video processing to complete
+     */
+    private void waitForVideoProcessing() throws InterruptedException {
         Thread.sleep(5000);
+    }
 
-        boolean isPassed = !scenario.isFailed();
-
-        if (BaseTest.actualVideoFileName(scenario.getName()).exists()) {
-            hash = qaseApiClient.uploadAttachment(projectCode, actualVideoFileName(scenario.getName()).getName(), VIDEO_DIRECTORY);
+    /**
+     * Handles video recording based on product type
+     */
+    private void handleVideoRecording(Scenario scenario) throws IOException {
+        if (product.equalsIgnoreCase("app")) {
+            videoFile = videoFileCreation(scenario.getName(), driver);
         }
+    }
 
+    /**
+     * Cleans up the driver instance
+     */
+    private void cleanupDriver() {
         try {
-            qaseApiClient.createTestCaseResult(runId, projectCode, hash, isPassed, caseId, steps);
+            if (driver != null) {
+                driver.quit();
+            }
         } catch (Exception e) {
-            e.printStackTrace();
-
+            System.err.println("Failed to cleanup driver: " + e.getMessage());
         }
+    }
+
+    /**
+     * Reports test result to QASE
+     */
+    private void reportTestResult(Scenario scenario) throws IOException, InterruptedException {
+        boolean isPassed = !scenario.isFailed();
+        String videoFileName;
+        if (actualVideoFileName(scenario.getName()).exists() && ! product.equalsIgnoreCase("app"))
+        {
+            videoFileName = actualVideoFileName(scenario.getName()).getName();
+        }
+        else if (product.equalsIgnoreCase("app"))
+        {
+            videoFileName = videoFile.getName();
+        }
+        else {
+            videoFileName = "";
+        }
+        String videoDirectory = actualVideoFileName(scenario.getName()).exists()
+                ? globalConfig.getDirectory().get("VIDEO_DIRECTORY")
+                : globalConfig.getDirectory().get("APP_VIDEO_DIRECTORY");
+
+        System.out.println(videoFileName.isEmpty());
+        hash = videoFileName.isEmpty() ? "" : qaseConfig.createHash(videoFileName, videoDirectory) ;
+        try {
+            qaseConfig.createTestCaseResult(runId, projectCode, hash, isPassed, caseId, steps);
+        } catch (Exception e) {
+            System.err.println("Failed to report test result: " + e.getMessage());
+        }
+
+    }
+
+    /**
+     * Cleans up media files (screenshots and videos)
+     */
+    private void cleanupMediaFiles() {
         if (removeScreenShotFlag) {
             try {
                 emptyFolder("screenshots");
             } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("No screenshots is deleted");
+                System.err.println("Failed to delete screenshots: " + e.getMessage());
             }
         }
         if (removeVideoFlag) {
             try {
-                VideoRecorder.deleteRecords(VIDEO_DIRECTORY);
+                VideoRecorder.deleteRecords(globalConfig.getDirectory().get("VIDEO_DIRECTORY"));
+                VideoRecorder.deleteRecords(globalConfig.getDirectory().get("APP_VIDEO_DIRECTORY"));
             } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("No video is deleted");
+                System.err.println("Failed to delete videos: " + e.getMessage());
             }
-        }
-
-
+            }
     }
 
-    /*@Before
-    public void startVideoRecording(Scenario scenario) {
-        try {
-            // Start recording with the scenario name
-            screenRecorder = VideoRecorder.startRecording(scenario.getName());
-            System.out.println("Test case "+scenario.getName() + " is recording");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }*/
 
     @AfterStep
-    public void prepareStepResult(Scenario scenario) throws IOException, InterruptedException {
-        boolean isPassed = !scenario.isFailed();
+    public void recordStepResult(Scenario scenario) throws IOException, InterruptedException {
         if (position > 0) {
-            String stepAction = qaseApiClient.getCaseStepAction(projectCode, Integer.parseInt(caseId), position);
-            String screenShotName = stepAction + ".png";
-            if (!isPassed) {
-                takeScreenshot(stepAction);
-                hash = qaseApiClient.uploadAttachment(projectCode, screenShotName, SCREENSHOT_DIRECTORY);
-            }
             try {
-                steps.add(BaseTest.stepsPayload(isPassed, position, stepAction, hash));
+                String stepAction = qaseConfig.getCaseStepAction(projectCode, Integer.parseInt(caseId), position);
+                boolean isPassed = !scenario.isFailed();
+
+                if (!isPassed) {
+                    captureScreenshot(stepAction);
+                }
+
+                recordStepDetails(isPassed, position, stepAction);
             } catch (Exception e) {
-                e.printStackTrace();
+                System.err.println("Failed to record step result: " + e.getMessage());
             }
 
         }
-        position++;
+            position++;
     }
 
-//    @After
-//    public void teardown() throws InterruptedException {
-//        Thread.sleep(5000);
-//        driver.quit();
-//    }
+    /**
+     * Captures screenshot for failed steps
+     */
+    private void captureScreenshot(String stepAction) throws IOException, InterruptedException {
+        try {
+            String screenShotName = stepAction + ".png";
+            takeScreenshot(stepAction);
+            hash = qaseConfig.createHash(screenShotName, globalConfig.getDirectory().get("SCREENSHOT_DIRECTORY"));
+        } catch (Exception e) {
+            System.err.println("Failed to capture screenshot: " + e.getMessage());
+        }
+    }
 
+    /**
+     * Records step details for reporting
+     */
+    private void recordStepDetails(boolean isPassed, int position, String stepAction) {
+        try {
+            steps.add(stepsPayload(isPassed, position, stepAction, hash));
+        } catch (Exception e) {
+            System.err.println("Failed to record step details: " + e.getMessage());
+        }
+    }
 }
+
