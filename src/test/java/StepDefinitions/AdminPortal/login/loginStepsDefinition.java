@@ -46,7 +46,13 @@ public class loginStepsDefinition extends BaseTest {
     @Then("the user sees {string} message pop up")
     public void the_user_sees_message_pop_up(String string)
     {
-        Assert.assertTrue(loginPage.loginErrorValidation().equalsIgnoreCase(string));
+        if (string.contains("Invalid")) {
+            Assert.assertTrue(loginPage.loginErrorValidation().equalsIgnoreCase(string));
+        }
+        else if (string.contains("Suspend"))
+        {
+            Assert.assertTrue(loginPage.suspendErrorValidation().equalsIgnoreCase(string));
+        }
     }
 
     @Then("the user sees the Sign In button is unclickable")

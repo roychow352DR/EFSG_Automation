@@ -35,88 +35,130 @@ import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.*;
 
+/**
+ * BaseTest class serves as the foundation for all test automation.
+ * It provides core functionality for:
+ * - Web and mobile driver initialization
+ * - Browser configuration
+ * - Screenshot and video recording
+ * - File management
+ * - Test data handling
+ */
 public class BaseTest {
+    // WebDriver instance for browser automation
     public static WebDriver driver;
+    
+    // Page Object instances
     public AdminLoginPage login;
     public MIOLoginPage mioLogin;
     public WebElement ctaButton;
+    
+    // Configuration and capabilities
     public DesiredCapabilities caps;
     public Scenario scenario;
     private static ScreenRecorder screenRecorder;
     public static File newFile, oldFile;
-    public static String browserType,productType;
+    public static String browserType, productType;
     public AppiumDriverLocalService service;
     public static UiAutomator2Options options;
     public MobilePlatform mobilePlatform;
     public MobileDriver mobileDriver;
 
+    /**
+     * Initializes the appropriate driver based on the product type and platform
+     * @return WebDriver instance
+     */
     public WebDriver initializeDriver() throws IOException, InterruptedException {
         mobileDriver = new MobileDriver();
         mobilePlatform = new MobilePlatform();
         String path = "//src//main//java//DataResources//GlobalData.properties";
-        productType = System.getProperty("product") != null ? System.getProperty("product") : getProperty(path, "product");
+        productType = System.getProperty("product") != null ? 
+            System.getProperty("product") : getProperty(path, "product");
 
-            if (!productType.equalsIgnoreCase("app")) {
-                browserType = System.getProperty("browser") != null ? System.getProperty("browser") : getProperty(path, "browser");
-                driver = setBrowserDriver(browserType);
-                driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
-                driver.get(setDomain(getProperty(path, "env"), getProperty(path, "product")));
-            } else if (mobilePlatform.getPlatform().equalsIgnoreCase("ANDROID")) {
-                driver = mobileDriver.initializeAndroidDriver();
-                ((CanRecordScreen) driver).startRecordingScreen();
-            }
-            else if (mobilePlatform.getPlatform().equalsIgnoreCase("IOS")) {
-                driver = mobileDriver.initializeiOSDriver();
-            }
-            else{
-                throw new RuntimeException("Invalid Platform");
-            }
+        if (!productType.equalsIgnoreCase("app")) {
+            // Initialize web browser driver
+            browserType = System.getProperty("browser") != null ? 
+                System.getProperty("browser") : getProperty(path, "browser");
+            driver = setBrowserDriver(browserType);
+            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
+            driver.get(setDomain(getProperty(path, "env"), getProperty(path, "product")));
+        } else if (mobilePlatform.getPlatform().equalsIgnoreCase("ANDROID")) {
+            // Initialize Android driver
+            driver = mobileDriver.initializeAndroidDriver();
+            ((CanRecordScreen) driver).startRecordingScreen();
+        } else if (mobilePlatform.getPlatform().equalsIgnoreCase("IOS")) {
+            // Initialize iOS driver
+            driver = mobileDriver.initializeiOSDriver();
+        } else {
+            throw new RuntimeException("Invalid Platform");
+        }
         return driver;
     }
 
-
+    /**
+     * Launches the admin portal application
+     * @return AdminLoginPage instance
+     */
     public AdminLoginPage launchApplication() throws IOException, InterruptedException {
         WebDriver driver = initializeDriver();
         login = new AdminLoginPage(driver);
         return login;
     }
 
+    /**
+     * Launches the MIO application
+     * @return MIOLoginPage instance
+     */
     public MIOLoginPage launchMIOApplication() throws IOException, InterruptedException {
         WebDriver driver = initializeDriver();
         mioLogin = new MIOLoginPage(driver);
         return mioLogin;
     }
 
+    /**
+     * Reads and parses JSON test data
+     * @return List of HashMaps containing test data
+     */
     public List<HashMap<String, String>> getJsonDataToMap() throws IOException {
-        String jsonContent = FileUtils.readFileToString(new File(System.getProperty("user.dir") + "//src//test//java//Data//Crendential.json"), StandardCharsets.UTF_8);
+        String jsonContent = FileUtils.readFileToString(
+            new File(System.getProperty("user.dir") + "//src//test//java//Data//Crendential.json"), 
+            StandardCharsets.UTF_8
+        );
         ObjectMapper mapper = new ObjectMapper();
-        List<HashMap<String, String>> data = mapper.readValue(jsonContent, new TypeReference<List<HashMap<String, String>>>() {
-        });
-
-        return data;
-
+        return mapper.readValue(jsonContent, new TypeReference<List<HashMap<String, String>>>() {});
     }
 
+    /**
+     * Creates and returns an ApplicationListPage instance
+     */
     public ApplicationListPage applicationPage() {
-        ApplicationListPage ap = new ApplicationListPage(driver);
-        return ap;
+        return new ApplicationListPage(driver);
     }
 
+    /**
+     * Checks if a CTA button is clickable
+     * @param cta WebElement to check
+     * @return boolean indicating if the element is enabled
+     */
     public boolean unclickableCTA(WebElement cta) {
         ctaButton = cta;
         return ctaButton.isEnabled();
     }
 
-    public String setDomain(String env,String product) {
+    /**
+     * Sets the domain URL based on environment and product
+     * @param env Environment name
+     * @param product Product name
+     * @return Domain URL
+     */
+    public String setDomain(String env, String product) {
         if (product.equalsIgnoreCase("adminPortal")) {
             return switch (env) {
                 case "bausit" -> "https://d13ckj22o5rgah.cloudfront.net/login";
                 case "bauuat" -> "https://uat-aocm-ap.empfs.net/login";
                 default -> "";
             };
-        }
-        else if (product.equalsIgnoreCase("mio"))
-        {
+        } else if (product.equalsIgnoreCase("mio")) {
             return switch (env) {
                 case "bausit" -> "https://d27ekljjcs6mcs.cloudfront.net/login";
                 case "bauuat" -> "https://d27ekljjcs6mcs.cloudfront.net/login";
@@ -126,17 +168,28 @@ public class BaseTest {
         return env;
     }
 
+    /**
+     * Reads property value from configuration file
+     * @param path Path to property file
+     * @param propertyItem Property key
+     * @return Property value
+     */
     public static String getProperty(String path, String propertyItem) throws IOException {
         Properties prop = new Properties();
-        FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + path);
-        prop.load(fis);
-
-        return (System.getProperty(propertyItem) != null ? System.getProperty(propertyItem) : prop.getProperty(propertyItem));
+        try (FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + path)) {
+            prop.load(fis);
+            return System.getProperty(propertyItem) != null ? 
+                System.getProperty(propertyItem) : prop.getProperty(propertyItem);
+        }
     }
 
+    /**
+     * Creates and manages video file for test recording
+     * @param scenarioName Name of the test scenario
+     * @return File object for the video
+     */
     public static File actualVideoFileName(String scenarioName) throws IOException {
         String VIDEO_DIRECTORY = getProperty(getPropertyPath("filePropertyPath"), "video_directory");
-        String actualFileName = "";
         newFile = new File(VIDEO_DIRECTORY, scenarioName + ".mp4");
         oldFile = new File(VIDEO_DIRECTORY, "Test.mp4");
         if (oldFile.exists()) {
@@ -145,10 +198,11 @@ public class BaseTest {
         return newFile;
     }
 
-    public File videoFile() {
-        return newFile;
-    }
-
+    /**
+     * Sets browser capabilities based on browser type
+     * @param browserName Name of the browser
+     * @return DesiredCapabilities object
+     */
     public DesiredCapabilities setBrowserCap(String browserName) {
         caps = new DesiredCapabilities();
         if (browserName.contains("headless")) {
@@ -164,87 +218,137 @@ public class BaseTest {
         return caps;
     }
 
-
+    /**
+     * Initializes and configures the appropriate browser driver
+     * @param browserName Name of the browser
+     * @return WebDriver instance
+     */
     public WebDriver setBrowserDriver(String browserName) {
-        if (browserName.contains("chrome")) {
-            ChromeOptions options = new ChromeOptions();
-            options.addArguments("--disable-dev-shm-usage");
-            options.addArguments("--no-sandbox");
-            options.addArguments("--disable-gpu");
-            options.addArguments("--start-maximized");
-
-            if (browserName.contains("headless")) {
-                options.addArguments("--headless=new");
+        try {
+            if (browserName.contains("chrome")) {
+                return initializeChromeDriver(browserName);
+            } else if (browserName.contains("firefox")) {
+                return initializeFirefoxDriver(browserName);
+            } else if (browserName.contains("edge")) {
+                return initializeEdgeDriver(browserName);
             }
-            DesiredCapabilities chromeCaps = setBrowserCap(browserName);
-            chromeCaps.setCapability(ChromeOptions.CAPABILITY, options);
-            try {
-               driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), chromeCaps);
-            } catch (Exception e) {
-                driver = new ChromeDriver(options);
-                System.out.printf(String.valueOf(e));
-            }
-        } else if (browserName.contains("firefox")) {
-            FirefoxOptions options = new FirefoxOptions();
-            options.addArguments("--disable-dev-shm-usage");
-            options.addArguments("--no-sandbox");
-            options.addArguments("--disable-gpu");
-            options.addArguments("--start-maximized");
-
-
-            if (browserName.contains("headless")) {
-                options.addArguments("--headless=new");
-            }
-            DesiredCapabilities firefoxCaps = setBrowserCap(browserName);
-            firefoxCaps.setCapability(FirefoxOptions.FIREFOX_OPTIONS, options);
-            try {
-                driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), firefoxCaps);
-            } catch (Exception e) {
-                driver = new FirefoxDriver(options);
-                System.out.printf(String.valueOf(e));
-            }
-        } else if (browserName.contains("edge")) {
-            EdgeOptions options = new EdgeOptions();
-            options.addArguments("--disable-dev-shm-usage");
-            options.addArguments("--no-sandbox");
-            options.addArguments("--disable-gpu");
-            options.addArguments("--start-maximized");
-
-
-            if (browserName.contains("headless")) {
-                options.addArguments("--headless=new");
-            }
-            DesiredCapabilities edgeCaps = setBrowserCap(browserName);
-            edgeCaps.setCapability(EdgeOptions.CAPABILITY, options);
-            try {
-                driver = new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), edgeCaps);
-            } catch (Exception e) {
-                driver = new EdgeDriver(options);
-                System.out.printf(String.valueOf(e));
-            }
+        } catch (Exception e) {
+            System.err.println("Error initializing browser driver: " + e.getMessage());
         }
-        return driver;
+        throw new RuntimeException("Unsupported browser type: " + browserName);
     }
 
+    private WebDriver initializeChromeDriver(String browserName) throws Exception {
+        ChromeOptions options = new ChromeOptions();
+        configureChromeBrowserOptions(options, browserName);
+        DesiredCapabilities chromeCaps = setBrowserCap(browserName);
+        chromeCaps.setCapability(ChromeOptions.CAPABILITY, options);
+        return createRemoteOrLocalChromeDriver(options, chromeCaps);
+    }
+
+    private WebDriver initializeFirefoxDriver(String browserName) throws Exception {
+        FirefoxOptions options = new FirefoxOptions();
+        configureFirefoxBrowserOptions(options, browserName);
+        DesiredCapabilities firefoxCaps = setBrowserCap(browserName);
+        firefoxCaps.setCapability(FirefoxOptions.FIREFOX_OPTIONS, options);
+        return createRemoteOrLocalFirefoxDriver(options, firefoxCaps);
+    }
+
+    private WebDriver initializeEdgeDriver(String browserName) throws Exception {
+        EdgeOptions options = new EdgeOptions();
+        configureEdgeBrowserOptions(options, browserName);
+        DesiredCapabilities edgeCaps = setBrowserCap(browserName);
+        edgeCaps.setCapability(EdgeOptions.CAPABILITY, options);
+        return createRemoteOrLocalEdgeDriver(options, edgeCaps);
+    }
+
+    private void configureChromeBrowserOptions(ChromeOptions options, String browserName) {
+        options.addArguments(
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+            "--disable-gpu",
+            "--start-maximized"
+        );
+        if (browserName.contains("headless")) {
+            options.addArguments("--headless=new");
+        }
+    }
+
+    private void configureFirefoxBrowserOptions(FirefoxOptions options, String browserName) {
+        options.addArguments(
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+            "--disable-gpu",
+            "--start-maximized"
+        );
+        if (browserName.contains("headless")) {
+            options.addArguments("--headless=new");
+        }
+    }
+
+    private void configureEdgeBrowserOptions(EdgeOptions options, String browserName) {
+        options.addArguments(
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+            "--disable-gpu",
+            "--start-maximized"
+        );
+        if (browserName.contains("headless")) {
+            options.addArguments("--headless=new");
+        }
+    }
+
+    private WebDriver createRemoteOrLocalChromeDriver(ChromeOptions options, DesiredCapabilities caps) throws Exception {
+        try {
+            return new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), caps);
+        } catch (Exception e) {
+            return new ChromeDriver(options);
+        }
+    }
+
+    private WebDriver createRemoteOrLocalFirefoxDriver(FirefoxOptions options, DesiredCapabilities caps) throws Exception {
+        try {
+            return new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), caps);
+        } catch (Exception e) {
+            return new FirefoxDriver(options);
+        }
+    }
+
+    private WebDriver createRemoteOrLocalEdgeDriver(EdgeOptions options, DesiredCapabilities caps) throws Exception {
+        try {
+            return new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), caps);
+        } catch (Exception e) {
+            return new EdgeDriver(options);
+        }
+    }
+
+    /**
+     * Takes a screenshot and saves it to the screenshots folder
+     * @param screenShotName Name for the screenshot file
+     */
     public static void takeScreenshot(String screenShotName) {
         File screenshotFile = createFolder("screenshots");
         String screenshotPath = screenshotFile.getAbsolutePath();
         try {
             File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-            File destFile = new File(screenshotPath + "/"+ screenShotName + ".png");
+            File destFile = new File(screenshotPath + "/" + screenShotName + ".png");
             Files.copy(srcFile.toPath(), destFile.toPath());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Creates and saves a video recording of the test
+     * @param appVideoName Name for the video file
+     * @param driver WebDriver instance
+     * @return File object for the video
+     */
     public static File videoFileCreation(String appVideoName, WebDriver driver) throws IOException {
         File appVideoRecordingFileDir = createFolder("app_Video");
         File videoFile = new File(appVideoRecordingFileDir, appVideoName + ".mp4");
 
         String base64Video = ((CanRecordScreen)driver).stopRecordingScreen();
-
-        // Decode and save as MP4 file
         byte[] data = Base64.getDecoder().decode(base64Video);
         try (FileOutputStream stream = new FileOutputStream(videoFile)) {
             stream.write(data);
@@ -254,47 +358,51 @@ public class BaseTest {
         return videoFile;
     }
 
+    /**
+     * Creates a step payload for test reporting
+     * @param isPassed Whether the step passed
+     * @param position Step position
+     * @param stepAction Step action description
+     * @param hash Attachment hash
+     * @return Map containing step information
+     */
     public static Map<String, Object> stepsPayload(boolean isPassed, int position, String stepAction, String hash) {
         Map<String, Object> step = new HashMap<>();
+        step.put("status", isPassed ? "passed" : "failed");
+        step.put("position", position);
+        step.put("action", stepAction);
         if (!isPassed) {
-            step.put("status", "failed");
-            step.put("position", position);
-            step.put("action", stepAction);
             step.put("attachments", List.of(hash));
-        } else {
-            step.put("status", "passed");
-            step.put("position", position);
-            step.put("action", stepAction);
         }
         return step;
     }
 
+    /**
+     * Clears all files from a specified folder
+     * @param folderName Name of the folder to clear
+     */
     public static void emptyFolder(String folderName) {
-        File screenshotsFolder = new File(folderName);
-        // Check if the folder exists
-        if (screenshotsFolder.exists() && screenshotsFolder.isDirectory()) {
-            // Get all files in the folder
-            File[] files = screenshotsFolder.listFiles();
-
+        File folder = new File(folderName);
+        if (folder.exists() && folder.isDirectory()) {
+            File[] files = folder.listFiles();
             if (files != null) {
                 for (File file : files) {
-                    // Delete each file
                     if (file.isFile() && file.delete()) {
                         System.out.println("Deleted file: " + file.getName());
                     } else {
                         System.out.println("Failed to delete file: " + file.getName());
                     }
                 }
-            } else {
-                System.out.println("No files found in the screenshots folder.");
             }
-        } else {
-            System.out.println("Screenshots folder does not exist.");
         }
     }
 
-    public static String getPropertyPath(String product)
-    {
+    /**
+     * Gets the property file path based on product type
+     * @param product Product name
+     * @return Property file path
+     */
+    public static String getPropertyPath(String product) {
         return switch (product) {
             case "adminPortal" -> "//src//main//java//DataResources//qase-adminportal.properties";
             case "mio" -> "//src//main//java//DataResources//qase-mioAdminPortal.properties";
@@ -303,26 +411,29 @@ public class BaseTest {
             case "globalPropertyPath" -> "//src//main//java//DataResources//GlobalData.properties";
             default -> "";
         };
-
     }
 
-    public static File createFolder(String folderName)
-    {
-        String screenshotDir = System.getProperty("user.dir") + "/" + folderName;
-        File directory = new File(screenshotDir);
+    /**
+     * Creates a folder if it doesn't exist
+     * @param folderName Name of the folder to create
+     * @return File object for the created folder
+     */
+    public static File createFolder(String folderName) {
+        String folderPath = System.getProperty("user.dir") + "/" + folderName;
+        File directory = new File(folderPath);
         if (!directory.exists()) {
-            directory.mkdirs(); // Create the directory if it doesn't exist
-            System.out.println("Screenshot folder created: " + screenshotDir);
+            directory.mkdirs();
+            System.out.println("Folder created: " + folderPath);
         }
-
         return directory;
     }
 
+    /**
+     * Launches the mobile application
+     * @return WelcomePage instance
+     */
     public WelcomePage launchApp() throws IOException, InterruptedException {
         AppiumDriver driver = (AndroidDriver) initializeDriver();
         return new WelcomePage(driver);
     }
-
-
-
 }
