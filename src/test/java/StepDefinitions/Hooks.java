@@ -136,7 +136,6 @@ public class Hooks extends BaseTest {
                 ? globalConfig.getDirectory().get("VIDEO_DIRECTORY")
                 : globalConfig.getDirectory().get("APP_VIDEO_DIRECTORY");
 
-        System.out.println(videoFileName.isEmpty());
         hash = videoFileName.isEmpty() ? "" : qaseConfig.createHash(videoFileName, videoDirectory) ;
         try {
             qaseConfig.createTestCaseResult(runId, projectCode, hash, isPassed, caseId, steps);
