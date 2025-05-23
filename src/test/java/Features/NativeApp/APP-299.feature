@@ -4,7 +4,7 @@ Feature: Native App login
     Given the user launch the app
 
 
-    @App
+    @App @Smoke
     Scenario Outline: The user can log in with lv2 account
       Given the user lands on the login page
       When the user fills email <email> and password <password> on App login page
