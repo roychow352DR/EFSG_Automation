@@ -43,7 +43,7 @@ public class loginSteps extends BaseTest {
     @And("the user skips biometric validation")
     public void the_user_skips_biometric_validation() throws InterruptedException {
         if (biometricsPage.biometricPageValidation()) {
-            Thread.sleep(2000);
+            Thread.sleep(3000);
             appHomePage = biometricsPage.skipBiometric();
         }
     }
