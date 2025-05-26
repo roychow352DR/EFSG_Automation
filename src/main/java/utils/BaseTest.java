@@ -47,12 +47,12 @@ import java.util.*;
 public class BaseTest {
     // WebDriver instance for browser automation
     public static WebDriver driver;
-    
+
     // Page Object instances
     public AdminLoginPage login;
     public MIOLoginPage mioLogin;
     public WebElement ctaButton;
-    
+
     // Configuration and capabilities
     public DesiredCapabilities caps;
     public Scenario scenario;
@@ -72,13 +72,13 @@ public class BaseTest {
         mobileDriver = new MobileDriver();
         mobilePlatform = new MobilePlatform();
         String path = "//src//main//java//DataResources//GlobalData.properties";
-        productType = System.getProperty("product") != null ? 
-            System.getProperty("product") : getProperty(path, "product");
+        productType = System.getProperty("product") != null ?
+                System.getProperty("product") : getProperty(path, "product");
 
         if (!productType.equalsIgnoreCase("app")) {
             // Initialize web browser driver
-            browserType = System.getProperty("browser") != null ? 
-                System.getProperty("browser") : getProperty(path, "browser");
+            browserType = System.getProperty("browser") != null ?
+                    System.getProperty("browser") : getProperty(path, "browser");
             driver = setBrowserDriver(browserType);
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
             driver.get(setDomain(getProperty(path, "env"), getProperty(path, "product")));
@@ -121,8 +121,8 @@ public class BaseTest {
      */
     public List<HashMap<String, String>> getJsonDataToMap() throws IOException {
         String jsonContent = FileUtils.readFileToString(
-            new File(System.getProperty("user.dir") + "//src//test//java//Data//Crendential.json"), 
-            StandardCharsets.UTF_8
+                new File(System.getProperty("user.dir") + "//src//test//java//Data//Crendential.json"),
+                StandardCharsets.UTF_8
         );
         ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(jsonContent, new TypeReference<List<HashMap<String, String>>>() {});
@@ -178,8 +178,8 @@ public class BaseTest {
         Properties prop = new Properties();
         try (FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + path)) {
             prop.load(fis);
-            return System.getProperty(propertyItem) != null ? 
-                System.getProperty(propertyItem) : prop.getProperty(propertyItem);
+            return System.getProperty(propertyItem) != null ?
+                    System.getProperty(propertyItem) : prop.getProperty(propertyItem);
         }
     }
 
@@ -197,7 +197,6 @@ public class BaseTest {
         }
         return newFile;
     }
-
     /**
      * Sets browser capabilities based on browser type
      * @param browserName Name of the browser
@@ -264,10 +263,10 @@ public class BaseTest {
 
     private void configureChromeBrowserOptions(ChromeOptions options, String browserName) {
         options.addArguments(
-            "--disable-dev-shm-usage",
-            "--no-sandbox",
-            "--disable-gpu",
-            "--start-maximized"
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
+                "--disable-gpu",
+                "--start-maximized"
         );
         if (browserName.contains("headless")) {
             options.addArguments("--headless=new");
@@ -276,10 +275,10 @@ public class BaseTest {
 
     private void configureFirefoxBrowserOptions(FirefoxOptions options, String browserName) {
         options.addArguments(
-            "--disable-dev-shm-usage",
-            "--no-sandbox",
-            "--disable-gpu",
-            "--start-maximized"
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
+                "--disable-gpu",
+                "--start-maximized"
         );
         if (browserName.contains("headless")) {
             options.addArguments("--headless=new");
@@ -288,10 +287,10 @@ public class BaseTest {
 
     private void configureEdgeBrowserOptions(EdgeOptions options, String browserName) {
         options.addArguments(
-            "--disable-dev-shm-usage",
-            "--no-sandbox",
-            "--disable-gpu",
-            "--start-maximized"
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
+                "--disable-gpu",
+                "--start-maximized"
         );
         if (browserName.contains("headless")) {
             options.addArguments("--headless=new");
