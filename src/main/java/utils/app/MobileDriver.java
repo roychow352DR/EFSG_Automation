@@ -8,6 +8,7 @@ import io.appium.java_client.ios.options.XCUITestOptions;
 import io.appium.java_client.screenrecording.CanRecordScreen;
 import io.appium.java_client.service.local.AppiumDriverLocalService;
 import io.appium.java_client.service.local.AppiumServiceBuilder;
+import org.openqa.selenium.remote.DesiredCapabilities;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -20,6 +21,7 @@ public class MobileDriver {
     public AppiumDriverLocalService service;
     private static Properties props = new Properties();
     public static UiAutomator2Options options;
+    public static DesiredCapabilities caps;
 
 
     public AndroidDriver initializeAndroidDriver() throws MalformedURLException {
@@ -29,11 +31,25 @@ public class MobileDriver {
                     .withIPAddress("127.0.0.1").usingPort(4723).build();
             service.start();
 
+//            caps = new DesiredCapabilities();
+//            caps.setCapability("platformName", "Android");
+//            caps.setCapability("deviceName", "emulator-5554");
+//            caps.setCapability("app", System.getProperty("user.dir") + "/src/main/resources/com.efsg.eiehktrading.android_uat-0.0.214-0805.apk");
+//            caps.setCapability("automationName", "UiAutomator2");
+
+
             options = new UiAutomator2Options();
-            options.setDeviceName("Pixel 2 XL API 33"); //emulator
+            options.setDeviceName("Pixel 2 XL API 33");//emulator
+            options.setPlatformName("Android");
+            options.setAutomationName("UiAutomator2");
             //options.setDeviceName("Android Phone"); // real device
             // options.setChromedriverExecutable("//Users//roychow//Downloads//chromedriver");
             options.setApp(System.getProperty("user.dir") + "/src/main/resources/com.efsg.eiehktrading.android_uat-0.0.214-0805.apk");
+
+
+            if (options == null) {
+                throw new IllegalStateException("Options object is null!");
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
