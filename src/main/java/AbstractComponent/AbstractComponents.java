@@ -6,6 +6,8 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.temporal.ChronoField;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,7 @@ public class AbstractComponents {
 
 
     public Map<String, String> userinfoList() {
+        LocalDate localDate = LocalDate.now();
         int randomEmailSeed = (int) (Math.random() * 10001);
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
@@ -37,6 +40,7 @@ public class AbstractComponents {
         info.put("idType", "ID_CARD");
         info.put("dateOfBirthYear", "1990");
         info.put("dateOfBirthDay", "20");
+        info.put("dateOfBirthYearBelow18",Integer.toString(localDate.getYear()-15));
         info.put("id", randomString(6));
         info.put("passwordNo", randomString(6));
         info.put("addressLine1", "Mong Kok");
@@ -49,6 +53,8 @@ public class AbstractComponents {
         info.put("taxCountry", "HKG");
         info.put("tradeEXP", "false");
         info.put("investEXP", "false");
+        info.put("expiryYear",Integer.toString(localDate.getYear()));
+        info.put("expiryDay",Integer.toString(localDate.get(ChronoField.DAY_OF_MONTH)));
         return info;
 
     }
@@ -65,10 +71,16 @@ public class AbstractComponents {
     }
 
 
-    public static void clearField(WebElement ele, String text) {
-        ele.sendKeys(Keys.chord(Keys.COMMAND, "a", Keys.DELETE));
+    public void clearField(WebElement ele) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        ele.click();
+        if (System.getProperty("os.name").contains("Mac")) {
+            ele.sendKeys(Keys.COMMAND + "a");
+        } else if (System.getProperty("os.name").contains("Windows")) {
+            ele.sendKeys(Keys.CONTROL + "a");
+        }
         ele.sendKeys(Keys.DELETE);
-        ele.sendKeys(text);
+        wait.until(driver -> Objects.requireNonNull(ele.getDomAttribute("value")).isEmpty());
     }
 
     public void waitUtilElementClickable(WebElement ele) {
@@ -129,9 +141,4 @@ public class AbstractComponents {
         return rec;
 
     }
-
-
-
-
-
 }

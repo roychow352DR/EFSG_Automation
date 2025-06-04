@@ -7,10 +7,8 @@ import PageObject.NativeApp.WelcomePage;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.appium.java_client.AppiumDriver;
-import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.options.UiAutomator2Options;
 import io.appium.java_client.screenrecording.CanRecordScreen;
-import io.appium.java_client.service.local.AppiumDriverLocalService;
 import io.cucumber.java.Scenario;
 import org.apache.commons.io.FileUtils;
 import org.monte.screenrecorder.ScreenRecorder;
@@ -90,6 +88,7 @@ public class BaseTest {
             } else if (mobilePlatform.getPlatform().equalsIgnoreCase("IOS")) {
                 // Initialize iOS driver
                 driver = mobileDriver.initializeiOSDriver();
+
             } else {
                 throw new RuntimeException("Invalid Platform: " + mobilePlatform.getPlatform());
             }
@@ -287,7 +286,7 @@ public class BaseTest {
             return new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), caps);
         } catch (Exception e) {
             return new ChromeDriver(options);
-        }
+       }
     }
 
     private WebDriver createRemoteOrLocalFirefoxDriver(FirefoxOptions options, DesiredCapabilities caps) throws Exception {
@@ -400,9 +399,12 @@ public class BaseTest {
 
     /**
      * Launches the mobile application
+     *
+     * @return
      */
     public WelcomePage launchApp() throws IOException, InterruptedException {
-        AppiumDriver driver = (AndroidDriver) initializeDriver();
+        AppiumDriver driver = (AppiumDriver) initializeDriver();
         return new WelcomePage(driver);
     }
+
 }

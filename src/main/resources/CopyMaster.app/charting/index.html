@@ -1,0 +1,43 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+
+		<title>TradingView Charting Library</title>
+
+		<!-- Fix for iOS Safari zooming bug -->
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0">
+
+		<script type="text/javascript" src="charting_library/charting_library.standalone.js"></script>
+		<script type="module">
+			import Datafeed, {setPath, setScale} from './datafeed.js?v1.1';
+
+			window.initOnReady = function(orientation, symbol, scale, interval, theme, path, wsPath, access_token, timezone, saved_data, locale) {
+				if (saved_data)
+					console.log("saved_data exists")
+				setPath(path, wsPath, access_token);
+				setScale(scale);
+				window.tvWidget = new TradingView.widget({
+					auto_save_delay: 3,
+					symbol: symbol, // default symbol
+					interval: interval, // default interval
+					timezone: timezone,
+					fullscreen: true, // displays the chart in the fullscreen mode
+					container: 'tv_chart_container',
+					datafeed: Datafeed,
+					library_path: 'charting_library/',
+					disabled_features: orientation.toUpperCase() === "PORTRAIT" ? ["header_resolutions", "header_symbol_search", "header_undo_redo", "header_compare", "left_toolbar", "timeframes_toolbar", "display_market_status", "control_bar", "symbol_info", "items_favoriting", "header_screenshot", "header_fullscreen_button"] : ["header_resolutions", "header_symbol_search", "header_undo_redo", "header_compare", "timeframes_toolbar", "display_market_status", "control_bar", "symbol_info", "items_favoriting", "header_screenshot", "header_fullscreen_button"],
+					enabled_features: ["move_logo_to_main_pane"],
+					header_widget_buttons_mode: 'fullsize',
+					theme: theme,
+					saved_data: saved_data, 
+					locale: locale
+				});
+			}
+		</script>
+	</head>
+
+	<body style="margin:0px;">
+		<div id="tv_chart_container"></div>
+	</body>
+
+</html>

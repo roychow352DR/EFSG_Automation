@@ -19,9 +19,11 @@ public class applicationSteps extends BaseTest {
     public EmployeeFinancialPage employeeFinancialPage;
     public TradingExperiencePage tradingExperiencePage;
 
+
     @Given("^the user logged in to Admin Portal as username (.+) and password (.+)$")
     public void the_user_logged_in_to_Admin_Portal(String name, String password) throws IOException, InterruptedException {
         login = launchApplication();
+        Thread.sleep(2000);
         login.loginApplication(name, password);
         Thread.sleep(2000);
         if (login.ctaButtonStatus()) {
@@ -64,7 +66,8 @@ public class applicationSteps extends BaseTest {
 
     @And("the user fills personal information page")
     public void the_user_fills_personal_information() throws InterruptedException {
-        personalInfoPage.fillInPersonalInfo();
+        boolean below18 = false;
+        personalInfoPage.fillInPersonalInfo(below18);
         contactInfoPage = personalInfoPage.submitPersonalInfo();
 
     }
@@ -112,8 +115,7 @@ public class applicationSteps extends BaseTest {
 
     @And("the user clicks {string} button on the personal information page")
     public void the_user_clicks_button_on_personal_information(String buttonName) {
-        personalInfoPage.clickCTA(buttonName);
-        contactInfoPage = new ContactInfoPage(driver);
+        contactInfoPage = personalInfoPage.clickCTA(buttonName);
 
     }
 
@@ -148,5 +150,74 @@ public class applicationSteps extends BaseTest {
     public void the_user_sees_a_record_with_status_after_first_approval(String status) throws InterruptedException {
         Assert.assertEquals(applicationPage.getEmailStatus(), status);
     }
+
+    @And("the user fills {string} code {string} on application information page")
+    public void the_user_fills_promotion_code_on_application_information_page(String type,String code)
+    {
+            applicationInfoPage.fillCode(type,code);
+
+    }
+
+    @Then("the user sees {string} error message displayed on application information page")
+    public void the_user_sees_error_message_displayed_on_application_information_page(String error)
+    {
+        Assert.assertEquals(applicationInfoPage.errorValidation(),error);
+    }
+
+    @And("the user fills mandatory information on application information page")
+    public void the_user_fills_mandatory_information_on_application_information_page()
+    {
+        applicationInfoPage.fillInApplicantInfo();
+
+    }
+
+    @And("the user lands on Application Information page")
+    public void the_user_lands_on_Application_Information_page()
+    {
+        applicationPage.clickButton("Create Account");
+        applicationPage.clickRadioButton("Individual");
+        applicationPage.clickSubmitButton();
+        applicationInfoPage = new ApplicantInformationPage(driver);
+    }
+
+    @And("the user fills existing {string} on application information page")
+    public void the_user_fills_existing_phone_number_on_application_information_page(String info)
+    {
+        String phoneNumber = "96553209";
+        String email = "eieuatapproved@yopmail.com";
+        if (info.equalsIgnoreCase("phone")) {
+            applicationInfoPage.fillExistingInfo(phoneNumber);
+        }
+        else if (info.equalsIgnoreCase("email"))
+        {
+            applicationInfoPage.fillExistingInfo(email);
+        }
+    }
+
+    @And("the user fills mandatory information on personal information page")
+    public void the_user_fills_mandatory_information_on_personal_information_page() throws InterruptedException {
+        boolean below18 = false;
+        personalInfoPage.fillInPersonalInfo(below18);
+    }
+
+    @And("the user fills mandatory information with DOB below 18 on personal information page")
+    public void the_user_fills_mandatory_information_with_DOB_below_18_on_personal_information_page() throws InterruptedException {
+        boolean below18 = true;
+        personalInfoPage.fillInPersonalInfo(below18);
+
+    }
+
+    @Then("the user sees {string} error message displayed on personal information page")
+    public void the_user_sees_error_message_displayed_on_personal_information_page(String errorText)
+    {
+        Assert.assertEquals(personalInfoPage.errorValidation(),errorText);
+    }
+
+    @And("the user fills expiry date")
+    public void the_user_fills_expiry_date() throws InterruptedException {
+        Thread.sleep(3000);
+        personalInfoPage.selectExpiryDate();
+    }
+
 
 }

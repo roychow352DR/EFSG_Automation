@@ -1,6 +1,7 @@
 package StepDefinitions.AdminPortal.login;
 
 import PageObject.AdminPortal.AdminLoginPage;
+import PageObject.AdminPortal.ApplicationListPage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -11,10 +12,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 public class loginStepsDefinition extends BaseTest {
-    public AdminLoginPage loginPage;
+    public AdminLoginPage login;
+    public ApplicationListPage applicationListPage;
+
     @Given("the user lands on Admin Portal login page")
     public void the_user_lands_on_Admin_Portal_login_page() throws IOException, URISyntaxException, InterruptedException {
-        loginPage =  launchApplication();
+        login =  launchApplication();
         Thread.sleep(2000);
     }
 
@@ -30,15 +33,15 @@ public class loginStepsDefinition extends BaseTest {
 
     @When("the user clicks Sign In button")
     public void the_user_clicks_Sign_In_button() throws InterruptedException {
-        if(loginPage.ctaButtonStatus()) {
-           loginPage.clickSignIn();
+        if(login.ctaButtonStatus()) {
+           applicationListPage = login.clickSignIn();
         }
     }
 
     @Then("the user sees Menu display on the screen")
     public void the_user_sees_Menu_display_on_the_screen() throws IOException {
 
-        Assert.assertTrue(applicationPage().menuTitle().isDisplayed());
+        Assert.assertTrue(applicationListPage.menuTitle().isDisplayed());
 
 
     }
@@ -47,11 +50,11 @@ public class loginStepsDefinition extends BaseTest {
     public void the_user_sees_message_pop_up(String string)
     {
         if (string.contains("Invalid")) {
-            Assert.assertTrue(loginPage.loginErrorValidation().equalsIgnoreCase(string));
+            Assert.assertTrue(login.loginErrorValidation().equalsIgnoreCase(string));
         }
         else if (string.contains("Suspend"))
         {
-            Assert.assertTrue(loginPage.suspendErrorValidation().equalsIgnoreCase(string));
+            Assert.assertTrue(login.suspendErrorValidation().equalsIgnoreCase(string));
         }
     }
 
@@ -61,5 +64,7 @@ public class loginStepsDefinition extends BaseTest {
         Assert.assertFalse(unclickableCTA(login.ctaButton()));
 
     }
+
+
 
 }
