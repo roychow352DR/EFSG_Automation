@@ -8,7 +8,7 @@ import org.openqa.selenium.support.PageFactory;
 
 public class AdminLoginPage {
     WebDriver driver;
-    public ApplicationListPage applicationPage;
+    public ApplicationListPage applicationListPage;
     public AbstractComponents abs;
 
     public AdminLoginPage(WebDriver driver) {
@@ -55,8 +55,8 @@ public class AdminLoginPage {
 
     public ApplicationListPage clickSignIn() {
         signInButton.click();
-        applicationPage = new ApplicationListPage(driver);
-        return applicationPage;
+        applicationListPage = new ApplicationListPage(driver);
+        return applicationListPage;
     }
 
     public boolean ctaButtonStatus() {
@@ -67,5 +67,6 @@ public class AdminLoginPage {
     public WebElement ctaButton() {
         return signInButton;
     }
+
 
 }

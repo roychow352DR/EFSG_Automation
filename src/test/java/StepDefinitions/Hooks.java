@@ -70,7 +70,7 @@ public class Hooks extends BaseTest {
     public void initializeTestCase(Scenario scenario) throws IOException {
         caseId = qaseConfig.getCaseId(scenario);
         steps.clear();
-        position = 0;
+        position = 1;
 
     }
 
@@ -78,7 +78,7 @@ public class Hooks extends BaseTest {
      * Handles test cleanup and reporting
      */
 
-    @After
+   @After
     public void cleanupAndReport(Scenario scenario) throws Exception {
         handleVideoRecording(scenario);
         cleanupDriver();
@@ -167,9 +167,9 @@ public class Hooks extends BaseTest {
     }
 
 
-    @AfterStep
+   @AfterStep
     public void recordStepResult(Scenario scenario) throws IOException, InterruptedException {
-        if (position > 0) {
+        if (position >= 1) {
             try {
                 String stepAction = qaseConfig.getCaseStepAction(projectCode, Integer.parseInt(caseId), position);
                 boolean isPassed = !scenario.isFailed();
@@ -209,6 +209,12 @@ public class Hooks extends BaseTest {
         } catch (Exception e) {
             System.err.println("Failed to record step details: " + e.getMessage());
         }
+    }
+
+  //  @After
+    public void tearDown()
+    {
+        driver.quit();
     }
 }
 
