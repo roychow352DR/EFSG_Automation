@@ -64,8 +64,17 @@ public class PersonalInfoPage {
     @FindBy(css = ".css-wmickx")
     List<WebElement> ctaButtons;
 
+    @FindBy(css = ".css-1wercf4")
+    WebElement errorText;
 
-    public void fillInPersonalInfo() throws InterruptedException {
+    @FindBy(css = ".css-h3o6is:nth-child(12) .css-slyssw")
+    WebElement expiryDate;
+
+    @FindBy(css = ".css-fp6ecq")
+    WebElement datePickerArrow;
+
+
+    public void fillInPersonalInfo(boolean below18) throws InterruptedException {
 
         fillName();
         selectGender();
@@ -73,7 +82,12 @@ public class PersonalInfoPage {
         selectIdType();
         selectNationality();
         fillIdentification();
-        selectDatePicker();
+        if (!below18) {
+            selectDatePicker();
+        }
+        else {
+            selectDateBelow18();
+        }
     }
 
     public void fillName() {
@@ -116,10 +130,34 @@ public class PersonalInfoPage {
         yearDropdown.click();
         abs.staleElementRefExceptionHandle(yearDropdownItems, "", abs.userinfoList().get("dateOfBirthYear"));
         abs.selectDropdownItemsByText(days, abs.userinfoList().get("dateOfBirthDay"));
+
     }
 
-    public void clickCTA(String buttonName) {
+    public ContactInfoPage clickCTA(String buttonName) {
         abs.clickButtonByText(ctaButtons, buttonName);
+        contactInfoPage = new ContactInfoPage(driver);
+        return contactInfoPage;
+
+    }
+    public void selectDateBelow18()
+    {
+        datePicker.click();
+        yearDropdown.click();
+        abs.staleElementRefExceptionHandle(yearDropdownItems, "", abs.userinfoList().get("dateOfBirthYearBelow18"));
+
+    }
+
+    public String errorValidation() {
+        abs.waitUtilElementFind(errorText);
+        return errorText.getText();
+    }
+
+    public void selectExpiryDate() throws InterruptedException {
+        expiryDate.click();
+        datePickerArrow.click();
+        Thread.sleep(2000);
+      //  abs.staleElementRefExceptionHandle(yearDropdownItems, "", abs.userinfoList().get("expiryDay"));
+        abs.selectDropdownItemsByText(days, abs.userinfoList().get("expiryDay"));
     }
 
 }

@@ -27,6 +27,7 @@ public class loginSteps extends BaseTest {
     @Given("the user lands on the login page")
     public void the_user_lands_on_the_login_page() throws InterruptedException {
         loginPage = welcomePage.launchToLogin();
+       // welcomePage.landToMe();
     }
 
     @When("^the user fills email (.+) and password (.+) on App login page$")
