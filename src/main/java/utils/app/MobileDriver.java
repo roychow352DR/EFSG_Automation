@@ -13,6 +13,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Properties;
 
 /**
@@ -68,7 +69,6 @@ public class MobileDriver {
             // Initialize iOS driver
             driver = new IOSDriver(new URL(APPIUM_SERVER_URL), iosOptions);
             driver.manage().timeouts().implicitlyWait(IMPLICIT_WAIT);
-            
             return (IOSDriver) driver;
         } catch (Exception e) {
             System.err.println("Error initializing iOS driver: " + e.getMessage());
@@ -119,14 +119,18 @@ public class MobileDriver {
      * Configures iOS-specific options
      */
     private void configureIOSOptions() {
+        if (iosOptions == null) {
+            throw new IllegalStateException("Options object is null!");
+        }
         // Set basic capabilities
-        iosOptions.setDeviceName("iPhone 12 Pro");
+        iosOptions.setDeviceName("iPhone 14 Pro");
         iosOptions.setPlatformName("16.4");
         iosOptions.setWdaLaunchTimeout(WDA_LAUNCH_TIMEOUT);
 
         // Set app path
-        String appPath = System.getProperty("user.dir") + "/src/main/resources/.app";
-        iosOptions.setApp(appPath);
+        String appPath = System.getProperty("user.dir") + "/src/main/resources/CopyMaster.app";
+       // iosOptions.setApp(appPath);
+        iosOptions.setApp("com.efsg.eiehktrading.ios.sit");
 
         // Uncomment and configure these for real device testing
         /*

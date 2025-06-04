@@ -1,16 +1,12 @@
 package PageObject.AdminPortal;
 
-import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import AbstractComponent.AbstractComponents;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
-import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 
 public class ApplicantInformationPage {
     WebDriver driver;
@@ -37,10 +33,10 @@ public class ApplicantInformationPage {
     WebElement phoneNumberField;
 
     @FindBy(name = "promoCode")
-    WebElement promoCode;
+    WebElement promoCodeField;
 
     @FindBy(name = "upperIbAcc")
-    WebElement referCode;
+    WebElement referCodeField;
 
     @FindBy(id = "mui-component-select-mobileCountryCode")
     WebElement countryCodeDropdown;
@@ -50,6 +46,9 @@ public class ApplicantInformationPage {
 
     @FindBy(xpath = "//div[@class='Toastify__toast-body']/div[2]")
     WebElement toast;
+
+    @FindBy(css = "span[class*='css-1wercf4']")
+    WebElement errorText;
 
     public void clickEntityDropdown() {
         entityDropdown.click();
@@ -86,29 +85,14 @@ public class ApplicantInformationPage {
     }
 
     public void refill(String type) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
         switch (type) {
             case "email":
-                emailField.click();
-                if (System.getProperty("os.name").contains("Mac")) {
-                    emailField.sendKeys(Keys.COMMAND + "a");
-                } else if (System.getProperty("os.name").contains("Windows")) {
-                    emailField.sendKeys(Keys.CONTROL + "a");
-                }
-                emailField.sendKeys(Keys.DELETE);
-                wait.until(driver -> Objects.requireNonNull(emailField.getDomAttribute("value")).isEmpty());
+                abs.clearField(emailField);
                 fillEmailAddress();
 
             case "phone":
-                phoneNumberField.click();
-                if (System.getProperty("os.name").contains("Mac")) {
-                    phoneNumberField.sendKeys(Keys.COMMAND + "a");
-                } else if (System.getProperty("os.name").contains("Windows")) {
-                    phoneNumberField.sendKeys(Keys.CONTROL + "a");
-                }
-                phoneNumberField.sendKeys(Keys.DELETE);
-                wait.until(driver -> Objects.requireNonNull(phoneNumberField.getDomAttribute("value")).isEmpty());
+                abs.clearField(phoneNumberField);
                 fillPhoneNumber();
         }
 
@@ -128,6 +112,37 @@ public class ApplicantInformationPage {
         nextButton.click();
         personalInfo = new PersonalInfoPage(driver);
         return personalInfo;
+    }
+
+    public void fillCode(String type,String code)
+    {
+        if (type.equalsIgnoreCase("promo"))
+        {
+            promoCodeField.sendKeys(code);
+        }
+        else if (type.equalsIgnoreCase("referral"))
+        {
+            referCodeField.sendKeys(code);
+        }
+    }
+
+    public String errorValidation()
+    {
+        abs.waitUtilElementFind(errorText);
+        return errorText.getText();
+    }
+
+    public void fillExistingInfo(String info)
+    {
+        if (!info.contains(".com")) {
+            abs.clearField(phoneNumberField);
+            phoneNumberField.sendKeys(info);
+        }
+        else
+        {
+            abs.clearField(emailField);
+            emailField.sendKeys(info);
+        }
     }
 
 }
