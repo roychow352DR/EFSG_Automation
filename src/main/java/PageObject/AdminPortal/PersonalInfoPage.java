@@ -152,12 +152,12 @@ public class PersonalInfoPage {
         return errorText.getText();
     }
 
-    public void selectExpiryDate() throws InterruptedException {
+    public void selectExpiryDate(int conditionDays) throws InterruptedException {
         expiryDate.click();
         datePickerArrow.click();
         Thread.sleep(2000);
       //  abs.staleElementRefExceptionHandle(yearDropdownItems, "", abs.userinfoList().get("expiryDay"));
-        abs.selectDropdownItemsByText(days, abs.userinfoList().get("expiryDay"));
+        abs.selectDropdownItemsByText(days, String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay"))+conditionDays));
     }
 
 }

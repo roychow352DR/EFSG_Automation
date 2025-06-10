@@ -213,10 +213,18 @@ public class applicationSteps extends BaseTest {
         Assert.assertEquals(personalInfoPage.errorValidation(),errorText);
     }
 
-    @And("the user fills expiry date")
-    public void the_user_fills_expiry_date() throws InterruptedException {
+    @And("the user fills expiry date {string} than current date")
+    public void the_user_fills_expiry_date(String condition) throws InterruptedException {
         Thread.sleep(3000);
-        personalInfoPage.selectExpiryDate();
+        int days;
+        if (condition.equalsIgnoreCase("later")) {
+            days = 1;
+            personalInfoPage.selectExpiryDate(days);
+        }
+        else {
+            days = -1;
+            personalInfoPage.selectExpiryDate(days);
+        }
     }
 
 
