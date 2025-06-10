@@ -1,7 +1,7 @@
 Feature: Admin Portal login
 
 
-  @Smoke @AdminPortal @Regression @Test
+  @Smoke @AdminPortal @Regression
   Scenario Outline: Login End to End flow
     Given the user lands on Admin Portal login page
     And the user fills in with username <name> and password <password>

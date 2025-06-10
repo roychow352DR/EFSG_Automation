@@ -3,6 +3,7 @@ package utils;
 import PageObject.AdminPortal.ApplicationListPage;
 import PageObject.AdminPortal.AdminLoginPage;
 import PageObject.MIOadmin.MIOLoginPage;
+import PageObject.NativeApp.AppLoginPage;
 import PageObject.NativeApp.WelcomePage;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +34,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.*;
 
+
 /**
  * BaseTest class serves as the foundation for all test automation.
  * It provides core functionality for:
@@ -50,6 +52,7 @@ public class BaseTest {
     public AdminLoginPage login;
     public MIOLoginPage mioLogin;
     public WebElement ctaButton;
+    public AppLoginPage appLoginPage;
 
     // Configuration and capabilities
     public DesiredCapabilities caps;
@@ -59,7 +62,7 @@ public class BaseTest {
     public static String browserType, productType;
     public static UiAutomator2Options options;
     public MobilePlatform mobilePlatform;
-    public MobileDriver mobileDriver;
+    public MobileDriver mobileDriver;/**/
 
     /**
      * Initializes the appropriate driver based on the product type and platform
@@ -68,15 +71,15 @@ public class BaseTest {
         mobileDriver = new MobileDriver();
         mobilePlatform = new MobilePlatform();
         String path = "//src//main//java//DataResources//GlobalData.properties";
-        
+
         // Get product type from system property or config file
-        productType = System.getProperty("product") != null ? 
+        productType = System.getProperty("product") != null ?
             System.getProperty("product") : getProperty(path, "product");
 
         try {
             if (!productType.equalsIgnoreCase("app")) {
                 // Initialize web browser driver
-                browserType = System.getProperty("browser") != null ? 
+                browserType = System.getProperty("browser") != null ?
                     System.getProperty("browser") : getProperty(path, "browser");
                 driver = setBrowserDriver(browserType);
                 driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
@@ -122,7 +125,7 @@ public class BaseTest {
      */
     public List<HashMap<String, String>> getJsonDataToMap() throws IOException {
         String jsonContent = FileUtils.readFileToString(
-            new File(System.getProperty("user.dir") + "//src//test//java//Data//Crendential.json"), 
+            new File(System.getProperty("user.dir") + "//src//test//java//Data//Crendential.json"),
             StandardCharsets.UTF_8
         );
         ObjectMapper mapper = new ObjectMapper();
@@ -168,7 +171,7 @@ public class BaseTest {
         Properties prop = new Properties();
         try (FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + path)) {
             prop.load(fis);
-            return System.getProperty(propertyItem) != null ? 
+            return System.getProperty(propertyItem) != null ?
                 System.getProperty(propertyItem) : prop.getProperty(propertyItem);
         }
     }
@@ -406,5 +409,6 @@ public class BaseTest {
         AppiumDriver driver = (AppiumDriver) initializeDriver();
         return new WelcomePage(driver);
     }
+
 
 }
