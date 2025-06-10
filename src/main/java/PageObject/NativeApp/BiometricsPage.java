@@ -20,21 +20,38 @@ public class BiometricsPage {
     }
 
     @FindBy(xpath = "//android.widget.TextView[@text='Biometrics Login']")
-    WebElement biometricLoginHeading;
+    WebElement biometricLoginHeadingAndroid;
 
     @FindBy(xpath = "//android.widget.TextView[@text='Skip now and activate later in “Setting”']")
-    WebElement skipBiometric;
+    WebElement skipBiometricAndroid;
+
+    @FindBy(xpath = "//XCUIElementTypeOther[@name='Skip now and activate later in “Setting”']")
+    WebElement skipBiometricIos;
+
+    @FindBy(xpath = "(//XCUIElementTypeOther[@name='Biometrics Login'])[6]")
+    WebElement biometricLoginHeadingIos;
 
 
     public boolean biometricPageValidation()
     {
-        abs.waitUtilElementFind(biometricLoginHeading);
-        return biometricLoginHeading.isDisplayed();
+        if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementFind(skipBiometricAndroid);
+            return skipBiometricAndroid.isEnabled();
+        }
+        else {
+            abs.waitUtilElementFind(skipBiometricIos);
+            return skipBiometricIos.isDisplayed();
+        }
     }
 
     public AppHomePage skipBiometric()
     {
-        skipBiometric.click();
+        if (driver instanceof AndroidDriver) {
+            skipBiometricAndroid.click();
+        }
+        else {
+            skipBiometricIos.click();
+        }
         return new AppHomePage(driver);
 
     }

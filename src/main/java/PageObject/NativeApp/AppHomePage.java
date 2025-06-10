@@ -19,11 +19,20 @@ public class AppHomePage {
     }
 
     @FindBy(xpath = "//android.widget.TextView[@text='Open a Live Trading Accounts']")
-    WebElement applicationText;
+    WebElement applicationButtonAndroid;
+
+    @FindBy(xpath = "(//XCUIElementTypeOther[@name='Open a Live Trading Accounts'])[2]")
+    WebElement applicationButtonIos;
 
     public boolean buttonValidation()
     {
-        abs.waitUtilElementFind(applicationText);
-        return applicationText.isDisplayed();
+        if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementFind(applicationButtonAndroid);
+            return applicationButtonAndroid.isDisplayed();
+        }
+        else {
+            abs.waitUtilElementFind(applicationButtonIos);
+            return applicationButtonIos.isDisplayed();
+        }
     }
 }

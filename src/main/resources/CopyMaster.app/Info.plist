@@ -60,7 +60,7 @@
 			<string>emp</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>eunify.eiehk.sit</string>
+				<string>eunify.eiehk.uat</string>
 			</array>
 		</dict>
 	</array>
