@@ -1,20 +1,13 @@
 package PageObject.NativeApp;
 
 import AbstractComponent.MobileAbstractComponents;
-import com.google.common.collect.ImmutableMap;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.ios.IOSDriver;
-import io.appium.java_client.pagefactory.iOSXCUITFindBy;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Platform;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class WelcomePage {
     AppiumDriver driver;
@@ -32,24 +25,30 @@ public class WelcomePage {
     @FindBy(xpath = "//android.widget.TextView[@text=\"Agree\"]")
     WebElement agreeButtonAndroid;
 
-    @iOSXCUITFindBy(accessibility="Agree")
+    @FindBy(xpath = "//XCUIElementTypeOther[@name=\"Agree\"]")
     WebElement agreeButtonIos;
 
     @FindBy(xpath = "//android.widget.FrameLayout[@resource-id='android:id/content']/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[3]")
-    WebElement image;
+    WebElement androidImage;
 
     @FindBy(xpath = "//android.widget.TextView[@text=\"Login\"]")
-    WebElement loginButton;
+    WebElement loginButtonAndroid;
 
-    private void isIOS() {
+    @FindBy(xpath = "//XCUIElementTypeOther[@name=\"Login\"]")
+    WebElement loginButtonIos;
 
-        System.out.println(driver.getCapabilities().getPlatformName());
+    @FindBy(xpath = "//XCUIElementTypeImage")
+    WebElement iosImage;
+
+    private Platform isIOS() {
+
+        return driver.getCapabilities().getPlatformName();
 
     }
 
     public void notificationPermission()
     {
-
+      //  abs.waitUtilElementFind(allowNotification);
         allowNotification.click();
     }
 
@@ -65,21 +64,33 @@ public class WelcomePage {
 
     public WebElement getImage()
     {
-        return driver.findElement(By.xpath("//android.widget.FrameLayout[@resource-id='android:id/content']/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[3]"));
+       if (driver instanceof AndroidDriver)
+       {
+           return driver.findElement(By.xpath("//android.widget.FrameLayout[@resource-id='android:id/content']/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[3]"));
+       }
+       else
+       {
+           return driver.findElement(By.xpath("//XCUIElementTypeOther[@name=\"Toolbar\"]/XCUIElementTypeOther/XCUIElementTypeOther/XCUIElementTypeOther/XCUIElementTypeOther/XCUIElementTypeOther/XCUIElementTypeOther/XCUIElementTypeOther/XCUIElementTypeOther[1]/XCUIElementTypeOther/XCUIElementTypeOther[4]"));
+       }
     }
 
     public void swipeScreen() throws InterruptedException {
         int swipeCount = 3;
+        abs.waitUtilElementFind(getImage());
         abs.swipeAction(getImage(),"left",swipeCount);
     }
 
     public void getStartedAction()
     {
-        loginButton.click();
+        if (driver instanceof AndroidDriver) {
+            loginButtonAndroid.click();
+        }
+        else {
+            loginButtonIos.click();
+        }
     }
 
     public AppLoginPage launchToLogin() throws InterruptedException {
-        notificationPermission();
         agreeTerms();
         swipeScreen();
         getStartedAction();
@@ -101,7 +112,7 @@ public class WelcomePage {
 //
 //        driver.executeScript("mobile: launchApp", params);
 
-        Thread.sleep(5000);
+ //       Thread.sleep(5000);
 
     }
 }
