@@ -56,12 +56,12 @@ public class QASEConfig extends GlobalConfig {
         {
             return qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId),
                     runTitle, getProperty(getPropertyPath("app"), property),
-                    getProperty(getGlobalPropertyPath("globalPropertyPath"), "env"));
+                    getProperty(getGlobalPropertyPath("globalPropertyPath"), "env"),getProperty(getGlobalPropertyPath("globalPropertyPath"), "entity"));
         }
         else {
             return qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId),
                     runTitle, getProperty(getGlobalPropertyPath("globalPropertyPath"), property),
-                    getProperty(getGlobalPropertyPath("globalPropertyPath"), "env"));
+                    getProperty(getGlobalPropertyPath("globalPropertyPath"), "env"),getProperty(getGlobalPropertyPath("globalPropertyPath"), "entity"));
         }
     }
 
