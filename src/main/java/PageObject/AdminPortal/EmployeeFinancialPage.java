@@ -6,6 +6,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
+import java.io.IOException;
 import java.util.List;
 
 public class EmployeeFinancialPage {
@@ -46,7 +47,7 @@ public class EmployeeFinancialPage {
     @FindBy(css = ".css-wmickx")
     List<WebElement> ctaButtons;
 
-    public void fillEmployeeFinancial() {
+    public void fillEmployeeFinancial() throws IOException {
         selectEmployeeStatus();
         selectIndustrial();
         selectEmployeeStatus();
@@ -57,33 +58,33 @@ public class EmployeeFinancialPage {
     }
 
 
-    public void selectEmployeeStatus() {
+    public void selectEmployeeStatus() throws IOException {
         employeeStatusDropdown.click();
         abs.staleElementRefExceptionHandle(dropdownItems, "data-value", abs.userinfoList().get("employStatus"));
 
     }
 
-    public void selectIndustrial() {
+    public void selectIndustrial() throws IOException {
         industrial.click();
         abs.staleElementRefExceptionHandle(dropdownItems, "data-value", abs.userinfoList().get("industrial"));
     }
 
-    public void selectAnnualIncome() {
+    public void selectAnnualIncome() throws IOException {
         annualIncome.click();
         abs.staleElementRefExceptionHandle(dropdownItems, "data-value", abs.userinfoList().get("annualIncome"));
     }
 
-    public void selectLiquidNetWorth() {
+    public void selectLiquidNetWorth() throws IOException {
         liquidNetWorth.click();
         abs.staleElementRefExceptionHandle(dropdownItems, "data-value", abs.userinfoList().get("netWorth"));
     }
 
-    public void selectSourceOfFunds() {
+    public void selectSourceOfFunds() throws IOException {
         sourceOfFunds.click();
         abs.staleElementRefExceptionHandle(dropdownItems, "data-value", abs.userinfoList().get("tradeFunds"));
     }
 
-    public void selectTaxCountry() {
+    public void selectTaxCountry() throws IOException {
         taxCountry.click();
         abs.staleElementRefExceptionHandle(dropdownItems, "data-value", abs.userinfoList().get("taxCountry"));
     }

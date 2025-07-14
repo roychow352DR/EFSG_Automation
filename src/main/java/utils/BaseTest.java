@@ -285,11 +285,11 @@ public class BaseTest {
     }
 
     private WebDriver createRemoteOrLocalChromeDriver(ChromeOptions options, DesiredCapabilities caps) throws Exception {
-        try {
-            return new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), caps);
-        } catch (Exception e) {
+//        try {
+//            return new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), caps);
+//        } catch (Exception e) {
             return new ChromeDriver(options);
-       }
+ //      }
     }
 
     private WebDriver createRemoteOrLocalFirefoxDriver(FirefoxOptions options, DesiredCapabilities caps) throws Exception {

@@ -4,7 +4,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.BaseTest;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
@@ -21,14 +23,16 @@ public class AbstractComponents {
     }
 
 
-    public Map<String, String> userinfoList() {
+    public Map<String, String> userinfoList() throws IOException {
         LocalDate localDate = LocalDate.now();
+        String path = "//src//main//java//DataResources//GlobalData.properties";
         int randomEmailSeed = (int) (Math.random() * 10001);
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
         info.put("email", "qaauto" + randomEmailSeed + "@yopmail.com");
         info.put("phoneNumber", Integer.toString(randomPhoneNo));
-        info.put("entity", "EIEHK");
+        info.put("entity", System.getProperty("entity") != null ?
+                System.getProperty("entity") : BaseTest.getProperty(path, "entity"));
         info.put("promoCode", "Test");
         info.put("referCode", "Test123");
         info.put("countryCode", "+852");

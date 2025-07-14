@@ -6,6 +6,7 @@ import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import AbstractComponent.AbstractComponents;
 
+import java.io.IOException;
 import java.util.List;
 
 public class ApplicantInformationPage {
@@ -50,22 +51,34 @@ public class ApplicantInformationPage {
     @FindBy(css = "span[class*='css-1wercf4']")
     WebElement errorText;
 
-    public void clickEntityDropdown() {
+    @FindBy(css = ".css-9262b6-root-outlined-root-outlined")
+    List<WebElement> ctaButtons;
+
+    @FindBy(css = "#mui-component-select-reason")
+    WebElement reasonDropdown;
+
+    @FindBy(css = ".css-sudvrv")
+    List<WebElement> reasonDropdownItems;
+
+    @FindBy(css = ".css-1vqcb36-root-contained-root-contained")
+    WebElement submitReasonButton;
+
+    public void clickEntityDropdown() throws IOException {
         entityDropdown.click();
         abs.staleElementRefExceptionHandle(dropdownItems,"",abs.userinfoList().get("entity"));
     }
 
-    public void fillEmailAddress() {
+    public void fillEmailAddress() throws IOException {
         email = abs.userinfoList().get("email");
         emailField.sendKeys(email);
     }
 
-    public void selectCountryCode()  {
+    public void selectCountryCode() throws IOException {
         countryCodeDropdown.click();
         abs.staleElementRefExceptionHandle(dropdownItems,"",abs.userinfoList().get("countryCode"));
     }
 
-    public void fillPhoneNumber() {
+    public void fillPhoneNumber() throws IOException {
         phoneNumberField.sendKeys(abs.userinfoList().get("phoneNumber"));
     }
 
@@ -76,7 +89,7 @@ public class ApplicantInformationPage {
         return toast.getText();
     }
 
-    public void fillInApplicantInfo()  {
+    public void fillInApplicantInfo() throws IOException {
 
         clickEntityDropdown();
         fillEmailAddress();
@@ -84,7 +97,7 @@ public class ApplicantInformationPage {
         fillPhoneNumber();
     }
 
-    public void refill(String type) {
+    public void refill(String type) throws IOException {
 
         switch (type) {
             case "email":
@@ -143,6 +156,22 @@ public class ApplicantInformationPage {
             abs.clearField(emailField);
             emailField.sendKeys(info);
         }
+    }
+
+    public void clickCtaButton(String ctaButtonText)
+    {
+        abs.clickButtonByText(ctaButtons,ctaButtonText);
+    }
+
+    public void selectReason(String reason)
+    {
+        reasonDropdown.click();
+        abs.waitUtilElementFind(reasonDropdownItems.getFirst());
+        abs.selectDropdownItemsByText(reasonDropdownItems,reason);
+    }
+
+    public void submitReason(){
+        submitReasonButton.click();
     }
 
 }

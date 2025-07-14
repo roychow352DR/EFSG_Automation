@@ -6,6 +6,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
+import java.io.IOException;
 import java.util.List;
 
 public class TradingExperiencePage {
@@ -47,17 +48,17 @@ public class TradingExperiencePage {
     List<WebElement> buttonsOnVerify;
 
 
-    public void selectTradeEXP() {
+    public void selectTradeEXP() throws IOException {
         tradeEXP.click();
         abs.staleElementRefExceptionHandle(dropdownItems, "data-value", abs.userinfoList().get("tradeEXP"));
     }
 
-    public void selectInvestEXP() {
+    public void selectInvestEXP() throws IOException {
         investEXP.click();
         abs.staleElementRefExceptionHandle(dropdownItems, "data-value", abs.userinfoList().get("investEXP"));
     }
 
-    public void fillTradeExperience() {
+    public void fillTradeExperience() throws IOException {
         selectTradeEXP();
         selectInvestEXP();
     }
