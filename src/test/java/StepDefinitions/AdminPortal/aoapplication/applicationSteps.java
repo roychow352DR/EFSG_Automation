@@ -30,7 +30,7 @@ public class applicationSteps extends BaseTest {
             applicationPage = login.clickSignIn();
 
         }
-        Assert.assertTrue(applicationPage().menuTitle().isDisplayed());
+        Assert.assertTrue(applicationPage.menuTitle().isDisplayed());
     }
 
     @And("the user clicks {string} button on the application page")
@@ -50,7 +50,7 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user fills application information page")
-    public void the_user_fills_application_information() throws InterruptedException {
+    public void the_user_fills_application_information() throws InterruptedException, IOException {
         applicationInfoPage.fillInApplicantInfo();
         String submitSuccess = applicationInfoPage.submitApplicationInfo();
         while (submitSuccess.contains("in use")) {
@@ -65,7 +65,7 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user fills personal information page")
-    public void the_user_fills_personal_information() throws InterruptedException {
+    public void the_user_fills_personal_information() throws InterruptedException, IOException {
         boolean below18 = false;
         personalInfoPage.fillInPersonalInfo(below18);
         contactInfoPage = personalInfoPage.submitPersonalInfo();
@@ -73,19 +73,19 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user fills contact information page")
-    public void the_user_fills_contact_information() {
+    public void the_user_fills_contact_information() throws IOException {
         contactInfoPage.fillContactInformation();
         employeeFinancialPage = contactInfoPage.submitContactInfo();
     }
 
     @And("the user fills employee & financial information page")
-    public void the_user_fills_employee_financial_information() {
+    public void the_user_fills_employee_financial_information() throws IOException {
         employeeFinancialPage.fillEmployeeFinancial();
         tradingExperiencePage = employeeFinancialPage.submitEmployeeFinancial();
     }
 
     @And("the user fills trading experience page")
-    public void the_user_fills_trading_experience() {
+    public void the_user_fills_trading_experience() throws IOException {
         tradingExperiencePage.fillTradeExperience();
 
     }
@@ -165,8 +165,7 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user fills mandatory information on application information page")
-    public void the_user_fills_mandatory_information_on_application_information_page()
-    {
+    public void the_user_fills_mandatory_information_on_application_information_page() throws IOException {
         applicationInfoPage.fillInApplicantInfo();
 
     }
@@ -195,13 +194,13 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user fills mandatory information on personal information page")
-    public void the_user_fills_mandatory_information_on_personal_information_page() throws InterruptedException {
+    public void the_user_fills_mandatory_information_on_personal_information_page() throws InterruptedException, IOException {
         boolean below18 = false;
         personalInfoPage.fillInPersonalInfo(below18);
     }
 
     @And("the user fills mandatory information with DOB below 18 on personal information page")
-    public void the_user_fills_mandatory_information_with_DOB_below_18_on_personal_information_page() throws InterruptedException {
+    public void the_user_fills_mandatory_information_with_DOB_below_18_on_personal_information_page() throws InterruptedException, IOException {
         boolean below18 = true;
         personalInfoPage.fillInPersonalInfo(below18);
 
@@ -214,7 +213,7 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user fills expiry date {string} than current date")
-    public void the_user_fills_expiry_date(String condition) throws InterruptedException {
+    public void the_user_fills_expiry_date(String condition) throws InterruptedException, IOException {
         Thread.sleep(3000);
         int days;
         if (condition.equalsIgnoreCase("later")) {
@@ -225,6 +224,24 @@ public class applicationSteps extends BaseTest {
             days = -1;
             personalInfoPage.selectExpiryDate(days);
         }
+    }
+
+    @And("the user clicks {string} CTA button on the application information page")
+    public void the_user_clicks_CTA_button_on_the_application_information_page(String ctaText) throws InterruptedException {
+        Thread.sleep(2000);
+        applicationInfoPage.clickCtaButton(ctaText);
+    }
+
+    @And("the user selects {string} as reason on the verify reason pop up")
+    public void the_user_selects_as_reason_on_the_verify_reason_pop_up(String reason)
+    {
+        applicationInfoPage.selectReason(reason);
+    }
+
+    @And("the user clicks {string} button on the verify reason pop up")
+    public void the_user_clicks_button_on_the_verify_reason_pop_up(String buttonText)
+    {
+        applicationInfoPage.submitReason();
     }
 
 

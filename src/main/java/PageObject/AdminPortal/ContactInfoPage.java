@@ -6,6 +6,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
+import java.io.IOException;
 import java.util.List;
 
 public class ContactInfoPage {
@@ -32,8 +33,7 @@ public class ContactInfoPage {
     @FindBy(css = ".css-wmickx")
     List<WebElement> ctaButtons;
 
-    public void fillContactInformation()
-    {
+    public void fillContactInformation() throws IOException {
         addressLine1.sendKeys(abs.userinfoList().get("addressLine1"));
         city.sendKeys(abs.userinfoList().get("city"));
     }
