@@ -69,6 +69,7 @@ public class BaseTest {
     public MobilePlatform mobilePlatform;
     public MobileDriver mobileDriver;/**/
 
+
     /**
      * Initializes the appropriate driver based on the product type and platform
      */
@@ -79,13 +80,13 @@ public class BaseTest {
 
         // Get product type from system property or config file
         productType = System.getProperty("product") != null ?
-                System.getProperty("product") : getProperty(path, "product");
+            System.getProperty("product") : getProperty(path, "product");
 
         try {
             if (!productType.equalsIgnoreCase("app")) {
                 // Initialize web browser driver
                 browserType = System.getProperty("browser") != null ?
-                        System.getProperty("browser") : getProperty(path, "browser");
+                    System.getProperty("browser") : getProperty(path, "browser");
                 driver = setBrowserDriver(browserType);
                 driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
                 driver.get(setDomain(getProperty(path, "env"), getProperty(path, "product")));
@@ -116,17 +117,17 @@ public class BaseTest {
         return login;
     }
 
+
     /**
      * Reads and parses JSON test data
      */
     public List<HashMap<String, String>> getJsonDataToMap() throws IOException {
         String jsonContent = FileUtils.readFileToString(
-                new File(System.getProperty("user.dir") + "//src//test//java//Data//Crendential.json"),
-                StandardCharsets.UTF_8
+            new File(System.getProperty("user.dir") + "//src//test//java//Data//Crendential.json"),
+            StandardCharsets.UTF_8
         );
         ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(jsonContent, new TypeReference<List<HashMap<String, String>>>() {
-        });
+        return mapper.readValue(jsonContent, new TypeReference<List<HashMap<String, String>>>() {});
     }
 
     public ApplicationListPage applicationPage() {
@@ -169,7 +170,7 @@ public class BaseTest {
         try (FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + path)) {
             prop.load(fis);
             return System.getProperty(propertyItem) != null ?
-                    System.getProperty(propertyItem) : prop.getProperty(propertyItem);
+                System.getProperty(propertyItem) : prop.getProperty(propertyItem);
         }
     }
 
@@ -286,7 +287,7 @@ public class BaseTest {
             return new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), caps);
         } catch (Exception e) {
             return new ChromeDriver(options);
-        }
+       }
     }
 
     private WebDriver createRemoteOrLocalFirefoxDriver(FirefoxOptions options, DesiredCapabilities caps) throws Exception {
@@ -321,28 +322,13 @@ public class BaseTest {
     }
 
     /**
-     * Takes a screenshot from Playwright and saves it to the screenshots folder
-     */
-    public static void takePWScreenshot(String screenShotName, Page page) throws IOException {
-
-        Path screenshotDir = Paths.get("screenshots");
-
-        if (!Files.exists(screenshotDir)) {
-            Files.createDirectories(screenshotDir);
-        }
-
-        Path screenshotPath = screenshotDir.resolve(screenShotName + ".png");
-        page.screenshot(new Page.ScreenshotOptions().setPath(screenshotPath));
-    }
-
-    /**
      * Creates and saves a video recording of the test
      */
     public static File videoFileCreation(String appVideoName, WebDriver driver) throws IOException {
         File appVideoRecordingFileDir = createFolder("app_Video");
         File videoFile = new File(appVideoRecordingFileDir, appVideoName + ".mp4");
 
-        String base64Video = ((CanRecordScreen) driver).stopRecordingScreen();
+        String base64Video = ((CanRecordScreen)driver).stopRecordingScreen();
         byte[] data = Base64.getDecoder().decode(base64Video);
         try (FileOutputStream stream = new FileOutputStream(videoFile)) {
             stream.write(data);
@@ -422,6 +408,20 @@ public class BaseTest {
         return new WelcomePage(driver);
     }
 
+    /**
+     * Takes a screenshot from Playwright and saves it to the screenshots folder
+     */
+    public static void takePWScreenshot(String screenShotName, Page page) throws IOException {
+
+        Path screenshotDir = Paths.get("screenshots");
+
+        if (!Files.exists(screenshotDir)) {
+            Files.createDirectories(screenshotDir);
+        }
+
+        Path screenshotPath = screenshotDir.resolve(screenShotName + ".png");
+        page.screenshot(new Page.ScreenshotOptions().setPath(screenshotPath));
+    }
 
     /**
      * Initializes Playwright browser and return page object

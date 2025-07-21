@@ -190,7 +190,7 @@ public class QaseApiClient {
 
         // Construct the multipart body
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        if (path.contains("videos")) {
+        if (path.contains("Video")) {
             try {
                 // Add the boundary and headers for the file part
                 outputStream.write(("--" + boundary + "\r\n").getBytes());
