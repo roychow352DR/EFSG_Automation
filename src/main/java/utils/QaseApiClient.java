@@ -57,14 +57,20 @@ public class QaseApiClient {
         return actualCaseId[1];// Extract the file name
     }
 
-    public int createTestRunByTestPlan(int planId, String runTitle, String platform, String env) throws IOException {
+    public int createTestRunByTestPlan(int planId, String runTitle, String platform, String env,String entity,String product) throws IOException {
         // Prepare the request payload
         SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd");
         String str = ft.format(new Date());
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("title", "[" + platform + "]" + "[" + env + "]" + str + " - " + runTitle);
-        requestBody.addProperty("plan_id", planId);
+        if (product.contains("adminPortal")){
+            requestBody.addProperty("title", "[" + entity + "]" + "[" + platform + "]" + "[" + env + "]" + str + " - " + runTitle);
+            requestBody.addProperty("plan_id", planId);
+        }
+        else {
+            requestBody.addProperty("title", "[" + platform + "]" + "[" + env + "]" + str + " - " + runTitle);
+            requestBody.addProperty("plan_id", planId);
+        }
 
         response = Request.post(endpoint)
                 .addHeader("Content-Type", "application/json")
@@ -184,7 +190,7 @@ public class QaseApiClient {
 
         // Construct the multipart body
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        if (path.contains("Video")) {
+        if (path.contains("videos")) {
             try {
                 // Add the boundary and headers for the file part
                 outputStream.write(("--" + boundary + "\r\n").getBytes());

@@ -24,6 +24,7 @@ public class GlobalConfig extends BaseTest {
         globalDirectory.put("VIDEO_DIRECTORY",getProperty(getGlobalPropertyPath("filePropertyPath"), "video_directory"));
         globalDirectory.put("SCREENSHOT_DIRECTORY",System.getProperty("user.dir") + "/screenshots/");
         globalDirectory.put("APP_VIDEO_DIRECTORY",System.getProperty("user.dir") + "/app_Video/");
+        globalDirectory.put("PW_VIDEO_DIRECTORY",System.getProperty("user.dir")+"/videos/");
         return globalDirectory;
     }
 
