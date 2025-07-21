@@ -1,7 +1,7 @@
 Feature: AO Application List
 
 
-  @Test
+
   Scenario Outline: Account status in Spec. Approval for Pending Deposit after first approve reason
     Given the user logged in to Admin Portal as username <name> and password <password>
     When the user clicks detail button of "Pending Deposit" record on the application page
