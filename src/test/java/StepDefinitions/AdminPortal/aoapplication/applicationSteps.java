@@ -2,6 +2,7 @@ package StepDefinitions.AdminPortal.aoapplication;
 
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
+import com.microsoft.playwright.Page;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -26,6 +27,7 @@ public class applicationSteps extends BaseTest {
     public boolean isExistedPhoneNumber = false;
     public boolean isBelow18 = false;
     public boolean isExpired = false;
+
 
 
     @Given("the user logged in to Admin Portal as username {string} and password {string}")
@@ -183,7 +185,7 @@ public class applicationSteps extends BaseTest {
     }
 
     @And("the user fills expiry date {string} than current date")
-    public void the_user_fills_expiry_date(String condition) throws InterruptedException {
+    public void the_user_fills_expiry_date(String condition) throws InterruptedException, IOException {
         Thread.sleep(3000);
         int days;
         if (condition.equalsIgnoreCase("later")) {

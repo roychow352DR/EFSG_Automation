@@ -5,6 +5,7 @@ import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import AbstractComponent.AbstractComponents;
 
+import java.io.IOException;
 import java.util.List;
 
 public class PersonalInfoPage {
@@ -74,7 +75,7 @@ public class PersonalInfoPage {
     WebElement datePickerArrow;
 
 
-    public void fillInPersonalInfo(boolean below18) throws InterruptedException {
+    public void fillInPersonalInfo(boolean below18) throws InterruptedException, IOException {
 
         fillName();
         selectGender();
@@ -90,32 +91,32 @@ public class PersonalInfoPage {
         }
     }
 
-    public void fillName() {
+    public void fillName() throws IOException {
         lastName.sendKeys(abs.userinfoList().get("lastName"));
         firstName.sendKeys(abs.userinfoList().get("firstName"));
     }
 
-    public void selectGender() {
+    public void selectGender() throws IOException {
         abs.selectDropdownItemsByAttribute(genderGroup, "value", abs.userinfoList().get("gender"));
     }
 
-    public void selectCountry() throws InterruptedException {
+    public void selectCountry() throws InterruptedException, IOException {
         countryDropdown.click();
         abs.staleElementRefExceptionHandle(countryList, "data-value", abs.userinfoList().get("country"));
     }
 
-    public void selectNationality() throws InterruptedException {
+    public void selectNationality() throws InterruptedException, IOException {
         nationalityDropdown.click();
         abs.staleElementRefExceptionHandle(countryList, "data-value", abs.userinfoList().get("nationality"));
 
     }
 
-    public void selectIdType() {
+    public void selectIdType() throws IOException {
         idType.click();
         abs.selectDropdownItemsByAttribute(idTypeList, "data-value", abs.userinfoList().get("idType"));
     }
 
-    public void fillIdentification() {
+    public void fillIdentification() throws IOException {
         identificationTextbox.sendKeys(abs.userinfoList().get("id"));
     }
 
@@ -125,7 +126,7 @@ public class PersonalInfoPage {
         return contactInfoPage;
     }
 
-    public void selectDatePicker() {
+    public void selectDatePicker() throws IOException {
         datePicker.click();
         yearDropdown.click();
         abs.staleElementRefExceptionHandle(yearDropdownItems, "", abs.userinfoList().get("dateOfBirthYear"));
@@ -139,8 +140,7 @@ public class PersonalInfoPage {
         return contactInfoPage;
 
     }
-    public void selectDateBelow18()
-    {
+    public void selectDateBelow18() throws IOException {
         datePicker.click();
         yearDropdown.click();
         abs.staleElementRefExceptionHandle(yearDropdownItems, "", abs.userinfoList().get("dateOfBirthYearBelow18"));
@@ -152,7 +152,7 @@ public class PersonalInfoPage {
         return errorText.getText();
     }
 
-    public void selectExpiryDate(int conditionDays) throws InterruptedException {
+    public void selectExpiryDate(int conditionDays) throws InterruptedException, IOException {
         expiryDate.click();
         datePickerArrow.click();
         Thread.sleep(2000);
