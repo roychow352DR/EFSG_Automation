@@ -2,11 +2,14 @@ package StepDefinitions;
 
 import Data.QASEConfig;
 import Data.GlobalConfig;
+import com.microsoft.playwright.BrowserContext;
 import io.cucumber.java.*;
 import utils.BaseTest;
 import utils.VideoRecorder;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,7 @@ public class Hooks extends BaseTest {
     public static GlobalConfig globalConfig;
     public static QASEConfig qaseConfig;
     public static String product;
+    public static Path videoPath;
 
     @BeforeAll
     public static void createQaseTestRun() throws IOException {
@@ -56,7 +60,7 @@ public class Hooks extends BaseTest {
             testPlanId = qaseConfig.getQaseConfig().get("testPlanId");
             runTitle = qaseConfig.getQaseConfig().get("runTitle");
             String runType = product.equalsIgnoreCase("app") ? "platform" : "browser";
-            runId = qaseConfig.getTestRunId(runType, testPlanId, runTitle);
+            runId = qaseConfig.getTestRunId(runType, testPlanId, runTitle,product);
         } catch (IOException e) {
             System.err.println("Failed to create test run: " + e.getMessage());
         }
@@ -78,12 +82,12 @@ public class Hooks extends BaseTest {
      * Handles test cleanup and reporting
      */
 
-   @After
+   //@After
     public void cleanupAndReport(Scenario scenario) throws Exception {
         handleVideoRecording(scenario);
         cleanupDriver();
         waitForVideoProcessing();
-        reportTestResult(scenario);
+       // reportTestResult(scenario);
         cleanupMediaFiles();
     }
     /**
@@ -118,12 +122,14 @@ public class Hooks extends BaseTest {
     /**
      * Reports test result to QASE
      */
-    private void reportTestResult(Scenario scenario) throws IOException, InterruptedException {
+    private void reportTestResult(Scenario scenario,Path videoPath) throws IOException, InterruptedException {
         boolean isPassed = !scenario.isFailed();
         String videoFileName;
-        if (actualVideoFileName(scenario.getName()).exists() && ! product.equalsIgnoreCase("app"))
+       // if (actualVideoFileName(scenario.getName()).exists() && ! product.equalsIgnoreCase("app"))
+        if (videoPath.toFile().exists() && ! product.equalsIgnoreCase("app"))
         {
-            videoFileName = actualVideoFileName(scenario.getName()).getName();
+           // videoFileName = actualVideoFileName(scenario.getName()).getName();
+            videoFileName = convertVideoFileFormat(videoPath,scenario.getName()).getName();
         }
         else if (product.equalsIgnoreCase("app"))
         {
@@ -132,8 +138,8 @@ public class Hooks extends BaseTest {
         else {
             videoFileName = "";
         }
-        String videoDirectory = actualVideoFileName(scenario.getName()).exists()
-                ? globalConfig.getDirectory().get("VIDEO_DIRECTORY")
+        String videoDirectory = !videoFileName.isEmpty() && ! product.equalsIgnoreCase("app")
+                ? globalConfig.getDirectory().get("PW_VIDEO_DIRECTORY")
                 : globalConfig.getDirectory().get("APP_VIDEO_DIRECTORY");
 
         hash = videoFileName.isEmpty() ? "" : qaseConfig.createHash(videoFileName, videoDirectory) ;
@@ -158,7 +164,8 @@ public class Hooks extends BaseTest {
         }
         if (removeVideoFlag) {
             try {
-                VideoRecorder.deleteRecords(globalConfig.getDirectory().get("VIDEO_DIRECTORY"));
+              //  VideoRecorder.deleteRecords(globalConfig.getDirectory().get("VIDEO_DIRECTORY"));
+                VideoRecorder.deleteRecords(globalConfig.getDirectory().get("PW_VIDEO_DIRECTORY"));
                 VideoRecorder.deleteRecords(globalConfig.getDirectory().get("APP_VIDEO_DIRECTORY"));
             } catch (Exception e) {
                 System.err.println("Failed to delete videos: " + e.getMessage());
@@ -168,14 +175,15 @@ public class Hooks extends BaseTest {
 
 
    @AfterStep
-    public void recordStepResult(Scenario scenario) throws IOException, InterruptedException {
+    public void recordStepResult(Scenario scenario) {
         if (position >= 1) {
             try {
                 String stepAction = qaseConfig.getCaseStepAction(projectCode, Integer.parseInt(caseId), position);
                 boolean isPassed = !scenario.isFailed();
 
                 if (!isPassed) {
-                    captureScreenshot(stepAction);
+                  //  captureScreenshot(stepAction);
+                    capturePWScreenshot(stepAction);
                 }
 
                 recordStepDetails(isPassed, position, stepAction);
@@ -188,12 +196,25 @@ public class Hooks extends BaseTest {
     }
 
     /**
-     * Captures screenshot for failed steps
+     * Captures screenshot for failed steps -- Selenium
      */
     private void captureScreenshot(String stepAction) throws IOException, InterruptedException {
         try {
             String screenShotName = stepAction + ".png";
             takeScreenshot(stepAction);
+            hash = qaseConfig.createHash(screenShotName, globalConfig.getDirectory().get("SCREENSHOT_DIRECTORY"));
+        } catch (Exception e) {
+            System.err.println("Failed to capture screenshot: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Captures screenshot for failed steps -- Playwright
+     */
+    private void capturePWScreenshot(String stepAction) {
+        try {
+            String screenShotName = stepAction + ".png";
+            takePWScreenshot(stepAction,page);
             hash = qaseConfig.createHash(screenShotName, globalConfig.getDirectory().get("SCREENSHOT_DIRECTORY"));
         } catch (Exception e) {
             System.err.println("Failed to capture screenshot: " + e.getMessage());
@@ -211,10 +232,38 @@ public class Hooks extends BaseTest {
         }
     }
 
-//    @After
-//    public void tearDown()
-//    {
-//        driver.quit();
-//    }
+    /**
+     * Handles test cleanup and reporting
+     */
+    @After
+    public void tearDown(Scenario scenario) throws IOException, InterruptedException {
+        cleanupPWSession();
+        reportTestResult(scenario,videoPath);
+        cleanupMediaFiles();
+    }
+
+    /**
+     * Cleans up the Playwright browser session
+     */
+    public void cleanupPWSession() {
+        try {
+            if (page != null) {
+                page.close();
+                //Path videoNewPath = page.video().saveAs(videoPath);
+            }
+            if (context != null) {
+                context.close();
+                videoPath = page.video().path();
+            }
+            if (browser != null) {
+                browser.close();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Failed to cleanup driver: " + e.getMessage());
+        }
+    }
+
+
 }
 
