@@ -2,12 +2,8 @@ Feature: Admin Portal login
 
 
   @Smoke @AdminPortal @Regression
-  Scenario Outline: Login End to End flow
+  Scenario: Login End to End flow
     Given the user lands on Admin Portal login page
-    And the user fills in with username <name> and password <password>
+    And the user fills in with username "qaauto" and password "Test1234@"
     When  the user clicks Sign In button
     Then  the user sees Menu display on the screen
-
-    Examples:
-      | name   | password  |
-      | qaauto | Test1234@ |

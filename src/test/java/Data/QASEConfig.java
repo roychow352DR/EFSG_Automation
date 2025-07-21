@@ -51,17 +51,17 @@ public class QASEConfig extends GlobalConfig {
         };
     }
 
-    public int getTestRunId(String property,String testPlanId,String runTitle) throws IOException {
+    public int getTestRunId(String property,String testPlanId,String runTitle,String product) throws IOException {
         if (product.equalsIgnoreCase("app"))
         {
             return qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId),
                     runTitle, getProperty(getPropertyPath("app"), property),
-                    getProperty(getGlobalPropertyPath("globalPropertyPath"), "env"),getProperty(getGlobalPropertyPath("globalPropertyPath"), "entity"));
+                    getProperty(getGlobalPropertyPath("globalPropertyPath"), "env"),getProperty(getGlobalPropertyPath("globalPropertyPath"), "entity"),product);
         }
         else {
             return qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId),
                     runTitle, getProperty(getGlobalPropertyPath("globalPropertyPath"), property),
-                    getProperty(getGlobalPropertyPath("globalPropertyPath"), "env"),getProperty(getGlobalPropertyPath("globalPropertyPath"), "entity"));
+                    getProperty(getGlobalPropertyPath("globalPropertyPath"), "env"),getProperty(getGlobalPropertyPath("globalPropertyPath"), "entity"),product);
         }
     }
 

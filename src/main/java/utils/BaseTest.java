@@ -2,11 +2,12 @@ package utils;
 
 import PageObject.AdminPortal.ApplicationListPage;
 import PageObject.AdminPortal.AdminLoginPage;
-import PageObject.MIOadmin.MIOLoginPage;
 import PageObject.NativeApp.AppLoginPage;
 import PageObject.NativeApp.WelcomePage;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.options.UiAutomator2Options;
 import io.appium.java_client.screenrecording.CanRecordScreen;
@@ -30,6 +31,8 @@ import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.*;
@@ -47,10 +50,12 @@ import java.util.*;
 public class BaseTest {
     // WebDriver instance for browser automation
     public static WebDriver driver;
+    public static Page page;
+    public static BrowserContext context;
+    public static Browser browser;
 
     // Page Object instances
     public AdminLoginPage login;
-    public MIOLoginPage mioLogin;
     public WebElement ctaButton;
     public AppLoginPage appLoginPage;
 
@@ -63,6 +68,7 @@ public class BaseTest {
     public static UiAutomator2Options options;
     public MobilePlatform mobilePlatform;
     public MobileDriver mobileDriver;/**/
+
 
     /**
      * Initializes the appropriate driver based on the product type and platform
@@ -111,14 +117,6 @@ public class BaseTest {
         return login;
     }
 
-    /**
-     * Launches the MIO application
-     */
-    public MIOLoginPage launchMIOApplication() throws IOException, InterruptedException {
-        WebDriver driver = initializeDriver();
-        mioLogin = new MIOLoginPage(driver);
-        return mioLogin;
-    }
 
     /**
      * Reads and parses JSON test data
@@ -285,11 +283,11 @@ public class BaseTest {
     }
 
     private WebDriver createRemoteOrLocalChromeDriver(ChromeOptions options, DesiredCapabilities caps) throws Exception {
-//        try {
-//            return new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), caps);
-//        } catch (Exception e) {
+        try {
+            return new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), caps);
+        } catch (Exception e) {
             return new ChromeDriver(options);
- //      }
+       }
     }
 
     private WebDriver createRemoteOrLocalFirefoxDriver(FirefoxOptions options, DesiredCapabilities caps) throws Exception {
@@ -408,6 +406,137 @@ public class BaseTest {
     public WelcomePage launchApp() throws IOException, InterruptedException {
         AppiumDriver driver = (AppiumDriver) initializeDriver();
         return new WelcomePage(driver);
+    }
+
+    /**
+     * Takes a screenshot from Playwright and saves it to the screenshots folder
+     */
+    public static void takePWScreenshot(String screenShotName, Page page) throws IOException {
+
+        Path screenshotDir = Paths.get("screenshots");
+
+        if (!Files.exists(screenshotDir)) {
+            Files.createDirectories(screenshotDir);
+        }
+
+        Path screenshotPath = screenshotDir.resolve(screenShotName + ".png");
+        page.screenshot(new Page.ScreenshotOptions().setPath(screenshotPath));
+    }
+
+    /**
+     * Initializes Playwright browser and return page object
+     *
+     * @return
+     */
+    public Page initializePage() throws IOException {
+        String path = "//src//main//java//DataResources//GlobalData.properties";
+
+        // Get product type from system property or config file
+        productType = getProperty(path, "product");
+
+        // Get browser type from system property or config file
+        browserType = getProperty(path, "browser");
+        try {
+            Playwright playwright = Playwright.create();
+            page = setBrowserPage(browserType, playwright);
+            page.navigate(setDomain(getProperty(path, "env"), getProperty(path, "product")));
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+        } catch (Exception e) {
+            System.err.println("Failed to initalize page" + e.getMessage());
+        }
+        return page;
+    }
+
+    public Page setBrowserPage(String browserType, Playwright playwright) throws IOException {
+        Page page = null;
+        if (browserType.contains("chrome")) {
+            page = initializeChromePage(playwright);
+        } else if (browserType.contains("firefox")) {
+            page = initializeFirefoxPage(playwright);
+        } else if (browserType.contains("webkit")) {
+            page = initializeWebkitPage(playwright);
+        }
+        else if (browserType.contains("edge")) {
+            page = initializeEdgePage(playwright);
+        }
+
+        return page;
+
+    }
+
+    public Page initializeChromePage(Playwright playwright) {
+        Page chromePage;
+        browser = playwright.chromium().launch(setLaunchOptions(browserType));
+        //browser = playwright.chromium().connect("http://localhost:4444/wd/hub",setConnectionOptions(browserType));
+        chromePage = recordPlaywrightVideo();
+        return chromePage;
+    }
+
+    public Page initializeFirefoxPage(Playwright playwright) {
+        Page firefoxPage;
+        browser = playwright.firefox().launch(setLaunchOptions(browserType));
+        firefoxPage = recordPlaywrightVideo();
+        return firefoxPage;
+    }
+
+    public Page initializeWebkitPage(Playwright playwright) {
+        Page webkitPage;
+        browser = playwright.webkit().launch(setLaunchOptions(browserType));
+        webkitPage = recordPlaywrightVideo();
+        return webkitPage;
+    }
+
+    public Page initializeEdgePage(Playwright playwright) {
+        Page edgePage;
+        browser = playwright.chromium().launch(setLaunchOptions(browserType).setChannel("msedge"));
+        edgePage = recordPlaywrightVideo();
+        return edgePage;
+    }
+
+
+    public BrowserType.LaunchOptions setLaunchOptions(String browserType) {
+
+        boolean headless = browserType.contains("headless");
+        return new BrowserType.LaunchOptions()
+                .setHeadless(headless)
+                .setTimeout(30 * 1000)
+                .setArgs(List.of("--start-maximized",
+                        "--disable-dev-shm-usage",
+                        "--no-sandbox",
+                        "--disable-gpu"));
+    }
+
+    public BrowserType.ConnectOptions setConnectionOptions(String browserType) {
+
+        boolean headless = browserType.contains("headless");
+        return new BrowserType.ConnectOptions()
+                .setTimeout(30 * 1000);
+    }
+
+    public Page recordPlaywrightVideo() {
+        try {
+            // Set up context options for video recording
+            Browser.NewContextOptions contextOptions = new Browser.NewContextOptions()
+                    .setRecordVideoDir(Paths.get("videos")) // directory for videos
+                    .setRecordVideoSize(1280, 720);         // optional: set the video size
+
+            // Create a new context with video recording
+            context = browser.newContext(contextOptions);
+        } catch (Exception e) {
+            System.err.println("Failed to record video : " + e.getMessage());
+        }
+
+        return context.newPage();
+    }
+
+
+    public File convertVideoFileFormat(Path videoPath, String scenarioName) throws IOException {
+        // New file name with .mp4 extension in the same directory
+        Path mp4Path = videoPath.resolveSibling(scenarioName + ".mp4");
+        Files.move(videoPath, mp4Path);
+        // System.out.println("Video saved to: " + mp4Path);
+        return mp4Path.toFile();
+
     }
 
 
