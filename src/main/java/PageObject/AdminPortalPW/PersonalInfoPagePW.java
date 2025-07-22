@@ -49,7 +49,7 @@ public class PersonalInfoPagePW {
 
     }
 
-    public void fillPersonalInfo(boolean isBelow18,boolean isExpired) throws IOException {
+    public void fillPersonalInfo(boolean isBelow18,boolean isExpired,String expiredCondition) throws IOException {
         fillName();
         selectGender();
         selectCountry();
@@ -57,7 +57,7 @@ public class PersonalInfoPagePW {
         selectNationality();
         selectIdType();
         fillId();
-        selectExpiryDate(isExpired);
+        selectExpiryDate(isExpired,expiredCondition);
         clickNext();
     }
 
@@ -114,19 +114,19 @@ public class PersonalInfoPagePW {
         return errorText.first();
     }
 
-    public void selectExpiryDate(boolean isExpired) throws IOException {
+    public void selectExpiryDate(boolean isExpired,String expiredCondition) throws IOException {
         calendarButton.last().click();
-        calendarExtendBtn.click();
         if (!isExpired) {
+            calendarExtendBtn.click();
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("validExpiryYear"))).click();
             dayItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("expiryDay"))).click();
         }
-        else {
-            yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("expiredYear"))).click();
+        else if (!expiredCondition.contains("before")){
             datePickerArrow.click();
             dayItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("expiryDay"))).first().click();
         }
-
-
+        else {
+            dayItems.filter(new Locator.FilterOptions().setHasText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay"))-1))).first().click();
+        }
     }
 }

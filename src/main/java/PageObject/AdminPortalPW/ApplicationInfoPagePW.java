@@ -41,7 +41,6 @@ public class ApplicationInfoPagePW {
         this.dropdownOptions = page.getByRole(AriaRole.OPTION);
         this.promoCodeField = page.locator("input[name='promoCode']");
         this.referralCodeField = page.locator("input[name='upperIbAcc']");
-
     }
 
     public void fillApplicationInfo(boolean isExistedEmail,boolean isExistedPhoneNumber) throws IOException {
