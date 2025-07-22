@@ -2,7 +2,6 @@ package StepDefinitions.AdminPortal.aoapplication;
 
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
-import com.microsoft.playwright.Page;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -14,7 +13,7 @@ import java.io.IOException;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
-public class applicationSteps extends BaseTest {
+public class ApplicationSteps extends BaseTest {
     public AdminLoginPage login;
     public ApplicationListPage applicationPage;
     public ApplicantInformationPage applicationInfoPage;
@@ -27,6 +26,7 @@ public class applicationSteps extends BaseTest {
     public boolean isExistedPhoneNumber = false;
     public boolean isBelow18 = false;
     public boolean isExpired = false;
+    public String condition;
 
 
 
@@ -60,7 +60,7 @@ public class applicationSteps extends BaseTest {
 
     @And("the user fills personal information page")
     public void the_user_fills_personal_information() throws IOException {
-        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18,isExpired);
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18,isExpired,condition);
 
     }
 
@@ -131,11 +131,6 @@ public class applicationSteps extends BaseTest {
         tradingExperiencePage.clickButtonOnVerify(buttonName);
     }
 
-    @Then("the user sees a record in {string} status after approval")
-    public void the_user_sees_a_record_with_status_after_first_approval(String status) throws InterruptedException {
-        Assert.assertEquals(applicationPage.getEmailStatus(), status);
-    }
-
     @And("the user fills {string} code {string} on application information page")
     public void the_user_fills_promotion_code_on_application_information_page(String type, String code) {
         if (type.equalsIgnoreCase("promo")) {
@@ -172,10 +167,10 @@ public class applicationSteps extends BaseTest {
         if (condition.equalsIgnoreCase("DOB below 18")) {
             isBelow18 = true;
         }
-        else if (condition.equalsIgnoreCase("Expired date")) {
+        else if (condition.contains("Expired")) {
             isExpired = true;
         }
-        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18,isExpired);
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18,isExpired,condition);
 
     }
 
@@ -211,7 +206,8 @@ public class applicationSteps extends BaseTest {
         //aopoManager.getApplicationInfoPage().clickNext();
 
     }
-
-
-
+    @And("the user selects {string} as reason on the verify reason pop up")
+    public void the_user_selects_as_reason_on_the_verify_reason_pop_up(String reason){
+        aopoManager.getApplicationInfoPage().selectReason(reason);
+    }
 }
