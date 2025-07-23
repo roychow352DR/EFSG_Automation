@@ -1,5 +1,6 @@
 package StepDefinitions.AdminPortal.login;
 
+import API.CoreService;
 import PageObject.AdminPortalPW.AOPOManager;
 import PageObject.AdminPortal.AdminLoginPage;
 import PageObject.AdminPortal.ApplicationListPage;
@@ -19,6 +20,7 @@ public class AOLoginSteps extends BaseTest {
     public ApplicationListPage applicationListPage;
     public AOPOManager aopoManager;
     Page page;
+    public CoreService coreService;
 
     @Given("the user lands on Admin Portal login page")
     public void the_user_lands_on_Admin_Portal_login_page() throws IOException, URISyntaxException, InterruptedException {
@@ -49,9 +51,10 @@ public class AOLoginSteps extends BaseTest {
 
     @Then("the user sees Menu display on the screen")
     public void the_user_sees_Menu_display_on_the_screen() throws IOException {
-
+        coreService = new CoreService();
      //   Assert.assertTrue(applicationListPage.menuTitle().isDisplayed());
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
+      //  coreService.getAccountStatus(retrieveLocalStorageVal("modules-permission"));
     }
 
     @Then("the user sees {string} message pop up")
