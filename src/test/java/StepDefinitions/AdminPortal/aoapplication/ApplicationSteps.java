@@ -1,5 +1,6 @@
 package StepDefinitions.AdminPortal.aoapplication;
 
+import API.CoreService;
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
 import io.cucumber.java.en.And;
@@ -28,8 +29,6 @@ public class ApplicationSteps extends BaseTest {
     public boolean isExpired = false;
     public String condition;
 
-
-
     @Given("the user logged in to Admin Portal as username {string} and password {string}")
     public void the_user_logged_in_to_Admin_Portal(String username, String password) throws IOException, InterruptedException {
         page = initializePage();
@@ -51,6 +50,7 @@ public class ApplicationSteps extends BaseTest {
     @And("the user clicks {string} button on the create account pop up")
     public void the_user_clicks_cta_on_the_create_account_pop_up(String buttonName) {
         aopoManager.getApplicationListPage().clickBtnOnCreate(buttonName);
+
     }
 
     @And("the user fills application information page")
@@ -209,5 +209,10 @@ public class ApplicationSteps extends BaseTest {
     @And("the user selects {string} as reason on the verify reason pop up")
     public void the_user_selects_as_reason_on_the_verify_reason_pop_up(String reason){
         aopoManager.getApplicationInfoPage().selectReason(reason);
+    }
+
+    @When("the user clicks {string} on the menu")
+    public void the_user_clicks_on_the_menu(String menu){
+        aopoManager.getMenuPagePW().clickMenu(menu);
     }
 }
