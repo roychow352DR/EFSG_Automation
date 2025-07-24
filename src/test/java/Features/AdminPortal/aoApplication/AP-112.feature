@@ -1,7 +1,7 @@
 Feature: AO Application List
 
 
-  @Regression @AdminPortal
+  @Regression @AdminPortal @AO
   Scenario: Prompted error for invalid promotion code
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     And the user clicks "Create Account" button on the application page

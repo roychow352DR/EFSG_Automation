@@ -26,6 +26,7 @@ public class PersonalInfoPagePW {
     public final Locator buttons;
     public final Locator errorText;
     public final Locator datePickerArrow;
+    public final Locator checkbox;
 
     public PersonalInfoPagePW(Page page){
         this.page = page;
@@ -45,7 +46,7 @@ public class PersonalInfoPagePW {
         this.buttons = page.getByRole(AriaRole.BUTTON);
         this.errorText = page.locator(".css-1wercf4");
         this.datePickerArrow = page.locator("button[title='Next month']");
-
+        this.checkbox = page.locator(".css-1jaw3da");
 
     }
 
@@ -59,6 +60,16 @@ public class PersonalInfoPagePW {
         fillId();
         selectExpiryDate(isExpired,expiredCondition);
         clickNext();
+    }
+
+    public void fillMandatory(boolean isBelow18) throws IOException {
+        fillName();
+        selectGender();
+        selectCountry();
+        fillDob(isBelow18);
+        selectNationality();
+        selectIdType();
+        fillId();
     }
 
     public void fillName() throws IOException {
@@ -128,5 +139,9 @@ public class PersonalInfoPagePW {
         else {
             dayItems.filter(new Locator.FilterOptions().setHasText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay"))-1))).first().click();
         }
+    }
+
+    public void uncheckBox(String label){
+        checkbox.filter(new Locator.FilterOptions().setHas(page.getByLabel(label))).click();
     }
 }
