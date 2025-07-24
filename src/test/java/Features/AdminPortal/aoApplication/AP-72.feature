@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal
+  @Regression @AdminPortal @AO
   Scenario: Prompt error if DOB is below 18
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     And the user clicks "Create Account" button on the application page
