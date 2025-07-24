@@ -3,6 +3,7 @@ package StepDefinitions.AdminPortal.aoapplication;
 import API.CoreService;
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
+import io.cucumber.java.bs.A;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -215,4 +216,16 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_clicks_on_the_menu(String menu){
         aopoManager.getMenuPagePW().clickMenu(menu);
     }
+
+    @And("the user fills mandatory information on personal information page")
+    public void the_user_fills_mandatory_information_on_personal_information_page() throws IOException {
+        aopoManager.getPersonalInfoPage().fillMandatory(isBelow18);
+    }
+
+    @And("the user uncheck {string} checkbox on personal information page")
+    public void the_user_uncheck_checkbox_on_personal_information_page(String label)
+    {
+        aopoManager.getPersonalInfoPage().uncheckBox(label);
+    }
+
 }

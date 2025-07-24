@@ -1,7 +1,7 @@
 Feature: AO Application List
 
 
-  @Regression @L3Creation @AdminPortal @Smoke
+  @Regression @L3Creation @AdminPortal @Smoke @AO
   Scenario: Account status in Pending Deposit after second approval
     Given the user logged in to Admin Portal as username "aoadmin02" and password "P@ssw0rd!"
     When the user clicks detail button of "Pending Approval" record on the application page
