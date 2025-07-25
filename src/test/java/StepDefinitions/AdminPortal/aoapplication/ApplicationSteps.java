@@ -8,6 +8,7 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import okio.JvmSystemFileSystem;
 import org.testng.Assert;
 import utils.BaseTest;
 
@@ -226,6 +227,21 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_uncheck_checkbox_on_personal_information_page(String label)
     {
         aopoManager.getPersonalInfoPage().uncheckBox(label);
+    }
+
+    @Then("the user sees {string} label is displayed on application information page")
+    public void the_user_sees_label_is_displayed_on_application_information_page(String labelName){
+        assertThat(aopoManager.getApplicationInfoPage().getLabel(labelName)).hasText(labelName);
+    }
+
+    @And("the user fills blacklisted firstname {string} and lastname {string} on personal information page")
+    public void the_user_fills_blacklisted_firstname_and_lastname_on_personal_information_page(String firstname,String lastName){
+        aopoManager.getPersonalInfoPage().fillBlacklistName(firstname,lastName);
+    }
+
+    @And("the user fills id {string} on personal information page")
+    public void the_user_fills_blacklisted_id_on_personal_information_page(String id) throws IOException {
+        aopoManager.getPersonalInfoPage().fillSpecificId(id);
     }
 
 }
