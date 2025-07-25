@@ -23,6 +23,7 @@ public class ApplicationInfoPagePW {
     public final Locator dropdownOptions;
     public final Locator promoCodeField;
     public final Locator referralCodeField;
+    public final Locator labels;
     String applicantEmail;
 
     public ApplicationInfoPagePW(Page page) {
@@ -41,6 +42,7 @@ public class ApplicationInfoPagePW {
         this.dropdownOptions = page.getByRole(AriaRole.OPTION);
         this.promoCodeField = page.locator("input[name='promoCode']");
         this.referralCodeField = page.locator("input[name='upperIbAcc']");
+        this.labels = page.locator(".css-9iedg7");
     }
 
     public void fillApplicationInfo(boolean isExistedEmail,boolean isExistedPhoneNumber) throws IOException {
@@ -148,6 +150,9 @@ public class ApplicationInfoPagePW {
         return toastMsg;
     }
 
-
+    public Locator getLabel(String labelText)
+    {
+        return labels.filter(new Locator.FilterOptions().setHasText(labelText));
+    }
 
 }

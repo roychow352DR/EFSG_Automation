@@ -57,7 +57,7 @@ public class PersonalInfoPagePW {
         fillDob(isBelow18);
         selectNationality();
         selectIdType();
-        fillId();
+        fillRandomId();
         selectExpiryDate(isExpired,expiredCondition);
         clickNext();
     }
@@ -69,7 +69,7 @@ public class PersonalInfoPagePW {
         fillDob(isBelow18);
         selectNationality();
         selectIdType();
-        fillId();
+        fillRandomId();
     }
 
     public void fillName() throws IOException {
@@ -107,7 +107,7 @@ public class PersonalInfoPagePW {
         dropdownOption.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("idType"))).click();
     }
 
-    public void fillId() throws IOException {
+    public void fillRandomId() throws IOException {
             idNoField.fill(abs.userinfoList().get("id"));
     }
 
@@ -144,4 +144,15 @@ public class PersonalInfoPagePW {
     public void uncheckBox(String label){
         checkbox.filter(new Locator.FilterOptions().setHas(page.getByLabel(label))).click();
     }
+
+    public void fillBlacklistName(String firstname,String lastname){
+        firstNameField.fill(firstname);
+        lastNameField.fill(lastname);
+    }
+
+    public void fillSpecificId(String id) throws IOException {
+        idNoField.fill(id);
+    }
+
+
 }
