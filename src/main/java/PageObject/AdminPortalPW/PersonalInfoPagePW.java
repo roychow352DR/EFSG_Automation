@@ -28,7 +28,7 @@ public class PersonalInfoPagePW {
     public final Locator datePickerArrow;
     public final Locator checkbox;
 
-    public PersonalInfoPagePW(Page page){
+    public PersonalInfoPagePW(Page page) {
         this.page = page;
         abs = new AbstractComponentsPW(page);
         lastNameField = page.locator("input[name='legalLastNameEn']");
@@ -50,7 +50,7 @@ public class PersonalInfoPagePW {
 
     }
 
-    public void fillPersonalInfo(boolean isBelow18,boolean isExpired,String expiredCondition) throws IOException {
+    public void fillPersonalInfo(boolean isBelow18, boolean isExpired, String expiredCondition) throws IOException {
         fillName();
         selectGender();
         selectCountry();
@@ -58,11 +58,11 @@ public class PersonalInfoPagePW {
         selectNationality();
         selectIdType();
         fillRandomId();
-        selectExpiryDate(isExpired,expiredCondition);
+        selectExpiryDate(isExpired, expiredCondition);
         clickNext();
     }
 
-    public void fillMandatory(boolean isBelow18) throws IOException {
+    public void fillMandatory(boolean isBelow18,boolean isExpired, String expiredCondition) throws IOException {
         fillName();
         selectGender();
         selectCountry();
@@ -70,6 +70,7 @@ public class PersonalInfoPagePW {
         selectNationality();
         selectIdType();
         fillRandomId();
+        selectExpiryDate(isExpired, expiredCondition);
     }
 
     public void fillName() throws IOException {
@@ -78,20 +79,20 @@ public class PersonalInfoPagePW {
     }
 
     public void selectGender() throws IOException {
-        genderRadio.filter(new Locator.FilterOptions().setHas(page.locator("input[value=" +abs.userinfoList().get("gender")+"]"))).click();
+        genderRadio.filter(new Locator.FilterOptions().setHas(page.locator("input[value=" + abs.userinfoList().get("gender") + "]"))).click();
     }
 
     public void selectCountry() throws IOException {
         countryDropdown.click();
         dropdownOption.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("country"))).click();
     }
+
     public void fillDob(boolean isBelow18) throws IOException {
         calendarButton.first().click();
         calendarExtendBtn.click();
         if (!isBelow18) {
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthYear"))).click();
-        }
-        else {
+        } else {
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthYearBelow18"))).click();
         }
         dayItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthDay"))).click();
@@ -108,15 +109,14 @@ public class PersonalInfoPagePW {
     }
 
     public void fillRandomId() throws IOException {
-            idNoField.fill(abs.userinfoList().get("id"));
+        idNoField.fill(abs.userinfoList().get("id"));
     }
 
-    public void clickNext()
-    {
+    public void clickNext() {
         buttons.filter(new Locator.FilterOptions().setHasText("Next To Contact Information")).click();
     }
-    public void clickButtonByText(String buttonText)
-    {
+
+    public void clickButtonByText(String buttonText) {
         buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).click();
     }
 
@@ -125,27 +125,25 @@ public class PersonalInfoPagePW {
         return errorText.first();
     }
 
-    public void selectExpiryDate(boolean isExpired,String expiredCondition) throws IOException {
+    public void selectExpiryDate(boolean isExpired, String expiredCondition) throws IOException {
         calendarButton.last().click();
         if (!isExpired) {
             calendarExtendBtn.click();
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("validExpiryYear"))).click();
             dayItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("expiryDay"))).click();
-        }
-        else if (!expiredCondition.contains("before")){
+        } else if (!expiredCondition.contains("before")) {
             datePickerArrow.click();
             dayItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("expiryDay"))).first().click();
-        }
-        else {
-            dayItems.filter(new Locator.FilterOptions().setHasText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay"))-1))).first().click();
+        } else {
+            dayItems.filter(new Locator.FilterOptions().setHasText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay")) - 1))).first().click();
         }
     }
 
-    public void uncheckBox(String label){
+    public void uncheckBox(String label) {
         checkbox.filter(new Locator.FilterOptions().setHas(page.getByLabel(label))).click();
     }
 
-    public void fillBlacklistName(String firstname,String lastname){
+    public void fillBlacklistName(String firstname, String lastname) {
         firstNameField.fill(firstname);
         lastNameField.fill(lastname);
     }
@@ -153,6 +151,12 @@ public class PersonalInfoPagePW {
     public void fillSpecificId(String id) throws IOException {
         idNoField.fill(id);
     }
+
+   public void selectIdType(String idType)
+   {
+       idTypeDropdown.click();
+       dropdownOption.filter(new Locator.FilterOptions().setHasText(idType)).click();
+   }
 
 
 }

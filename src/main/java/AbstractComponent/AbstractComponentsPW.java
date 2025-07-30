@@ -45,7 +45,7 @@ public class AbstractComponentsPW {
         info.put("country", "Hong Kong, China");
         info.put("nationality", "Hong Kong, China");
         info.put("gender", "Male");
-        info.put("idType", "ID CARD");
+        info.put("idType", "ID Card");
         info.put("dateOfBirthYear", "1990");
         info.put("dateOfBirthDay", "20");
         info.put("dateOfBirthYearBelow18", Integer.toString(localDate.getYear() - 15));
