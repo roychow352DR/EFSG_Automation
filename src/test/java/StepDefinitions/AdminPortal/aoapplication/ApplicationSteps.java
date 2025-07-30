@@ -220,7 +220,7 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user fills mandatory information on personal information page")
     public void the_user_fills_mandatory_information_on_personal_information_page() throws IOException {
-        aopoManager.getPersonalInfoPage().fillMandatory(isBelow18);
+        aopoManager.getPersonalInfoPage().fillMandatory(isBelow18,isExpired,condition);
     }
 
     @And("the user uncheck {string} checkbox on personal information page")
@@ -243,5 +243,11 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_fills_blacklisted_id_on_personal_information_page(String id) throws IOException {
         aopoManager.getPersonalInfoPage().fillSpecificId(id);
     }
+
+    @And("the user select {string} as ID Type on personal information page")
+    public void the_user_select_as_ID_Type_on_personal_information_page(String idType){
+        aopoManager.getPersonalInfoPage().selectIdType(idType);
+    }
+
 
 }

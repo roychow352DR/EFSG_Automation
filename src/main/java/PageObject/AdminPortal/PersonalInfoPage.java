@@ -159,5 +159,4 @@ public class PersonalInfoPage {
       //  abs.staleElementRefExceptionHandle(yearDropdownItems, "", abs.userinfoList().get("expiryDay"));
         abs.selectDropdownItemsByText(days, String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay"))+conditionDays));
     }
-
 }

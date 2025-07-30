@@ -72,9 +72,15 @@ public class VideoRecorder extends ScreenRecorder{
 
     public static void deleteRecords(String path) {
         File directory = new File(path);
+        if (!directory.isDirectory()) {
+            System.out.println(path + " is not a directory.");
+            return;
+        }
         File[] files = directory.listFiles();
-        for (File file : files) {
-            file.delete();
+        if (files != null) {
+            for (File file : files) {
+                file.delete();
+            }
         }
     }
 }
