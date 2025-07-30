@@ -322,7 +322,17 @@
             <artifactId>playwright</artifactId>
             <version>1.53.0</version>
         </dependency>
+
+        <!-- Maven -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.33</version>
+        </dependency>
+
     </dependencies>
+
+
 
 
 </project>
