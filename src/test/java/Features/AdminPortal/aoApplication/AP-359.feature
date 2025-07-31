@@ -8,5 +8,5 @@ Feature: AO Application List
     And the user clicks "Activate live trading account" button on the application information page
     And the user selects "Verify the Applicants in real person" as reason on the verify reason pop up
     And the user clicks "Confirm" button on the application information page
-    Then the user sees a record in "Spec. Approval for Pending Deposit" status is created on the application list
+    Then the user sees an existing record is updated to "Spec. Approval for Pending Deposit" status on the application list
 

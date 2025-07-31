@@ -12,6 +12,7 @@ import okio.JvmSystemFileSystem;
 import org.testng.Assert;
 import utils.BaseTest;
 
+import java.awt.*;
 import java.io.IOException;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
@@ -57,12 +58,12 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user fills application information page")
     public void the_user_fills_application_information() throws IOException {
-        aopoManager.getApplicationInfoPage().fillApplicationInfo(isExistedEmail,isExistedPhoneNumber);
+        aopoManager.getApplicationInfoPage().fillApplicationInfo(isExistedEmail, isExistedPhoneNumber);
     }
 
     @And("the user fills personal information page")
     public void the_user_fills_personal_information() throws IOException {
-        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18,isExpired,condition);
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18, isExpired, condition);
 
     }
 
@@ -89,7 +90,7 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees a record in {string} status is created on the application list")
     public void the_user_sees_a_record_with_status_is_created_on_the_application_list(String status) throws InterruptedException {
-        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.applicationInfoPagePW.submittedApplicantEmail())).hasText(status);
+        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.getApplicationInfoPage().submittedApplicantEmail())).hasText(status);
     }
 
     @When("the user clicks detail button of {string} record on the application page")
@@ -145,13 +146,13 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees {string} error message displayed on application information page")
     public void the_user_sees_error_message_displayed_on_application_information_page(String error) {
-       // assertThat(aopoManager.getApplicationInfoPage().getToastMsg()).hasText(error);
+        // assertThat(aopoManager.getApplicationInfoPage().getToastMsg()).hasText(error);
         assertThat(aopoManager.getApplicationInfoPage().errorValidation()).hasText(error);
     }
 
     @And("the user fills mandatory information on application information page")
     public void the_user_fills_mandatory_information_on_application_information_page() throws IOException {
-        aopoManager.getApplicationInfoPage().fillMandatory(isExistedEmail,isExistedPhoneNumber);
+        aopoManager.getApplicationInfoPage().fillMandatory(isExistedEmail, isExistedPhoneNumber);
 
     }
 
@@ -168,11 +169,10 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_submits_mandatory_information_with_on_personal_information_page(String condition) throws IOException {
         if (condition.equalsIgnoreCase("DOB below 18")) {
             isBelow18 = true;
-        }
-        else if (condition.contains("Expired")) {
+        } else if (condition.contains("Expired")) {
             isExpired = true;
         }
-        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18,isExpired,condition);
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18, isExpired, condition);
 
     }
 
@@ -196,47 +196,44 @@ public class ApplicationSteps extends BaseTest {
 
     @When("the user submits mandatory information with {string} on application information page")
     public void the_user_submits_mandatory_information_with_on_application_information_page(String condition) throws IOException {
-        if (condition.equalsIgnoreCase("Exist email"))
-        {
+        if (condition.equalsIgnoreCase("Exist email")) {
             isExistedEmail = true;
-        }
-        else if (condition.equalsIgnoreCase("Exist phoneNumber"))
-        {
+        } else if (condition.equalsIgnoreCase("Exist phoneNumber")) {
             isExistedPhoneNumber = true;
         }
-        aopoManager.getApplicationInfoPage().fillApplicationInfo(isExistedEmail,isExistedPhoneNumber);
+        aopoManager.getApplicationInfoPage().fillApplicationInfo(isExistedEmail, isExistedPhoneNumber);
         //aopoManager.getApplicationInfoPage().clickNext();
 
     }
+
     @And("the user selects {string} as reason on the verify reason pop up")
-    public void the_user_selects_as_reason_on_the_verify_reason_pop_up(String reason){
+    public void the_user_selects_as_reason_on_the_verify_reason_pop_up(String reason) {
         aopoManager.getApplicationInfoPage().selectReason(reason);
     }
 
     @When("the user clicks {string} on the menu")
-    public void the_user_clicks_on_the_menu(String menu){
+    public void the_user_clicks_on_the_menu(String menu) {
         aopoManager.getMenuPagePW().clickMenu(menu);
     }
 
     @And("the user fills mandatory information on personal information page")
     public void the_user_fills_mandatory_information_on_personal_information_page() throws IOException {
-        aopoManager.getPersonalInfoPage().fillMandatory(isBelow18,isExpired,condition);
+        aopoManager.getPersonalInfoPage().fillMandatory(isBelow18, isExpired, condition);
     }
 
     @And("the user uncheck {string} checkbox on personal information page")
-    public void the_user_uncheck_checkbox_on_personal_information_page(String label)
-    {
+    public void the_user_uncheck_checkbox_on_personal_information_page(String label) {
         aopoManager.getPersonalInfoPage().uncheckBox(label);
     }
 
     @Then("the user sees {string} label is displayed on application information page")
-    public void the_user_sees_label_is_displayed_on_application_information_page(String labelName){
+    public void the_user_sees_label_is_displayed_on_application_information_page(String labelName) {
         assertThat(aopoManager.getApplicationInfoPage().getLabel(labelName)).hasText(labelName);
     }
 
     @And("the user fills blacklisted firstname {string} and lastname {string} on personal information page")
-    public void the_user_fills_blacklisted_firstname_and_lastname_on_personal_information_page(String firstname,String lastName){
-        aopoManager.getPersonalInfoPage().fillBlacklistName(firstname,lastName);
+    public void the_user_fills_blacklisted_firstname_and_lastname_on_personal_information_page(String firstname, String lastName) {
+        aopoManager.getPersonalInfoPage().fillBlacklistName(firstname, lastName);
     }
 
     @And("the user fills id {string} on personal information page")
@@ -245,8 +242,18 @@ public class ApplicationSteps extends BaseTest {
     }
 
     @And("the user select {string} as ID Type on personal information page")
-    public void the_user_select_as_ID_Type_on_personal_information_page(String idType){
+    public void the_user_select_as_ID_Type_on_personal_information_page(String idType) {
         aopoManager.getPersonalInfoPage().selectIdType(idType);
+    }
+
+    @Then("the user sees {string} button on application information page")
+    public void the_user_sees_button_on_application_information_page(String buttonName) {
+        assertThat(aopoManager.getApplicationInfoPage().getButtonByText(buttonName)).isVisible();
+    }
+
+    @Then("the user sees an existing record is updated to {string} status on the application list")
+    public void the_user_sees_an_existing_record_is_updated_to_status_on_the_application_list(String status) {
+        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.getApplicationListPage().getClickDetailEmail())).hasText(status);
     }
 
 

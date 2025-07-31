@@ -12,7 +12,7 @@ Feature: AO Application List
     And the user clicks "Verify" button on the trading experience page
     And the user selects "Pass eKYC" as verify reason on the verify pop up
     And the user clicks "Confirm" button on the trading experience page
-    Then the user sees a record in "Pending Approval" status is created on the application list
+    Then the user sees an existing record is updated to "Pending Approval" status on the application list
 
 
 

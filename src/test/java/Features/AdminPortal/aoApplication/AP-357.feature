@@ -12,6 +12,6 @@ Feature: AO Application List
     And the user clicks "Approve" button on the trading experience page
     And the user selects "Pass eKYC" as verify reason on the verify pop up
     And the user clicks "Confirm" button on the trading experience page
-    Then the user sees a record in "Pending Deposit" status is created on the application list
+    Then the user sees an existing record is updated to "Pending Deposit" status on the application list
 
 
