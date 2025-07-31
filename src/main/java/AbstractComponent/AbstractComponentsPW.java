@@ -4,22 +4,17 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.openqa.selenium.*;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.BaseTest;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class AbstractComponentsPW {
     Page page;
+    public String email;
 
     public AbstractComponentsPW(Page page) {
         this.page = page;
@@ -69,25 +64,21 @@ public class AbstractComponentsPW {
     }
 
 
-//    public void clearField(WebElement ele) {
-//        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-//        ele.click();
-//        if (System.getProperty("os.name").contains("Mac")) {
-//            ele.sendKeys(Keys.COMMAND + "a");
-//        } else if (System.getProperty("os.name").contains("Windows")) {
-//            ele.sendKeys(Keys.CONTROL + "a");
-//        }
-//        ele.sendKeys(Keys.DELETE);
-//        wait.until(driver -> Objects.requireNonNull(ele.getDomAttribute("value")).isEmpty());
-//    }
-
-
     public String randomString(int length) {
         return RandomStringUtils.randomAlphanumeric(length);
     }
 
     public void waitForLocatorVisible(Locator locator) {
         locator.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
+    }
+
+    public void storeSubmitEmail(String submitEmail)
+    {
+        email = submitEmail;
+    }
+
+    public String getSubmitEmail(){
+        return email;
     }
 
 
