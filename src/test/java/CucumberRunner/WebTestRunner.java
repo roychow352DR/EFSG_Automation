@@ -11,15 +11,7 @@ import org.junit.runner.RunWith;
         , plugin = {"pretty",
         /*"html:target/cucumber-reports/cucumber-report.html",*/
         "json:target/cucumber-reports/cucumber-report.json","rerun:target/web_failed_scenarios.txt"},tags = "@Test")
-//@CucumberOptions(features = {"src/test/java/Features/AdminPortal/aoApplication/AP-100.feature",
-//        "src/test/java/Features/AdminPortal/aoApplication/AP-353.feature",
-//        "src/test/java/Features/AdminPortal/aoApplication/AP-357.feature"
-//        },
-//        glue = "StepDefinitions",
-//        monochrome = true,
-//        plugin = {"pretty",
-//        /*"html:target/cucumber-reports/cucumber-report.html",*/
-//        "json:target/cucumber-reports/cucumber-report.json","rerun:target/web_failed_scenarios.txt"})
+
 public class WebTestRunner extends AbstractTestNGCucumberTests {
 
 
