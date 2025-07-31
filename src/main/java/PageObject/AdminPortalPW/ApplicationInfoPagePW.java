@@ -155,4 +155,8 @@ public class ApplicationInfoPagePW {
         return labels.filter(new Locator.FilterOptions().setHasText(labelText));
     }
 
+    public Locator getButtonByText(String buttonText){
+        return buttons.filter(new Locator.FilterOptions().setHas(page.getByText(buttonText,new Page.GetByTextOptions().setExact(true))));
+    }
+
 }
