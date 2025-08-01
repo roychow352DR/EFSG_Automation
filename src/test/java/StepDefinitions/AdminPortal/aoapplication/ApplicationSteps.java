@@ -1,6 +1,7 @@
 package StepDefinitions.AdminPortal.aoapplication;
 
 import API.CoreService;
+import Data.SQLDatabase;
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
 import io.cucumber.java.bs.A;
@@ -8,12 +9,10 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import okio.JvmSystemFileSystem;
 import org.testng.Assert;
 import utils.BaseTest;
-
-import java.awt.*;
 import java.io.IOException;
+import java.sql.SQLException;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
@@ -30,7 +29,9 @@ public class ApplicationSteps extends BaseTest {
     public boolean isExistedPhoneNumber = false;
     public boolean isBelow18 = false;
     public boolean isExpired = false;
+    public boolean isEdd = false;
     public String condition;
+    public SQLDatabase sqlDb = new SQLDatabase();
 
     @Given("the user logged in to Admin Portal as username {string} and password {string}")
     public void the_user_logged_in_to_Admin_Portal(String username, String password) throws IOException, InterruptedException {
@@ -63,7 +64,7 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user fills personal information page")
     public void the_user_fills_personal_information() throws IOException {
-        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18, isExpired, condition);
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18, isExpired, condition, isEdd);
 
     }
 
@@ -172,7 +173,10 @@ public class ApplicationSteps extends BaseTest {
         } else if (condition.contains("Expired")) {
             isExpired = true;
         }
-        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18, isExpired, condition);
+        else if (condition.contains("EDD")){
+            isEdd = true;
+        }
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18, isExpired, condition, isEdd);
 
     }
 
@@ -218,7 +222,7 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user fills mandatory information on personal information page")
     public void the_user_fills_mandatory_information_on_personal_information_page() throws IOException {
-        aopoManager.getPersonalInfoPage().fillMandatory(isBelow18, isExpired, condition);
+        aopoManager.getPersonalInfoPage().fillMandatory(isBelow18, isExpired, condition, isEdd);
     }
 
     @And("the user uncheck {string} checkbox on personal information page")
@@ -253,7 +257,12 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees an existing record is updated to {string} status on the application list")
     public void the_user_sees_an_existing_record_is_updated_to_status_on_the_application_list(String status) {
-        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.getApplicationListPage().getClickDetailEmail())).hasText(status);
+        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.getApplicationListPage().getStatusEmail(status))).hasText(status);
+    }
+
+    @Then("the {string} account record is retrieved in CM database")
+    public void the_account_record_is_retrieved_in_CM_database(String status) throws SQLException {
+        Assert.assertNotNull(sqlDb.getPersonProfileId(aopoManager.getApplicationListPage().getStatusEmail(status)));
     }
 
 

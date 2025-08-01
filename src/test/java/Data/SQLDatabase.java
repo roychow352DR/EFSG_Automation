@@ -34,4 +34,17 @@ public class SQLDatabase {
         }
         return null;
     }
+
+    public String getPersonProfileId(String email) throws SQLException {
+        Statement stmt = retriveDataFromSQLDB();
+        try {
+            ResultSet resultSet = stmt.executeQuery("SELECT * FROM cm.person_email where email_addr = '"+email+"'");
+            while (resultSet.next()) {
+                return resultSet.getString("profile_id");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
