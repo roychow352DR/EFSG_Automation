@@ -50,10 +50,10 @@ public class PersonalInfoPagePW {
 
     }
 
-    public void fillPersonalInfo(boolean isBelow18, boolean isExpired, String expiredCondition) throws IOException {
+    public void fillPersonalInfo(boolean isBelow18, boolean isExpired, String expiredCondition, boolean isEdd) throws IOException {
         fillName();
         selectGender();
-        selectCountry();
+        selectCountry(isEdd);
         fillDob(isBelow18);
         selectNationality();
         selectIdType();
@@ -62,10 +62,10 @@ public class PersonalInfoPagePW {
         clickNext();
     }
 
-    public void fillMandatory(boolean isBelow18,boolean isExpired, String expiredCondition) throws IOException {
+    public void fillMandatory(boolean isBelow18,boolean isExpired, String expiredCondition, boolean isEdd) throws IOException {
         fillName();
         selectGender();
-        selectCountry();
+        selectCountry(isEdd);
         fillDob(isBelow18);
         selectNationality();
         selectIdType();
@@ -82,9 +82,14 @@ public class PersonalInfoPagePW {
         genderRadio.filter(new Locator.FilterOptions().setHas(page.locator("input[value=" + abs.userinfoList().get("gender") + "]"))).click();
     }
 
-    public void selectCountry() throws IOException {
+    public void selectCountry(boolean isEdd) throws IOException {
         countryDropdown.click();
-        dropdownOption.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("country"))).click();
+        if (!isEdd) {
+            dropdownOption.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("country"))).click();
+        }
+        else {
+            dropdownOption.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("eddCountry"))).click();
+        }
     }
 
     public void fillDob(boolean isBelow18) throws IOException {
@@ -130,12 +135,15 @@ public class PersonalInfoPagePW {
         if (!isExpired) {
             calendarExtendBtn.click();
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("validExpiryYear"))).click();
-            dayItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("expiryDay"))).click();
+            dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
+                    ,new Page.GetByTextOptions().setExact(true)))).click();
         } else if (!expiredCondition.contains("before")) {
             datePickerArrow.click();
-            dayItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("expiryDay"))).first().click();
+            dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
+                    ,new Page.GetByTextOptions().setExact(true)))).first().click();
         } else {
-            dayItems.filter(new Locator.FilterOptions().setHasText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay")) - 1))).first().click();
+            dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay")) - 1)
+                    ,new Page.GetByTextOptions().setExact(true)))).click();
         }
     }
 
