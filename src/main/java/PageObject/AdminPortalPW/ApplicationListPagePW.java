@@ -62,7 +62,9 @@ public class ApplicationListPagePW {
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
 
-    public String getClickDetailEmail() {
+    public String getStatusEmail(String applicationStatus) {
+        getStatusByText(applicationStatus);
+        email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(1).textContent();
         return email;
     }
 
