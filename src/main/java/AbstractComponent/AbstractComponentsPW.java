@@ -38,6 +38,7 @@ public class AbstractComponentsPW {
         info.put("lastName", "Peter");
         info.put("firstName", "Chu");
         info.put("country", "Hong Kong, China");
+        info.put("eddCountry", "Malaysia");
         info.put("nationality", "Hong Kong, China");
         info.put("gender", "Male");
         info.put("idType", "ID Card");
@@ -70,15 +71,6 @@ public class AbstractComponentsPW {
 
     public void waitForLocatorVisible(Locator locator) {
         locator.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
-    }
-
-    public void storeSubmitEmail(String submitEmail)
-    {
-        email = submitEmail;
-    }
-
-    public String getSubmitEmail(){
-        return email;
     }
 
 
