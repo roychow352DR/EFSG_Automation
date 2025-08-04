@@ -174,7 +174,7 @@ public class Hooks extends BaseTest {
     }
 
 
-   @AfterStep
+    @AfterStep
     public void recordStepResult(Scenario scenario) {
         if (position >= 1) {
             try {
