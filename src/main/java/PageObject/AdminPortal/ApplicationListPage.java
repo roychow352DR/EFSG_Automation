@@ -14,7 +14,7 @@ public class ApplicationListPage {
     WebDriver driver;
     public ApplicantInformationPage applicantInformationPage;
     AbstractComponents abs;
-    public String email;
+    public static String email;
 
     public ApplicationListPage(WebDriver driver) {
         this.driver = driver;
