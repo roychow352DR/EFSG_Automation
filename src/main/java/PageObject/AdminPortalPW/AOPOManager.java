@@ -12,6 +12,7 @@ public class AOPOManager {
     public final EmployeeFinInfoPagePW employeeFinInfoPagePW;
     public final TradingExpPagePW tradingExpPagePW;
     public final MenuPagePW menuPagePW;
+    public final CustomerManagementPage customerManagementPage;
 
     public AOPOManager(Page page) {
         this.page = page;
@@ -23,6 +24,7 @@ public class AOPOManager {
         this.employeeFinInfoPagePW = new EmployeeFinInfoPagePW(page);
         this.tradingExpPagePW = new TradingExpPagePW(page);
         this.menuPagePW = new MenuPagePW(page);
+        this.customerManagementPage = new CustomerManagementPage(page);
 
     }
 
@@ -54,7 +56,13 @@ public class AOPOManager {
         return tradingExpPagePW;
     }
 
-    public MenuPagePW getMenuPagePW() {return menuPagePW;}
+    public MenuPagePW getMenuPagePW() {
+        return menuPagePW;
+    }
+
+    public CustomerManagementPage getCustomerManagementPage(){
+        return customerManagementPage;
+    }
 
 
 }
