@@ -73,5 +73,31 @@ public class AbstractComponentsPW {
         locator.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
     }
 
+    // click next page til the record display at application list based on status text
+    public void getItemsByText(String text, Locator items, Locator nextPageBtn) {
+        boolean isFound = false;
+        waitForLocatorVisible(items.first());
+        while (true) {
+            int count = items.count();
+            for (int i = 0; i < count; i++) {
+                Locator locator = items.nth(i);
+                String itemText = locator.textContent();
+                if (itemText != null && itemText.equalsIgnoreCase(text)) {
+                    isFound = true;
+                    break;
+                }
+            }
+            if (isFound) {
+                break;
+            }
+            if (nextPageBtn.isEnabled()) {
+                nextPageBtn.click();
+                waitForLocatorVisible(items.first());
+            } else {
+                System.out.println("No more pages. " + text + " not found.");
+                break;
+            }
+        }
+    }
 
 }

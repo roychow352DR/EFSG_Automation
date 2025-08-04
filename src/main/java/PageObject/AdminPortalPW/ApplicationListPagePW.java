@@ -56,49 +56,15 @@ public class ApplicationListPagePW {
     }
 
     public void clickDetailBtn(String applicationStatus) {
-        getStatusByText(applicationStatus);
+        abs.getItemsByText(applicationStatus, status, nextPageBtn);
         email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(1).textContent();
         row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
 
     public String getStatusEmail(String applicationStatus) {
-        getStatusByText(applicationStatus);
+        abs.getItemsByText(applicationStatus, status, nextPageBtn);
         email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(1).textContent();
         return email;
     }
-
-    public void findApplicationRow(String applicationStatus) {
-        email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(1).textContent();
-        row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).getByRole(AriaRole.BUTTON,
-                new Locator.GetByRoleOptions().setName("Detail")).first().click();
-    }
-
-    // click next page til the record display at application list based on status text
-    public void getStatusByText(String statusText) {
-        boolean isFound = false;
-        abs.waitForLocatorVisible(status.first());
-        while (true) {
-            int count = status.count();
-            for (int i = 0; i < count; i++) {
-                Locator locator = status.nth(i);
-                String text = locator.textContent();
-                if (text != null && text.equalsIgnoreCase(statusText)) {
-                    isFound = true;
-                    break;
-                }
-            }
-            if (isFound) {
-                break;
-            }
-            if (nextPageBtn.isEnabled()) {
-                nextPageBtn.click();
-                abs.waitForLocatorVisible(status.first());
-            } else {
-                System.out.println("No more pages. " + statusText + " not found.");
-                break;
-            }
-        }
-    }
-
 }

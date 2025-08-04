@@ -24,7 +24,7 @@ public class ApplicationSteps extends BaseTest {
     public ContactInfoPage contactInfoPage;
     public EmployeeFinancialPage employeeFinancialPage;
     public TradingExperiencePage tradingExperiencePage;
-    public AOPOManager aopoManager;
+    public static AOPOManager aopoManager;
     public boolean isExistedEmail = false;
     public boolean isExistedPhoneNumber = false;
     public boolean isBelow18 = false;
@@ -263,6 +263,11 @@ public class ApplicationSteps extends BaseTest {
     @Then("the {string} account record is retrieved in CM database")
     public void the_account_record_is_retrieved_in_CM_database(String status) throws SQLException {
         Assert.assertNotNull(sqlDb.getPersonProfileId(aopoManager.getApplicationListPage().getStatusEmail(status)));
+    }
+
+    @When("the user sees a record in {string} status on the application list")
+    public void the_user_sees_a_record_in_status_on_the_application_list(String status){
+       Assert.assertNotNull(aopoManager.getApplicationListPage().getStatusEmail(status));
     }
 
 
