@@ -56,8 +56,7 @@ public class ApplicationListPagePW {
     }
 
     public void clickDetailBtn(String applicationStatus) {
-        abs.getItemsByText(applicationStatus, status, nextPageBtn);
-        email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(1).textContent();
+        getStatusEmail(applicationStatus);
         row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
