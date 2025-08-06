@@ -265,7 +265,7 @@ public class ApplicationSteps extends BaseTest {
         Assert.assertNotNull(sqlDb.getPersonProfileId(aopoManager.getApplicationListPage().getStatusEmail(status)));
     }
 
-    @When("the user sees a record in {string} status on the application list")
+    @And("the user sees a record in {string} status on the application list")
     public void the_user_sees_a_record_in_status_on_the_application_list(String status){
        Assert.assertNotNull(aopoManager.getApplicationListPage().getStatusEmail(status));
     }

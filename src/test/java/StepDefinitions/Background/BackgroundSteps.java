@@ -2,10 +2,12 @@ package StepDefinitions.Background;
 
 import Data.SQLDatabase;
 import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
 import org.testng.Assert;
 
 import java.sql.SQLException;
 
+import static StepDefinitions.AdminPortal.aoapplication.ApplicationSteps.aopoManager;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 public class BackgroundSteps {
