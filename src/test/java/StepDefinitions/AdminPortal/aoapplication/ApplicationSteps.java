@@ -34,7 +34,7 @@ public class ApplicationSteps extends BaseTest {
     public SQLDatabase sqlDb = new SQLDatabase();
 
     @Given("the user logged in to Admin Portal as username {string} and password {string}")
-    public void the_user_logged_in_to_Admin_Portal(String username, String password) throws IOException, InterruptedException {
+    public void the_user_logged_in_to_Admin_Portal(String username, String password) throws IOException {
         page = initializePage();
         aopoManager = new AOPOManager(page);
         aopoManager.getAdminLoginPage().loginETE(username, password);
@@ -97,6 +97,7 @@ public class ApplicationSteps extends BaseTest {
     @When("the user clicks detail button of {string} record on the application page")
     public void the_user_clicks_detail_button_of_record_on_application(String status) {
         aopoManager.getApplicationListPage().clickDetailBtn(status);
+        page.pause();
     }
 
     @And("the user clicks {string} button on the application information page")
