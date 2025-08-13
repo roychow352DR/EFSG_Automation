@@ -9,6 +9,7 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.checkerframework.checker.units.qual.C;
 import org.testng.Assert;
 import utils.BaseTest;
 import java.io.IOException;
@@ -34,7 +35,7 @@ public class ApplicationSteps extends BaseTest {
     public SQLDatabase sqlDb = new SQLDatabase();
 
     @Given("the user logged in to Admin Portal as username {string} and password {string}")
-    public void the_user_logged_in_to_Admin_Portal(String username, String password) throws IOException {
+    public void the_user_logged_in_to_Admin_Portal(String username, String password) throws IOException, SQLException {
         page = initializePage();
         aopoManager = new AOPOManager(page);
         aopoManager.getAdminLoginPage().loginETE(username, password);

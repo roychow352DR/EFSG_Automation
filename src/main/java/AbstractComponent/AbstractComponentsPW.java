@@ -100,4 +100,36 @@ public class AbstractComponentsPW {
         }
     }
 
+    public void getItemsByText(String text1, String text2, String entity, Locator items1, Locator items2, Locator entityRow, Locator nextPageBtn) {
+        boolean isFound = false;
+        waitForLocatorVisible(items1.first());
+        while (true) {
+            int count = items1.count();
+            int count2 = items2.count();
+            int countEntity = entityRow.count();
+            for (int i = 0; i < count || i < count2 || i < countEntity; i++) {
+                Locator locator = items1.nth(i);
+                Locator locator2 = items2.nth(i);
+                Locator entityLocator = entityRow.nth(i);
+                String itemText = locator.textContent();
+                String itemText2 = locator2.textContent();
+                String entityText = entityLocator.textContent();
+                if (itemText != null && itemText.equalsIgnoreCase(text1) && itemText2.equalsIgnoreCase(text2) && entityText.equalsIgnoreCase(entity)) {
+                    isFound = true;
+                    break;
+                }
+            }
+            if (isFound) {
+                break;
+            }
+            if (nextPageBtn.isEnabled()) {
+                nextPageBtn.click();
+                waitForLocatorVisible(items1.first());
+            } else {
+                System.out.println("No more pages. " + text1 + "and" + text2 + " not found.");
+                break;
+            }
+        }
+    }
+
 }
