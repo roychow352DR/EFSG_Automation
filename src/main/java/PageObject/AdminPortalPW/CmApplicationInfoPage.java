@@ -5,6 +5,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.WaitForSelectorState;
 
 import java.io.IOException;
 
@@ -46,8 +47,9 @@ public class CmApplicationInfoPage {
         this.labels = page.locator(".css-9iedg7");
     }
 
-    public void clickButtonByText(String buttonText) {
+    public void clickButtonByText(String buttonText) throws InterruptedException {
         page.waitForLoadState(LoadState.NETWORKIDLE);
+        page.waitForTimeout(500);
         buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).click();
     }
     public Locator getLabel(String labelText)

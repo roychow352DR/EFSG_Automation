@@ -26,6 +26,10 @@ public class CmPersonalInfoPage {
     public final Locator errorText;
     public final Locator datePickerArrow;
     public final Locator checkbox;
+    public final Locator mobileField;
+    public final Locator historyBtn;
+    public final Locator emailField;
+    public final Locator historyDialogue;
 
     public CmPersonalInfoPage(Page page) {
         this.page = page;
@@ -46,6 +50,10 @@ public class CmPersonalInfoPage {
         this.errorText = page.locator(".css-1wercf4");
         this.datePickerArrow = page.locator("button[title='Next month']");
         this.checkbox = page.locator(".css-1jaw3da");
+        this.mobileField = page.locator("input[name='mobile']");
+        this.historyBtn = page.locator(".css-1xktw9");
+        this.emailField = page.locator("input[name='email']");
+        this.historyDialogue = page.getByRole(AriaRole.DIALOG, new Page.GetByRoleOptions().setName("History"));
 
     }
 
@@ -61,7 +69,7 @@ public class CmPersonalInfoPage {
         clickNext();
     }
 
-    public void fillMandatory(boolean isBelow18,boolean isExpired, String expiredCondition, boolean isEdd) throws IOException {
+    public void fillMandatory(boolean isBelow18, boolean isExpired, String expiredCondition, boolean isEdd) throws IOException {
         fillName();
         selectGender();
         selectCountry(isEdd);
@@ -85,8 +93,7 @@ public class CmPersonalInfoPage {
         countryDropdown.click();
         if (!isEdd) {
             dropdownOption.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("country"))).click();
-        }
-        else {
+        } else {
             dropdownOption.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("eddCountry"))).click();
         }
     }
@@ -135,14 +142,14 @@ public class CmPersonalInfoPage {
             calendarExtendBtn.click();
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("validExpiryYear"))).click();
             dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
-                    ,new Page.GetByTextOptions().setExact(true)))).click();
+                    , new Page.GetByTextOptions().setExact(true)))).click();
         } else if (!expiredCondition.contains("before")) {
             datePickerArrow.click();
             dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
-                    ,new Page.GetByTextOptions().setExact(true)))).first().click();
+                    , new Page.GetByTextOptions().setExact(true)))).first().click();
         } else {
             dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay")) - 1)
-                    ,new Page.GetByTextOptions().setExact(true)))).click();
+                    , new Page.GetByTextOptions().setExact(true)))).click();
         }
     }
 
@@ -159,11 +166,34 @@ public class CmPersonalInfoPage {
         idNoField.fill(id);
     }
 
-   public void selectIdType(String idType)
-   {
-       idTypeDropdown.click();
-       dropdownOption.filter(new Locator.FilterOptions().setHasText(idType)).click();
-   }
+    public void selectIdType(String idType) {
+        idTypeDropdown.click();
+        dropdownOption.filter(new Locator.FilterOptions().setHasText(idType)).click();
+    }
+
+    public void fillMobile() throws IOException {
+        mobileField.fill(abs.userinfoList().get("phoneNumber"));
+    }
+
+    public Locator getHistoryButton() {
+        return historyBtn;
+    }
+
+    public Locator locatorValidation(String buttonName) {
+        if (buttonName.contains("History")) {
+            return getHistoryButton();
+        }
+        return null;
+    }
+
+    public String getEmail() {
+        return emailField.inputValue();
+    }
+
+    public Locator getHistoryDialogue() {
+        historyBtn.click();
+        return historyDialogue;
+    }
 
 
 }
