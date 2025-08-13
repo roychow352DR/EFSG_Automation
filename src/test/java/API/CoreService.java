@@ -9,6 +9,8 @@ import com.microsoft.playwright.options.RequestOptions;
 
 public class CoreService {
 
+    public String domain = "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
+
     public void getAccountStatus(String token)
     {
         String domain = "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
@@ -38,6 +40,17 @@ public class CoreService {
         APIResponse response = request.post(domain + "account-opening/init-customer/LEVEL_3_INDIVIDUAL",
                 RequestOptions.create().setHeader("Authorization",authToken));
         System.out.println("uuid: " + parseJson(response.text(),"id"));
+
+    }
+
+    public void getAoAccountDetail(String uuid,String token,String value){
+        String authToken = "Bearer " + token;
+        String endPoint = domain + "account-opening/" + uuid;
+        Playwright playwright = Playwright.create();
+        APIRequestContext request = playwright.request().newContext();
+        APIResponse response = request.get(endPoint,
+                RequestOptions.create().setHeader("Authorization",authToken));
+        System.out.println( value + ":" + parseJson(response.text(),value));
 
     }
 }
