@@ -10,7 +10,7 @@ public class MenuPagePW {
 
     public MenuPagePW(Page page) {
         this.page = page;
-        menuButtons = page.getByRole(AriaRole.BUTTON);
+        this.menuButtons = page.getByRole(AriaRole.BUTTON);
     }
 
     public void clickMenu(String buttonName) {

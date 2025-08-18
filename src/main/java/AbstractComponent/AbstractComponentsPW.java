@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class AbstractComponentsPW {
@@ -130,6 +131,16 @@ public class AbstractComponentsPW {
                 break;
             }
         }
+    }
+
+    public String getInputValueByAttribute(Locator locator,String attribute,String attributeVal){
+        List<Locator> inputs = locator.all();
+        for (Locator input : inputs) {
+            if (input.getAttribute(attribute).equalsIgnoreCase(attributeVal)) {
+                return input.inputValue();
+            }
+        }
+        return attribute;
     }
 
 }

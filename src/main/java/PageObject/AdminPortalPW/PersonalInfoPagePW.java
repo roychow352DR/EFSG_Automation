@@ -31,7 +31,7 @@ public class PersonalInfoPagePW {
     public PersonalInfoPagePW(Page page) {
         this.page = page;
         abs = new AbstractComponentsPW(page);
-        lastNameField = page.locator("input[name='legalLastNameEn']");
+        this.lastNameField = page.locator("input[name='legalLastNameEn']");
         this.firstNameField = page.locator("input[name='legalFirstAndMiddleNameEn']");
         this.genderRadio = page.locator(".css-1jaw3da");
         this.countryDropdown = page.locator("#mui-component-select-jurisdictionOfResidence");
