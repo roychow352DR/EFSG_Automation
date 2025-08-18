@@ -28,4 +28,10 @@ public class BackendSteps extends BaseTest {
     public void retrieved_from_api_endpoint(String value){
         coreService.getAoAccountDetail("7e4f1f5a-24fc-48a9-8729-38372009e46c",retrieveLocalStorageVal(),value);
     }
+
+    @Then("{string} is updated to modified value in CM {string} database table where {string} retrieved by {string}")
+    public void is_updated_to_modified_value_in_CM_database_table_where_retrieved_by(String columnName,String tableName,String filterCol,String filterVal) throws SQLException {
+        String retrievedValue = sqlDb.retrieveValueFromDb(columnName,tableName,filterCol,sqlDb.getValueBasedOnEmail(filterVal,aopoManager.getCustomerManagementPage().email));
+        Assert.assertEquals(retrievedValue,aopoManager.cmPersonalInfoPage.changeValue);
+    }
 }

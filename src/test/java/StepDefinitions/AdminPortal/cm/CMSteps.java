@@ -78,7 +78,23 @@ public class CMSteps {
     }
 
     @Then("the user sees {string} dialogue on the CM personal information page upon click on the {string} button")
-    public void the_user_sees_dialogue_on_the_CM_personal_information_page_upon_click_on_the_button(String dialogueName,String buttonName){
+    public void the_user_sees_dialogue_on_the_CM_personal_information_page_upon_click_on_the_button(String dialogueName, String buttonName) {
         assertThat(aopoManager.getCmPersonalInfoPage().getHistoryDialogue()).isVisible();
+    }
+
+    @And("the user sees change value of {string} on the CM personal information page")
+    public void the_user_sees_change_value_of_on_the_CM_personal_information_page(String label) {
+        assertThat(aopoManager.getCmPersonalInfoPage().getHistoryBtn()).isVisible();
+        aopoManager.getCmPersonalInfoPage().getFieldTextByLabel(label);
+    }
+
+    @When("the user clicks detail button of specific entity record on the customer management page")
+    public void the_user_clicks_detail_button_of_specific_entity_record_on_the_customer_management_page() throws IOException {
+        aopoManager.getCustomerManagementPage().clickDetailBtn();
+    }
+
+    @Then("the user sees an error dialogue with wordings {string} on the trading experience page")
+    public void the_user_sees_an_error_dialogue_with_wordings_on_the_trading_experience_page(String errorText) {
+        assertThat(aopoManager.getCmTradingExpPage().getDialogueText()).hasText(errorText);
     }
 }
