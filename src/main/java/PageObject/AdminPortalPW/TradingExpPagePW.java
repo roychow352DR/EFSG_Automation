@@ -19,11 +19,11 @@ public class TradingExpPagePW {
     {
         this.page = page;
         abs = new AbstractComponentsPW(page);
-        tradeExp = page.locator("#mui-component-select-fiveOrMorTransactionLastThreeYears");
-        investExp = page.locator("#mui-component-select-haveOtherTrade");
-        dropdownOption = page.getByRole(AriaRole.OPTION);
-        buttons = page.getByRole(AriaRole.BUTTON);
-        reasonDropdown = page.locator("#mui-component-select-verify");
+        this.tradeExp = page.locator("#mui-component-select-fiveOrMorTransactionLastThreeYears");
+        this.investExp = page.locator("#mui-component-select-haveOtherTrade");
+        this.dropdownOption = page.getByRole(AriaRole.OPTION);
+        this.buttons = page.getByRole(AriaRole.BUTTON);
+        this.reasonDropdown = page.locator("#mui-component-select-verify");
     }
 
     public void fillTradingExp() throws IOException {

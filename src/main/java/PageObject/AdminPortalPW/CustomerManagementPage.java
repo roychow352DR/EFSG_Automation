@@ -48,11 +48,19 @@ public class CustomerManagementPage {
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
 
-    public void clickDetailBtn() {
+    public void clickDetailBtn() throws IOException {
+        email = getEntityEmail(abs.userinfoList().get("entity"));
         abs.getItemsByText(email, cmEmail, nextPageBtn);
         rows.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
+
+//    public void clickDetailBtn(String entity){
+//        email = getEntityEmail(entity);
+//        abs.getItemsByText(this.email, cmEmail, nextPageBtn);
+//        rows.filter(new Locator.FilterOptions().setHasText(this.email)).getByRole(AriaRole.BUTTON,
+//                new Locator.GetByRoleOptions().setName("Detail")).first().click();
+//    }
 
     public void getEmail(String statusText, String filterText, Locator getItemlocator, Locator filterLocator, String clientTypeText) throws IOException {
         abs.getItemsByText(filterText, clientTypeText, abs.userinfoList().get("entity"), getItemlocator, clientType, entity, nextPageBtn);
@@ -63,6 +71,15 @@ public class CustomerManagementPage {
     public void getEmail(String statusText, String filterText, Locator getItemlocator, Locator filterLocator) {
         abs.getItemsByText(filterText, getItemlocator, nextPageBtn);
         email = rows.filter(new Locator.FilterOptions().setHasText(statusText)).first().locator(filterLocator).textContent();
+    }
+
+    public String getEntityEmail(String entity){
+        return switch(entity){
+            case "EIEHK" -> "qaeiecmtest@yopmail.com";
+            case "XPRO" -> "qaxprocmtest@yopmail.com";
+            case "EBL" -> "qaeblcmtest@yopmail.com";
+            default -> null;
+        };
     }
 
 }
