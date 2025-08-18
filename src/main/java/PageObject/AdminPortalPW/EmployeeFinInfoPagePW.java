@@ -24,15 +24,15 @@ public class EmployeeFinInfoPagePW {
     public EmployeeFinInfoPagePW(Page page){
         this.page = page;
         abs = new AbstractComponentsPW(page);
-        employeeStatus = page.locator("#mui-component-select-employmentStatus");
-        annualIncome = page.locator("#mui-component-select-annualIncome");
-        liquidNetWorth = page.locator("#mui-component-select-liquidNetworth");
-        sourceOfFunds = page.locator("#mui-component-select-sourceOfFunds");
-        taxJurisdiction = page.locator("#mui-component-select-jurisdictionOfTaxResidence");
-        dropdownOption = page.getByRole(AriaRole.OPTION);
-        industrial = page.locator("#mui-component-select-industrial");
-        nextBtn = page.getByRole(AriaRole.BUTTON);
-        buttons = page.getByRole(AriaRole.BUTTON);
+        this.employeeStatus = page.locator("#mui-component-select-employmentStatus");
+        this.annualIncome = page.locator("#mui-component-select-annualIncome");
+        this.liquidNetWorth = page.locator("#mui-component-select-liquidNetworth");
+        this.sourceOfFunds = page.locator("#mui-component-select-sourceOfFunds");
+        this.taxJurisdiction = page.locator("#mui-component-select-jurisdictionOfTaxResidence");
+        this.dropdownOption = page.getByRole(AriaRole.OPTION);
+        this.industrial = page.locator("#mui-component-select-industrial");
+        this.nextBtn = page.getByRole(AriaRole.BUTTON);
+        this.buttons = page.getByRole(AriaRole.BUTTON);
     }
 
     public void fillEmployeeFinInfo() throws IOException {

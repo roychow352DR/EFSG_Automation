@@ -30,6 +30,9 @@ public class CmPersonalInfoPage {
     public final Locator historyBtn;
     public final Locator emailField;
     public final Locator historyDialogue;
+    public final Locator textField;
+    public final Locator label;
+    public String changeValue;
 
     public CmPersonalInfoPage(Page page) {
         this.page = page;
@@ -54,7 +57,8 @@ public class CmPersonalInfoPage {
         this.historyBtn = page.locator(".css-1xktw9");
         this.emailField = page.locator("input[name='email']");
         this.historyDialogue = page.getByRole(AriaRole.DIALOG, new Page.GetByRoleOptions().setName("History"));
-
+        this.textField = page.locator("input");
+        this.label = page.locator("label");
     }
 
     public void fillPersonalInfo(boolean isBelow18, boolean isExpired, String expiredCondition, boolean isEdd) throws IOException {
@@ -195,5 +199,11 @@ public class CmPersonalInfoPage {
         return historyDialogue;
     }
 
+    public Locator getHistoryBtn() {
+        return historyBtn;
+    }
 
+    public void getFieldTextByLabel(String labelName) {
+        changeValue = abs.getInputValueByAttribute(textField, "name", labelName);
+    }
 }

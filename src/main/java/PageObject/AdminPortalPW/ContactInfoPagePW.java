@@ -17,10 +17,10 @@ public class ContactInfoPagePW {
     public ContactInfoPagePW(Page page){
         this.page = page;
         abs = new AbstractComponentsPW(page);
-        addressField = page.locator("input[name='addressLine1']");
-        cityField = page.locator("input[name='city']");
-        nextBtn = page.getByRole(AriaRole.BUTTON);
-        buttons = page.getByRole(AriaRole.BUTTON);
+        this.addressField = page.locator("input[name='addressLine1']");
+        this.cityField = page.locator("input[name='city']");
+        this.nextBtn = page.getByRole(AriaRole.BUTTON);
+        this.buttons = page.getByRole(AriaRole.BUTTON);
     }
     public void fillContactInfo() throws IOException {
         fillAddress();
