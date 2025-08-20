@@ -1,19 +1,33 @@
 package API;
 
+import AbstractComponent.AbstractComponentsPW;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.microsoft.playwright.APIRequestContext;
 import com.microsoft.playwright.APIResponse;
+import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.RequestOptions;
 
+import java.io.IOException;
+
 public class CoreService {
 
+    private final AbstractComponentsPW abs;
+    private final String entity;
+    public static String clientType;
+    public static String status;
     public String domain = "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
+
+    public CoreService(Page page) throws IOException {
+        abs = new AbstractComponentsPW(page);
+        entity = abs.userinfoList().get("entity");
+    }
 
     public void getAccountStatus(String token)
     {
-        String domain = "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
         String id = "46be06ef-ab11-4d3b-978b-49f1ce80265e";
         String authToken = "Bearer " + token;
         Playwright playwright = Playwright.create();
@@ -31,9 +45,24 @@ public class CoreService {
         return responseObj.get(value).getAsString();
     }
 
+    public String getValFromJsonArray(String responseBody,String value)
+    {
+        Gson gson = new Gson();
+        JsonObject json = gson.fromJson(responseBody, JsonObject.class);
+        JsonObject responseObj = json.getAsJsonObject("response");
+        JsonArray contentArray = responseObj.getAsJsonArray("content");
+//        for (int i = 0 ; i < contentArray.size() ; i++){
+//            JsonObject firstItem = contentArray.get(i).getAsJsonObject();
+//            if (firstItem.get(condition).getAsString().equalsIgnoreCase(conditionValue)){
+//                return firstItem.get(value).getAsString();
+//            }
+//        }
+        JsonObject firstItem = contentArray.get(0).getAsJsonObject();
+        return firstItem.get(value).getAsString();
+    }
+
     public void getAccountId(String token)
     {
-        String domain = "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
         String authToken = "Bearer " + token;
         Playwright playwright = Playwright.create();
         APIRequestContext request = playwright.request().newContext();
@@ -52,5 +81,38 @@ public class CoreService {
                 RequestOptions.create().setHeader("Authorization",authToken));
         System.out.println( value + ":" + parseJson(response.text(),value));
 
+    }
+
+    public void getCmList(String token,String extractVal) {
+        int pageNum = 0;
+        String jsonBody ;
+        String endPoint = domain + "customer-management/page";
+        String authToken = "Bearer " + token;
+        String value;
+        Playwright playwright = Playwright.create();
+        APIRequestContext request = playwright.request().newContext();
+        APIResponse response;
+        do {
+            jsonBody = "{\"filter\":{\"clientType\": \""+clientType+"\",\"entity\":[\""+entity+"\"],\"status\": \""+status+"\"},\"page\":" + pageNum + ",\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}";
+            System.out.println(jsonBody);
+            response = request.post(
+                    endPoint,
+                    RequestOptions.create()
+                            .setHeader("Authorization", authToken)
+                            .setHeader("Content-Type", "application/json")
+                            .setData(jsonBody)
+            );
+            value = getValFromJsonArray(response.text(),extractVal);
+            if (value == null) {
+                pageNum++;
+            }
+        } while (value == null);
+    }
+
+    public void setParamVal(String param, String value){
+        switch(param){
+            case "clientType" : clientType = value;
+            case "status" : status = value;
+        }
     }
 }
