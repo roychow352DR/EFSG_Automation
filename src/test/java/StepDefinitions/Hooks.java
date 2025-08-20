@@ -6,6 +6,7 @@ import com.microsoft.playwright.BrowserContext;
 import io.cucumber.java.*;
 import utils.BaseTest;
 import utils.VideoRecorder;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,13 +23,13 @@ public class Hooks extends BaseTest {
     public static String projectCode;
     public static String testPlanId;
     public static String apiToken;
-    public static String hash ;
+    public static String hash;
     public static String caseId;
     //public static  VideoRecorder videoRecorder;
     public static File videoFile;
     public static boolean removeVideoFlag = true;
     public static boolean removeScreenShotFlag = true;
-    public static int position ;
+    public static int position;
     public static List<Map<String, Object>> steps = new ArrayList<>();
     public static GlobalConfig globalConfig;
     public static QASEConfig qaseConfig;
@@ -60,7 +61,7 @@ public class Hooks extends BaseTest {
             testPlanId = qaseConfig.getQaseConfig().get("testPlanId");
             runTitle = qaseConfig.getQaseConfig().get("runTitle");
             String runType = product.equalsIgnoreCase("app") ? "platform" : "browser";
-            runId = qaseConfig.getTestRunId(runType, testPlanId, runTitle,product);
+            runId = qaseConfig.getTestRunId(runType, testPlanId, runTitle, product);
         } catch (IOException e) {
             System.err.println("Failed to create test run: " + e.getMessage());
         }
@@ -82,14 +83,15 @@ public class Hooks extends BaseTest {
      * Handles test cleanup and reporting
      */
 
-   //@After
+    //@After
     public void cleanupAndReport(Scenario scenario) throws Exception {
         handleVideoRecording(scenario);
         cleanupDriver();
         waitForVideoProcessing();
-       // reportTestResult(scenario);
+        // reportTestResult(scenario);
         cleanupMediaFiles();
     }
+
     /**
      * Waits for video processing to complete
      */
@@ -122,27 +124,23 @@ public class Hooks extends BaseTest {
     /**
      * Reports test result to QASE
      */
-    private void reportTestResult(Scenario scenario,Path videoPath) throws IOException, InterruptedException {
+    private void reportTestResult(Scenario scenario, Path videoPath) throws IOException, InterruptedException {
         boolean isPassed = !scenario.isFailed();
         String videoFileName;
-       // if (actualVideoFileName(scenario.getName()).exists() && ! product.equalsIgnoreCase("app"))
-        if (videoPath.toFile().exists() && ! product.equalsIgnoreCase("app"))
-        {
-           // videoFileName = actualVideoFileName(scenario.getName()).getName();
-            videoFileName = convertVideoFileFormat(videoPath,scenario.getName()).getName();
-        }
-        else if (product.equalsIgnoreCase("app"))
-        {
+        // if (actualVideoFileName(scenario.getName()).exists() && ! product.equalsIgnoreCase("app"))
+        if (videoPath.toFile().exists() && !product.equalsIgnoreCase("app")) {
+            // videoFileName = actualVideoFileName(scenario.getName()).getName();
+            videoFileName = convertVideoFileFormat(videoPath, scenario.getName()).getName();
+        } else if (product.equalsIgnoreCase("app")) {
             videoFileName = videoFile.getName();
-        }
-        else {
+        } else {
             videoFileName = "";
         }
-        String videoDirectory = !videoFileName.isEmpty() && ! product.equalsIgnoreCase("app")
+        String videoDirectory = !videoFileName.isEmpty() && !product.equalsIgnoreCase("app")
                 ? globalConfig.getDirectory().get("PW_VIDEO_DIRECTORY")
                 : globalConfig.getDirectory().get("APP_VIDEO_DIRECTORY");
 
-        hash = videoFileName.isEmpty() ? "" : qaseConfig.createHash(videoFileName, videoDirectory) ;
+        hash = videoFileName.isEmpty() ? "" : qaseConfig.createHash(videoFileName, videoDirectory);
         try {
             qaseConfig.createTestCaseResult(runId, projectCode, hash, isPassed, caseId, steps);
         } catch (Exception e) {
@@ -164,13 +162,13 @@ public class Hooks extends BaseTest {
         }
         if (removeVideoFlag) {
             try {
-              //  VideoRecorder.deleteRecords(globalConfig.getDirectory().get("VIDEO_DIRECTORY"));
+                //  VideoRecorder.deleteRecords(globalConfig.getDirectory().get("VIDEO_DIRECTORY"));
                 VideoRecorder.deleteRecords(globalConfig.getDirectory().get("PW_VIDEO_DIRECTORY"));
                 VideoRecorder.deleteRecords(globalConfig.getDirectory().get("APP_VIDEO_DIRECTORY"));
             } catch (Exception e) {
                 System.err.println("Failed to delete videos: " + e.getMessage());
             }
-            }
+        }
     }
 
 
@@ -182,7 +180,7 @@ public class Hooks extends BaseTest {
                 boolean isPassed = !scenario.isFailed();
 
                 if (!isPassed) {
-                  //  captureScreenshot(stepAction);
+                    //  captureScreenshot(stepAction);
                     capturePWScreenshot(stepAction);
                 }
 
@@ -192,7 +190,7 @@ public class Hooks extends BaseTest {
             }
 
         }
-            position++;
+        position++;
     }
 
     /**
@@ -214,7 +212,7 @@ public class Hooks extends BaseTest {
     private void capturePWScreenshot(String stepAction) {
         try {
             String screenShotName = stepAction + ".png";
-            takePWScreenshot(stepAction,page);
+            takePWScreenshot(stepAction, page);
             hash = qaseConfig.createHash(screenShotName, globalConfig.getDirectory().get("SCREENSHOT_DIRECTORY"));
         } catch (Exception e) {
             System.err.println("Failed to capture screenshot: " + e.getMessage());
@@ -238,7 +236,7 @@ public class Hooks extends BaseTest {
     @After
     public void tearDown(Scenario scenario) throws IOException, InterruptedException {
         cleanupPWSession();
-        reportTestResult(scenario,videoPath);
+        reportTestResult(scenario, videoPath);
         cleanupMediaFiles();
     }
 
@@ -263,7 +261,5 @@ public class Hooks extends BaseTest {
             System.err.println("Failed to cleanup driver: " + e.getMessage());
         }
     }
-
-
 }
 
