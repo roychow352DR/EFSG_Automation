@@ -4,7 +4,6 @@ import AbstractComponent.AbstractComponentsPW;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import com.microsoft.playwright.options.LoadState;
 
 import java.io.IOException;
 
@@ -20,6 +19,7 @@ public class CustomerManagementPage {
     public final Locator status;
     public final Locator clientType;
     public final Locator entity;
+    public final Locator dialogue;
 
     public CustomerManagementPage(Page page) {
         this.page = page;
@@ -32,6 +32,7 @@ public class CustomerManagementPage {
         this.status = page.locator(".css-9iedg7");
         this.clientType = page.locator(".css-ff6t81:nth-child(1)");
         this.entity = page.locator(".css-ff6t81:nth-child(2)");
+        this.dialogue = page.locator(".Toastify__toast-body");
     }
 
     public Locator getStatusRow(String statusText, String l3Email) {
@@ -41,6 +42,9 @@ public class CustomerManagementPage {
         return cmStatus;
     }
 
+    public void getStatusEmail(String cmStatusText,String clientTypeText) throws IOException {
+        getEmail(cmStatusText, cmStatusText, status, cmEmail, clientTypeText);
+    }
 
     public void clickDetailBtn(String cmStatus, String clientTypeText) throws IOException {
         getEmail(cmStatus, cmStatus, status, cmEmail, clientTypeText);
@@ -81,5 +85,11 @@ public class CustomerManagementPage {
             default -> null;
         };
     }
+
+    public Locator getDialogue(){
+        abs.waitForLocatorVisible(dialogue);
+        return dialogue;
+    }
+
 
 }

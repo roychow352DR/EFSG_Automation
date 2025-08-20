@@ -51,7 +51,7 @@ public class AOLoginSteps extends BaseTest {
 
     @Then("the user sees Menu display on the screen")
     public void the_user_sees_Menu_display_on_the_screen() throws IOException {
-        coreService = new CoreService();
+        coreService = new CoreService(page);
      //   Assert.assertTrue(applicationListPage.menuTitle().isDisplayed());
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
       //  coreService.getAccountStatus(retrieveLocalStorageVal("modules-permission"));

@@ -542,9 +542,6 @@ public class BaseTest {
     public String retrieveLocalStorageVal()
     {
         String value = "";
-//        String value = (String) page.evaluate("key => window.localStorage.getItem(key)", key);
-//
-//        System.out.println("Value for key '" + key + "' is: " + value);
         Map<String, Object> matchedTokens = (Map<String, Object>) page.evaluate("() => { " +
                 "const result = {}; " +
                 "for (let i = 0; i < localStorage.length; i++) { " +
@@ -553,16 +550,10 @@ public class BaseTest {
                 "} " +
                 "return result; " +
                 "}");
-
         for (Map.Entry<String, Object> entry : matchedTokens.entrySet()) {
             value = (String) entry.getValue();
-            System.out.println("Key: " + entry.getKey() + " | Value: " + value);
+          //  System.out.println("Key: " + entry.getKey() + " | Value: " + value);
         }
-
         return value;
-
-
     }
-
-
 }
