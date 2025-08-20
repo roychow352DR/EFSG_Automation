@@ -52,7 +52,8 @@ public class CmPersonalInfoPage {
         this.buttons = page.getByRole(AriaRole.BUTTON);
         this.errorText = page.locator(".css-1wercf4");
         this.datePickerArrow = page.locator("button[title='Next month']");
-        this.checkbox = page.locator(".css-1jaw3da");
+        //this.checkbox = page.getByRole(AriaRole.CHECKBOX);
+        this.checkbox = page.locator(".css-15j76c0");
         this.mobileField = page.locator("input[name='mobile']");
         this.historyBtn = page.locator(".css-1xktw9");
         this.emailField = page.locator("input[name='email']");
@@ -158,7 +159,7 @@ public class CmPersonalInfoPage {
     }
 
     public void uncheckBox(String label) {
-        checkbox.filter(new Locator.FilterOptions().setHas(page.getByLabel(label))).click();
+        checkbox.filter(new Locator.FilterOptions().setHas(page.locator("input[name='"+label+"']"))).click();
     }
 
     public void fillBlacklistName(String firstname, String lastname) {

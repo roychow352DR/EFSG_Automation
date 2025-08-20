@@ -97,4 +97,25 @@ public class CMSteps {
     public void the_user_sees_an_error_dialogue_with_wordings_on_the_trading_experience_page(String errorText) {
         assertThat(aopoManager.getCmTradingExpPage().getDialogueText()).hasText(errorText);
     }
+
+    @And("the user uncheck {string} checkbox on the CM personal information page")
+    public void the_user_uncheck_checkbox_on_the_CM_personal_information_page(String checkboxName){
+        aopoManager.getCmPersonalInfoPage().uncheckBox(checkboxName);
+    }
+
+    @Then("the user sees {string} error message displayed on the CM personal information page")
+    public void the_user_sees_error_message_displayed_on_the_CM_personal_information_page(String errorText){
+        assertThat(aopoManager.getCmPersonalInfoPage().errorValidation()).hasText(errorText);
+    }
+
+    @Then("the user sees {string} dialogue is prompted on the customer management page")
+    public void the_user_sees_dialogue_is_prompted_on_the_customer_management_page(String dialogueText){
+        assertThat(aopoManager.getCustomerManagementPage().getDialogue()).hasText(dialogueText);
+    }
+
+    @When("the user sees a record in {string} status with {string} client type on the customer management page")
+    public void the_user_sees_a_record_in_status_with_client_type_on_the_customer_management_page(String cmStatus,String clientType) throws IOException {
+        aopoManager.getCustomerManagementPage().getStatusEmail(cmStatus,clientType);
+    }
+
 }
