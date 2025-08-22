@@ -75,15 +75,18 @@ public class AbstractComponentsPW {
     }
 
     // click next page til the record display at application list based on status text
-    public void getItemsByText(String text, Locator items, Locator nextPageBtn) {
+    public void getItemsByText(String text, Locator items, Locator nextPageBtn, String entity, Locator entityRow) {
         boolean isFound = false;
         waitForLocatorVisible(items.first());
         while (true) {
             int count = items.count();
             for (int i = 0; i < count; i++) {
                 Locator locator = items.nth(i);
+                Locator entityLocator = entityRow.nth(i);
+                int countEntity = entityRow.count();
                 String itemText = locator.textContent();
-                if (itemText != null && itemText.equalsIgnoreCase(text)) {
+                String entityText = entityLocator.textContent();
+                if (itemText != null && itemText.equalsIgnoreCase(text) && entityText.equalsIgnoreCase(entity)) {
                     isFound = true;
                     break;
                 }
@@ -133,7 +136,7 @@ public class AbstractComponentsPW {
         }
     }
 
-    public String getInputValueByAttribute(Locator locator,String attribute,String attributeVal){
+    public String getInputValueByAttribute(Locator locator, String attribute, String attributeVal) {
         List<Locator> inputs = locator.all();
         for (Locator input : inputs) {
             if (input.getAttribute(attribute).equalsIgnoreCase(attributeVal)) {

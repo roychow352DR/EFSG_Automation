@@ -5,6 +5,8 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 
+import java.io.IOException;
+
 public class ApplicationListPagePW {
     private final Page page;
     public final Locator menuTitle;
@@ -16,10 +18,12 @@ public class ApplicationListPagePW {
     public final Locator statusCol;
     private final AbstractComponentsPW abs;
     public String email;
+    public String entity;
     public final Locator nextPageBtn;
     public final Locator status;
+    public final Locator entityRow;
 
-    public ApplicationListPagePW(Page page) {
+    public ApplicationListPagePW(Page page) throws IOException {
         this.page = page;
         abs = new AbstractComponentsPW(page);
         this.menuTitle = page.getByText("Menu");
@@ -31,6 +35,8 @@ public class ApplicationListPagePW {
         this.statusCol = page.locator("td:nth-child(6)");
         this.nextPageBtn = page.locator("button[aria-label='Go to next page']");
         this.status = page.locator(".css-9iedg7");
+        this.entityRow = page.locator(".css-ff6t81:nth-child(1)");
+        this.entity = abs.userinfoList().get("entity");
     }
 
     public Locator getMenuText() {
@@ -55,14 +61,14 @@ public class ApplicationListPagePW {
         return applicationStatus;
     }
 
-    public void clickDetailBtn(String applicationStatus) {
+    public void clickDetailBtn(String applicationStatus) throws IOException {
         getStatusEmail(applicationStatus);
         row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
 
-    public String getStatusEmail(String applicationStatus) {
-        abs.getItemsByText(applicationStatus, status, nextPageBtn);
+    public String getStatusEmail(String applicationStatus) throws IOException {
+        abs.getItemsByText(applicationStatus, status, nextPageBtn,entity,entityRow);
         email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(1).textContent();
         return email;
     }
