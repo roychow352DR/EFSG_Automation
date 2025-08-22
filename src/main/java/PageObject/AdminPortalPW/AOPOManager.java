@@ -2,6 +2,8 @@ package PageObject.AdminPortalPW;
 
 import com.microsoft.playwright.Page;
 
+import java.io.IOException;
+
 public class AOPOManager {
     private final Page page;
     public final AdminLoginPagePW adminPortalPagePW;
@@ -19,7 +21,7 @@ public class AOPOManager {
     public final CmEmployeeFinInfoPage cmEmployeeFinInfoPage;
     public final CmTradingExpPage cmTradingExpPage;
 
-    public AOPOManager(Page page) {
+    public AOPOManager(Page page) throws IOException {
         this.page = page;
         this.adminPortalPagePW = new AdminLoginPagePW(page);
         this.applicationListPagePW = new ApplicationListPagePW(page);

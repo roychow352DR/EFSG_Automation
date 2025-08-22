@@ -14,7 +14,8 @@ public class ContactInfoPagePW {
     public final Locator cityField;
     public final Locator nextBtn;
     public final Locator buttons;
-    public ContactInfoPagePW(Page page){
+
+    public ContactInfoPagePW(Page page) {
         this.page = page;
         abs = new AbstractComponentsPW(page);
         this.addressField = page.locator("input[name='addressLine1']");
@@ -22,9 +23,14 @@ public class ContactInfoPagePW {
         this.nextBtn = page.getByRole(AriaRole.BUTTON);
         this.buttons = page.getByRole(AriaRole.BUTTON);
     }
+
     public void fillContactInfo() throws IOException {
         fillAddress();
         clickNext();
+    }
+
+    public void fillMandatory() throws IOException {
+        fillAddress();
     }
 
     public void fillAddress() throws IOException {
@@ -35,6 +41,7 @@ public class ContactInfoPagePW {
     public void clickNext() {
         nextBtn.filter(new Locator.FilterOptions().setHasText("Next To Employee and Financial Information")).click();
     }
+
     public void clickButtonByText(String buttonText) {
         buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).click();
     }

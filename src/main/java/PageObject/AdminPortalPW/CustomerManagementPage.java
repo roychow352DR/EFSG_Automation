@@ -18,10 +18,11 @@ public class CustomerManagementPage {
     public final Locator buttons;
     public final Locator status;
     public final Locator clientType;
-    public final Locator entity;
+    public final Locator entityRow;
     public final Locator dialogue;
+    public String entity;
 
-    public CustomerManagementPage(Page page) {
+    public CustomerManagementPage(Page page) throws IOException {
         this.page = page;
         abs = new AbstractComponentsPW(page);
         this.rows = page.locator("tbody tr");
@@ -31,8 +32,10 @@ public class CustomerManagementPage {
         this.buttons = page.getByRole(AriaRole.BUTTON);
         this.status = page.locator(".css-9iedg7");
         this.clientType = page.locator(".css-ff6t81:nth-child(1)");
-        this.entity = page.locator(".css-ff6t81:nth-child(2)");
+        this.entityRow = page.locator(".css-ff6t81:nth-child(2)");
         this.dialogue = page.locator(".Toastify__toast-body");
+        this.entity = abs.userinfoList().get("entity");
+
     }
 
     public Locator getStatusRow(String statusText, String l3Email) {
@@ -53,8 +56,8 @@ public class CustomerManagementPage {
     }
 
     public void clickDetailBtn() throws IOException {
-        email = getEntityEmail(abs.userinfoList().get("entity"));
-        abs.getItemsByText(email, cmEmail, nextPageBtn);
+        email = getEntityEmail(entity);
+        abs.getItemsByText(email, cmEmail, nextPageBtn,entity,entityRow);
         rows.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
@@ -67,13 +70,13 @@ public class CustomerManagementPage {
 //    }
 
     public void getEmail(String statusText, String filterText, Locator getItemlocator, Locator filterLocator, String clientTypeText) throws IOException {
-        abs.getItemsByText(filterText, clientTypeText, abs.userinfoList().get("entity"), getItemlocator, clientType, entity, nextPageBtn);
+        abs.getItemsByText(filterText, clientTypeText, entity, getItemlocator, clientType, entityRow, nextPageBtn);
         email = rows.filter(new Locator.FilterOptions().setHasText(statusText)).filter(new Locator.FilterOptions().setHasText(clientTypeText)).
-                filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("entity"))).first().locator(filterLocator).textContent();
+                filter(new Locator.FilterOptions().setHasText(entity)).first().locator(filterLocator).textContent();
     }
 
     public void getEmail(String statusText, String filterText, Locator getItemlocator, Locator filterLocator) {
-        abs.getItemsByText(filterText, getItemlocator, nextPageBtn);
+        abs.getItemsByText(filterText, getItemlocator, nextPageBtn,entity,entityRow);
         email = rows.filter(new Locator.FilterOptions().setHasText(statusText)).first().locator(filterLocator).textContent();
     }
 

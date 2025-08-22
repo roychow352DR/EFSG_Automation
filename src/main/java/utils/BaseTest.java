@@ -69,6 +69,21 @@ public class BaseTest {
     public MobilePlatform mobilePlatform;
     public MobileDriver mobileDriver;/**/
 
+    public boolean isBelow18;
+    public boolean isExistedEmail;
+    public boolean isExistedPhoneNumber ;
+    public boolean isExpired ;
+    public boolean isEdd;
+    public boolean isExpiredBeforeCurrent;
+    public boolean isCrossEntity;
+
+
+    public SetCondition initializeCondition;
+
+    public BaseTest() {
+        this.initializeCondition = new SetCondition(isBelow18, isExistedPhoneNumber,isBelow18,isExpired,isEdd,isExpiredBeforeCurrent,isCrossEntity);
+    }
+
 
     /**
      * Initializes the appropriate driver based on the product type and platform
@@ -77,6 +92,7 @@ public class BaseTest {
         mobileDriver = new MobileDriver();
         mobilePlatform = new MobilePlatform();
         String path = "//src//main//java//DataResources//GlobalData.properties";
+
 
         // Get product type from system property or config file
         productType = System.getProperty("product") != null ?
