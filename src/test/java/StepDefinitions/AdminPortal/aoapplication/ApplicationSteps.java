@@ -1,17 +1,18 @@
 package StepDefinitions.AdminPortal.aoapplication;
 
-import API.CoreService;
 import Data.SQLDatabase;
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
-import io.cucumber.java.bs.A;
+import StepDefinitions.Background.BackgroundSteps;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.checkerframework.checker.units.qual.C;
+import io.cucumber.java.en_scouse.An;
 import org.testng.Assert;
 import utils.BaseTest;
+import utils.SetCondition;
+
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -26,13 +27,9 @@ public class ApplicationSteps extends BaseTest {
     public EmployeeFinancialPage employeeFinancialPage;
     public TradingExperiencePage tradingExperiencePage;
     public static AOPOManager aopoManager;
-    public boolean isExistedEmail = false;
-    public boolean isExistedPhoneNumber = false;
-    public boolean isBelow18 = false;
-    public boolean isExpired = false;
-    public boolean isEdd = false;
-    public String condition;
     public SQLDatabase sqlDb = new SQLDatabase();
+
+
 
     @Given("the user logged in to Admin Portal as username {string} and password {string}")
     public void the_user_logged_in_to_Admin_Portal(String username, String password) throws IOException, SQLException {
@@ -60,12 +57,17 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user fills application information page")
     public void the_user_fills_application_information() throws IOException {
-        aopoManager.getApplicationInfoPage().fillApplicationInfo(isExistedEmail, isExistedPhoneNumber);
+        aopoManager.getApplicationInfoPage().fillApplicationInfo(SetCondition.isExistedEmail(),
+                SetCondition.isExistedPhoneNumber(),
+                SetCondition.isCrossEntity());
     }
 
     @And("the user fills personal information page")
     public void the_user_fills_personal_information() throws IOException {
-        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18, isExpired, condition, isEdd);
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
+                SetCondition.isExpired(),
+                SetCondition.isExpiredBeforeCurrent(),
+                SetCondition.isEdd());
 
     }
 
@@ -96,9 +98,8 @@ public class ApplicationSteps extends BaseTest {
     }
 
     @When("the user clicks detail button of {string} record on the application page")
-    public void the_user_clicks_detail_button_of_record_on_application(String status) {
+    public void the_user_clicks_detail_button_of_record_on_application(String status) throws IOException {
         aopoManager.getApplicationListPage().clickDetailBtn(status);
-        page.pause();
     }
 
     @And("the user clicks {string} button on the application information page")
@@ -155,7 +156,9 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user fills mandatory information on application information page")
     public void the_user_fills_mandatory_information_on_application_information_page() throws IOException {
-        aopoManager.getApplicationInfoPage().fillMandatory(isExistedEmail, isExistedPhoneNumber);
+        aopoManager.getApplicationInfoPage().fillMandatory(SetCondition.isExistedEmail(),
+                SetCondition.isExistedPhoneNumber(),
+                SetCondition.isCrossEntity());
 
     }
 
@@ -168,18 +171,12 @@ public class ApplicationSteps extends BaseTest {
     }
 
 
-    @And("the user submits mandatory information with {string} on personal information page")
-    public void the_user_submits_mandatory_information_with_on_personal_information_page(String condition) throws IOException {
-        if (condition.equalsIgnoreCase("DOB below 18")) {
-            isBelow18 = true;
-        } else if (condition.contains("Expired")) {
-            isExpired = true;
-        }
-        else if (condition.contains("EDD")){
-            isEdd = true;
-        }
-        aopoManager.getPersonalInfoPage().fillPersonalInfo(isBelow18, isExpired, condition, isEdd);
-
+    @And("the user submits mandatory information on personal information page")
+    public void the_user_submits_mandatory_information_with_on_personal_information_page() throws IOException {
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
+                SetCondition.isExpired(),
+                SetCondition.isExpiredBeforeCurrent(),
+                SetCondition.isEdd());
     }
 
     @Then("the user sees {string} error message displayed on personal information page")
@@ -200,14 +197,12 @@ public class ApplicationSteps extends BaseTest {
         }
     }
 
-    @When("the user submits mandatory information with {string} on application information page")
-    public void the_user_submits_mandatory_information_with_on_application_information_page(String condition) throws IOException {
-        if (condition.equalsIgnoreCase("Exist email")) {
-            isExistedEmail = true;
-        } else if (condition.equalsIgnoreCase("Exist phoneNumber")) {
-            isExistedPhoneNumber = true;
-        }
-        aopoManager.getApplicationInfoPage().fillApplicationInfo(isExistedEmail, isExistedPhoneNumber);
+    @When("the user submits mandatory information on application information page")
+    public void the_user_submits_mandatory_information_with_on_application_information_page() throws IOException {
+        System.out.println(SetCondition.isExistedEmail());
+        aopoManager.getApplicationInfoPage().fillApplicationInfo(SetCondition.isExistedEmail(),
+                SetCondition.isExistedPhoneNumber(),
+                SetCondition.isCrossEntity());
         //aopoManager.getApplicationInfoPage().clickNext();
 
     }
@@ -224,7 +219,10 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user fills mandatory information on personal information page")
     public void the_user_fills_mandatory_information_on_personal_information_page() throws IOException {
-        aopoManager.getPersonalInfoPage().fillMandatory(isBelow18, isExpired, condition, isEdd);
+        aopoManager.getPersonalInfoPage().fillMandatory(SetCondition.isBelow18(),
+                SetCondition.isExpired(),
+                SetCondition.isExpiredBeforeCurrent(),
+                SetCondition.isEdd());
     }
 
     @And("the user uncheck {string} checkbox on personal information page")
@@ -258,18 +256,43 @@ public class ApplicationSteps extends BaseTest {
     }
 
     @Then("the user sees an existing record is updated to {string} status on the application list")
-    public void the_user_sees_an_existing_record_is_updated_to_status_on_the_application_list(String status) {
+    public void the_user_sees_an_existing_record_is_updated_to_status_on_the_application_list(String status) throws IOException {
         assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.getApplicationListPage().getStatusEmail(status))).hasText(status);
     }
 
     @Then("the {string} account record is retrieved in CM database")
-    public void the_account_record_is_retrieved_in_CM_database(String status) throws SQLException {
+    public void the_account_record_is_retrieved_in_CM_database(String status) throws SQLException, IOException {
         Assert.assertNotNull(sqlDb.getPersonProfileId(aopoManager.getApplicationListPage().getStatusEmail(status)));
     }
 
     @And("the user sees a record in {string} status on the application list")
-    public void the_user_sees_a_record_in_status_on_the_application_list(String status){
-       Assert.assertNotNull(aopoManager.getApplicationListPage().getStatusEmail(status));
+    public void the_user_sees_a_record_in_status_on_the_application_list(String status) throws IOException {
+        Assert.assertNotNull(aopoManager.getApplicationListPage().getStatusEmail(status));
+    }
+
+    @Then("the user sees {string} label is not displayed on application information page")
+    public void the_user_sees_label_is_not_displayed_on_application_information_page(String labelName) {
+        assertThat(aopoManager.getApplicationInfoPage().getLabel(labelName)).isHidden();
+    }
+
+    @And("the user fills mandatory information on contact information page")
+    public void the_user_fills_mandatory_information_on_contact_information_page() throws IOException {
+        aopoManager.getContactInfoPage().fillMandatory();
+    }
+
+    @Given("the {string} condition is satisfied")
+    public void the_condition_is_satisfied(String condition) {
+
+        switch (condition) {
+            case "DOB Below 18" -> isBelow18 = true;
+            case "Exist Email" -> isExistedEmail = true;
+            case "Exist Phone Number" -> isExistedPhoneNumber = true;
+            case "Expired date" -> isExpired = true;
+            case "EDD" -> isEdd = true;
+            case "Expired date before current date" -> isExpiredBeforeCurrent = true;
+            case "Cross Entity" -> isCrossEntity = true;
+        }
+        new SetCondition(isExistedEmail, isExistedPhoneNumber, isBelow18, isExpired, isEdd,isExpiredBeforeCurrent,isCrossEntity);
     }
 
 
