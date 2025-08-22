@@ -1,6 +1,7 @@
 package PageObject.AdminPortalPW;
 
 import AbstractComponent.AbstractComponentsPW;
+import utils.SetCondition;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
@@ -25,6 +26,7 @@ public class ApplicationInfoPagePW {
     public final Locator referralCodeField;
     public final Locator labels;
     String applicantEmail;
+    public SetCondition setCondition;
 
     public ApplicationInfoPagePW(Page page) {
         this.page = page;
@@ -45,24 +47,33 @@ public class ApplicationInfoPagePW {
         this.labels = page.locator(".css-9iedg7");
     }
 
-    public void fillApplicationInfo(boolean isExistedEmail,boolean isExistedPhoneNumber) throws IOException {
-        selectEntity();
+    public void fillApplicationInfo(boolean isExistedEmail,boolean isExistedPhoneNumber,boolean isCrossEntity) throws IOException {
+        selectEntity(isCrossEntity);
         fillEmail(isExistedEmail);
         fillPhoneNumber(isExistedPhoneNumber);
         submitApplicantInfo(isExistedEmail,isExistedPhoneNumber);
     }
 
-    public void fillMandatory(boolean isExistedEmail,boolean isExistedPhoneNumber) throws IOException {
-        selectEntity();
+    public void fillMandatory(boolean isExistedEmail,boolean isExistedPhoneNumber,boolean isCrossEntity) throws IOException {
+        selectEntity(isCrossEntity);
         fillEmail(isExistedEmail);
         fillPhoneNumber(isExistedPhoneNumber);
     }
 
 
-    public void selectEntity() throws IOException {
+    public void selectEntity(boolean isCrossEntity) throws IOException {
         entityDropdown.click();
-        listItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("entity"))).click();
+        if (!isCrossEntity) {
+            listItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("entity"))).click();
+        }
+        else if (!abs.userinfoList().get("entity").equalsIgnoreCase("Xpro")){
+            listItems.filter(new Locator.FilterOptions().setHasText("XPro")).click();
+        }
+        else {
+            listItems.filter(new Locator.FilterOptions().setHasText("EIEHK")).click();
+        }
     }
+
 
     public void fillEmail(boolean isExistedEmail) throws IOException {
         if (!isExistedEmail) {
@@ -147,7 +158,7 @@ public class ApplicationInfoPagePW {
     public Locator getToastMsg()
     {
         abs.waitForLocatorVisible(toastMsg);
-        return toastMsg;
+        return toastMsg.first();
     }
 
     public Locator getLabel(String labelText)
