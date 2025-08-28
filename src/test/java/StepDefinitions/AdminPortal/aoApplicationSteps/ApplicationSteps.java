@@ -1,14 +1,12 @@
-package StepDefinitions.AdminPortal.aoapplication;
+package StepDefinitions.AdminPortal.aoApplicationSteps;
 
 import Data.SQLDatabase;
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
-import StepDefinitions.Background.BackgroundSteps;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.java.en_scouse.An;
 import org.testng.Assert;
 import utils.BaseTest;
 import utils.SetCondition;
@@ -292,7 +290,32 @@ public class ApplicationSteps extends BaseTest {
             case "Expired date before current date" -> isExpiredBeforeCurrent = true;
             case "Cross Entity" -> isCrossEntity = true;
         }
-        new SetCondition(isExistedEmail, isExistedPhoneNumber, isBelow18, isExpired, isEdd,isExpiredBeforeCurrent,isCrossEntity);
+         new SetCondition(isExistedEmail, isExistedPhoneNumber, isBelow18, isExpired, isEdd,isExpiredBeforeCurrent,isCrossEntity);
+    }
+
+    @And("the user selects entity {string} on the application information page")
+    public void the_user_selects_entity_on_the_application_information_page(String entity) throws IOException {
+        aopoManager.getApplicationInfoPage().selectEntity(isCrossEntity,entity);
+    }
+
+    @And("the user fills username {string} on application information page")
+    public void the_user_fills_username_on_application_information_page(String username){
+        aopoManager.getApplicationInfoPage().fillUsername(username);
+    }
+
+    @Then("the user sees an error dialogue with wordings {string} on the application information page")
+    public void the_user_sees_an_error_dialogue_with_wordings_on_the_application_information_page(String errorText){
+        Assert.assertEquals(aopoManager.getApplicationInfoPage().getToastMsg().textContent(),errorText);
+    }
+
+    @Then("the text field {string} is not editable")
+    public void the_text_field_is_not_editable(String textFieldName){
+        assertThat(aopoManager.getApplicationInfoPage().getTextField(textFieldName)).isDisabled();
+    }
+
+    @Then("the text field {string} is editable")
+    public void the_text_field_is_editable(String textFieldName){
+        assertThat(aopoManager.getApplicationInfoPage().getTextField(textFieldName)).isEnabled();
     }
 
 

@@ -25,6 +25,8 @@ public class ApplicationInfoPagePW {
     public final Locator promoCodeField;
     public final Locator referralCodeField;
     public final Locator labels;
+    public final Locator usernameField;
+    public final Locator textFields;
     String applicantEmail;
     public SetCondition setCondition;
 
@@ -45,6 +47,8 @@ public class ApplicationInfoPagePW {
         this.promoCodeField = page.locator("input[name='promoCode']");
         this.referralCodeField = page.locator("input[name='upperIbAcc']");
         this.labels = page.locator(".css-9iedg7");
+        this.usernameField = page.locator("input[name='username']");
+        this.textFields = page.getByRole(AriaRole.TEXTBOX);
     }
 
     public void fillApplicationInfo(boolean isExistedEmail,boolean isExistedPhoneNumber,boolean isCrossEntity) throws IOException {
@@ -72,6 +76,11 @@ public class ApplicationInfoPagePW {
         else {
             listItems.filter(new Locator.FilterOptions().setHasText("EIEHK")).click();
         }
+    }
+
+    public void selectEntity(boolean isCrossEntity,String entity) throws IOException {
+        entityDropdown.click();
+        listItems.filter(new Locator.FilterOptions().setHasText(entity)).click();
     }
 
 
@@ -168,6 +177,14 @@ public class ApplicationInfoPagePW {
 
     public Locator getButtonByText(String buttonText){
         return buttons.filter(new Locator.FilterOptions().setHas(page.getByText(buttonText,new Page.GetByTextOptions().setExact(true))));
+    }
+
+    public void fillUsername(String username){
+        usernameField.fill(username);
+    }
+
+    public Locator getTextField(String fieldName){
+        return page.locator("input[name='"+fieldName+"']");
     }
 
 }

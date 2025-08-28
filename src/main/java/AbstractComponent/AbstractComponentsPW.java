@@ -9,6 +9,7 @@ import utils.BaseTest;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +63,25 @@ public class AbstractComponentsPW {
         info.put("expiryDay", Integer.toString(localDate.get(ChronoField.DAY_OF_MONTH)));
         info.put("validExpiryYear", Integer.toString(localDate.getYear() + 2));
         return info;
+    }
 
+    public Map<String, String> blacklistInfoList() throws IOException {
+        String path = "//src//main//java//DataResources//GlobalData.properties";
+        int randomEmailSeed = (int) (Math.random() * 10001);
+        int randomPhoneNo = (int) (Math.random() * 10000001);
+        Map<String, String> blacklistInfo = new HashMap<String, String>();
+        blacklistInfo.put("entity", BaseTest.getProperty(path, "entity"));
+        blacklistInfo.put("email", "qaautoblacklist" + randomEmailSeed + "@yopmail.com");
+        blacklistInfo.put("lastName", "Blacklist");
+        blacklistInfo.put("firstName", "QA");
+        blacklistInfo.put("id", randomString(6));
+        blacklistInfo.put("passwordNo", randomString(6));
+        blacklistInfo.put("idType", "ID Card");
+        blacklistInfo.put("category", "Hacker");
+        blacklistInfo.put("nationality", "Hong Kong, China");
+        blacklistInfo.put("phoneNumber", Integer.toString(randomPhoneNo));
+        blacklistInfo.put("countryCode", "+852");
+        return blacklistInfo;
     }
 
 
