@@ -43,6 +43,7 @@ public class SetCondition {
     public static boolean isExpiredBeforeCurrent() {
         return isExpiredBeforeCurrent;
     }
+
     public static boolean isCrossEntity() {
         return isCrossEntity;
     }

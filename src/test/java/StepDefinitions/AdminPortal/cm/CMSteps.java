@@ -1,18 +1,14 @@
 package StepDefinitions.AdminPortal.cm;
 
-import StepDefinitions.Background.BackgroundSteps;
-import io.cucumber.java.bs.A;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.testng.Assert;
 import utils.BaseTest;
 
 import java.io.IOException;
 
-import static StepDefinitions.AdminPortal.aoapplication.ApplicationSteps.aopoManager;
+import static StepDefinitions.AdminPortal.aoApplicationSteps.ApplicationSteps.aopoManager;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import static utils.BaseTest.page;
 
 
 public class CMSteps extends BaseTest {
