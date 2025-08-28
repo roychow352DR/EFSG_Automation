@@ -20,6 +20,7 @@ public class AOPOManager {
     public final CmContactInfoPage cmContactInfoPage;
     public final CmEmployeeFinInfoPage cmEmployeeFinInfoPage;
     public final CmTradingExpPage cmTradingExpPage;
+    public final BlackListPage blackListPage;
 
     public AOPOManager(Page page) throws IOException {
         this.page = page;
@@ -37,6 +38,7 @@ public class AOPOManager {
         this.cmContactInfoPage = new CmContactInfoPage(page);
         this.cmEmployeeFinInfoPage = new CmEmployeeFinInfoPage(page);
         this.cmTradingExpPage = new CmTradingExpPage(page);
+        this.blackListPage = new BlackListPage(page);
 
     }
 
@@ -95,5 +97,7 @@ public class AOPOManager {
         return cmTradingExpPage;
     }
 
-
+    public BlackListPage getBlackListPage() {
+        return blackListPage;
+    }
 }
