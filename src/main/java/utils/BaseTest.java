@@ -64,7 +64,9 @@ public class BaseTest {
     public Scenario scenario;
     private static ScreenRecorder screenRecorder;
     public static File newFile, oldFile;
-    public static String browserType, productType;
+    public static String browserType;
+    public static String productType;
+    public static String productEntity;
     public static UiAutomator2Options options;
     public MobilePlatform mobilePlatform;
     public MobileDriver mobileDriver;/**/
@@ -98,6 +100,10 @@ public class BaseTest {
         productType = System.getProperty("product") != null ?
             System.getProperty("product") : getProperty(path, "product");
 
+        // Get product entity from system property or config file
+        productEntity = System.getProperty("entity") != null ?
+                System.getProperty("entity") : getProperty(path, "entity");
+
         try {
             if (!productType.equalsIgnoreCase("app")) {
                 // Initialize web browser driver
@@ -105,7 +111,7 @@ public class BaseTest {
                     System.getProperty("browser") : getProperty(path, "browser");
                 driver = setBrowserDriver(browserType);
                 driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
-                driver.get(setDomain(getProperty(path, "env"), getProperty(path, "product")));
+                driver.get(setDomain(getProperty(path, "env"), getProperty(path, "product"),productEntity));
             } else if (mobilePlatform.getPlatform().equalsIgnoreCase("ANDROID")) {
                 // Initialize Android driver
                 driver = mobileDriver.initializeAndroidDriver();
@@ -161,11 +167,13 @@ public class BaseTest {
     /**
      * Sets the domain URL based on environment and product
      */
-    public String setDomain(String env, String product) {
+    public String setDomain(String env, String product, String entity) {
         if (product.equalsIgnoreCase("adminPortal")) {
             return switch (env) {
                 case "bausit" -> "https://d13ckj22o5rgah.cloudfront.net/login";
                 case "bauuat" -> "https://uat-aocm-ap.empfs.net/login";
+                case "mt5sit" -> "https://d3lyp6p86bdjbb.cloudfront.net/login";
+                case "mt5uat" -> "";
                 default -> throw new IllegalArgumentException("Invalid environment: " + env);
             };
         } else if (product.equalsIgnoreCase("mio")) {
@@ -455,7 +463,7 @@ public class BaseTest {
         try {
             Playwright playwright = Playwright.create();
             page = setBrowserPage(browserType, playwright);
-            page.navigate(setDomain(getProperty(path, "env"), getProperty(path, "product")));
+            page.navigate(setDomain(getProperty(path, "env"), getProperty(path, "product"),productEntity));
             page.waitForLoadState(LoadState.NETWORKIDLE);
         } catch (Exception e) {
             System.err.println("Failed to initalize page" + e.getMessage());
