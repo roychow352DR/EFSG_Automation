@@ -15,6 +15,8 @@ public class TradingExpPagePW {
     public final Locator dropdownOption;
     public final Locator buttons;
     public final Locator reasonDropdown;
+    public final Locator settlementCurrencyDropdown;
+
     public TradingExpPagePW(Page page)
     {
         this.page = page;
@@ -24,9 +26,13 @@ public class TradingExpPagePW {
         this.dropdownOption = page.getByRole(AriaRole.OPTION);
         this.buttons = page.getByRole(AriaRole.BUTTON);
         this.reasonDropdown = page.locator("#mui-component-select-verify");
+        this.settlementCurrencyDropdown = page.locator("#mui-component-select-settlementCurrency");
     }
 
     public void fillTradingExp() throws IOException {
+        if (abs.userinfoList().get("entity").contains("EBL")){
+            selectSettlement();
+        }
         selectTradeExp();
         selectInvestExp();
     }
@@ -51,5 +57,10 @@ public class TradingExpPagePW {
     {
         reasonDropdown.click();
         dropdownOption.filter(new Locator.FilterOptions().setHasText(reason)).click();
+    }
+
+    public void selectSettlement(){
+        settlementCurrencyDropdown.click();
+        dropdownOption.filter(new Locator.FilterOptions().setHasText("USD")).click();
     }
 }
