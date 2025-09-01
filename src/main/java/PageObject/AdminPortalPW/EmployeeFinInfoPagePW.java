@@ -39,7 +39,7 @@ public class EmployeeFinInfoPagePW {
         selectEmployeeStatus();
         selectIndustrial();
         selectAnnualIncome();
-        selectliquidNetWorth();
+        selectLiquidNetWorth();
         selectSourceOfFunds();
         selectTaxJurisdiction();
         clickNext();
@@ -64,7 +64,7 @@ public class EmployeeFinInfoPagePW {
 
     }
 
-    public void selectliquidNetWorth() throws IOException {
+    public void selectLiquidNetWorth() throws IOException {
         liquidNetWorth.click();
         dropdownOption.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("netWorth"),
                 new Page.GetByTextOptions().setExact(true)))).click();

@@ -9,10 +9,7 @@ import utils.BaseTest;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoField;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class AbstractComponentsPW {
     Page page;
@@ -29,7 +26,7 @@ public class AbstractComponentsPW {
         int randomEmailSeed = (int) (Math.random() * 10001);
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
-        info.put("email", "qaauto" + randomEmailSeed + "@yopmail.com");
+        info.put("email", "qaauto" + BaseTest.getProperty(path, "entity") +  "_" + randomEmailSeed + "@yopmail.com");
         info.put("existedEmail", "eieuatapproved@yopmail.com");
         info.put("phoneNumber", Integer.toString(randomPhoneNo));
         info.put("existedPhoneNumber", "96553209");
@@ -62,6 +59,8 @@ public class AbstractComponentsPW {
         info.put("expiredYear", Integer.toString(localDate.getYear()));
         info.put("expiryDay", Integer.toString(localDate.get(ChronoField.DAY_OF_MONTH)));
         info.put("validExpiryYear", Integer.toString(localDate.getYear() + 2));
+       // info.put("username",randomString((int)(Math.random() * 100) + 1));
+        info.put("username",randomString(4) +(int) (Math.random() * 1001) );
         return info;
     }
 
