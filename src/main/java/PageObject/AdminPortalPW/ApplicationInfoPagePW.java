@@ -1,6 +1,7 @@
 package PageObject.AdminPortalPW;
 
 import AbstractComponent.AbstractComponentsPW;
+import utils.BaseTest;
 import utils.SetCondition;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
@@ -53,6 +54,9 @@ public class ApplicationInfoPagePW {
 
     public void fillApplicationInfo(boolean isExistedEmail,boolean isExistedPhoneNumber,boolean isCrossEntity) throws IOException {
         selectEntity(isCrossEntity);
+        if (abs.userinfoList().get("entity").contains("EBL")){
+            fillRandomUsername();
+        }
         fillEmail(isExistedEmail);
         fillPhoneNumber(isExistedPhoneNumber);
         submitApplicantInfo(isExistedEmail,isExistedPhoneNumber);
@@ -68,13 +72,17 @@ public class ApplicationInfoPagePW {
     public void selectEntity(boolean isCrossEntity) throws IOException {
         entityDropdown.click();
         if (!isCrossEntity) {
-            listItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("entity"))).click();
+            listItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("entity"),
+                    new Page.GetByTextOptions().setExact(true)))).click();
         }
         else if (!abs.userinfoList().get("entity").equalsIgnoreCase("Xpro")){
-            listItems.filter(new Locator.FilterOptions().setHasText("XPro")).click();
+            listItems.filter(new Locator.FilterOptions().setHas(page.getByText("Xpro",
+                    new Page.GetByTextOptions().setExact(true)))).click();
         }
         else {
-            listItems.filter(new Locator.FilterOptions().setHasText("EIEHK")).click();
+           // listItems.filter(new Locator.FilterOptions().setHasText("EIEHK")).click();
+            listItems.filter(new Locator.FilterOptions().setHas(page.getByText("EIEHK",
+                    new Page.GetByTextOptions().setExact(true)))).click();
         }
     }
 
@@ -181,6 +189,10 @@ public class ApplicationInfoPagePW {
 
     public void fillUsername(String username){
         usernameField.fill(username);
+    }
+
+    public void fillRandomUsername() throws IOException {
+        usernameField.fill(abs.userinfoList().get("username"));
     }
 
     public Locator getTextField(String fieldName){
