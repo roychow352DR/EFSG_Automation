@@ -63,7 +63,7 @@ public class ApplicationListPagePW {
 
     public void clickDetailBtn(String applicationStatus) throws IOException {
         getStatusEmail(applicationStatus);
-        row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).getByRole(AriaRole.BUTTON,
+        row.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
 
