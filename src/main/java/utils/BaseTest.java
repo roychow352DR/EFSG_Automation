@@ -59,6 +59,7 @@ public class BaseTest {
     public WebElement ctaButton;
     public AppLoginPage appLoginPage;
 
+
     // Configuration and capabilities
     public DesiredCapabilities caps;
     public Scenario scenario;
@@ -67,23 +68,25 @@ public class BaseTest {
     public static String browserType;
     public static String productType;
     public static String productEntity;
+    public static String productEnv;
     public static UiAutomator2Options options;
     public MobilePlatform mobilePlatform;
     public MobileDriver mobileDriver;/**/
 
     public boolean isBelow18;
     public boolean isExistedEmail;
-    public boolean isExistedPhoneNumber ;
-    public boolean isExpired ;
+    public boolean isExistedPhoneNumber;
+    public boolean isExpired;
     public boolean isEdd;
     public boolean isExpiredBeforeCurrent;
     public boolean isCrossEntity;
+    public static String retrievedData;
 
 
     public SetCondition initializeCondition;
 
     public BaseTest() {
-        this.initializeCondition = new SetCondition(isBelow18, isExistedPhoneNumber,isBelow18,isExpired,isEdd,isExpiredBeforeCurrent,isCrossEntity);
+        this.initializeCondition = new SetCondition(isBelow18, isExistedPhoneNumber, isBelow18, isExpired, isEdd, isExpiredBeforeCurrent, isCrossEntity);
     }
 
 
@@ -98,20 +101,24 @@ public class BaseTest {
 
         // Get product type from system property or config file
         productType = System.getProperty("product") != null ?
-            System.getProperty("product") : getProperty(path, "product");
+                System.getProperty("product") : getProperty(path, "product");
 
         // Get product entity from system property or config file
         productEntity = System.getProperty("entity") != null ?
                 System.getProperty("entity") : getProperty(path, "entity");
 
+        // Get product test env from system property or config file
+        productEnv = System.getProperty("env") != null ?
+                System.getProperty("env") : getProperty(path, "env");
+
         try {
             if (!productType.equalsIgnoreCase("app")) {
                 // Initialize web browser driver
                 browserType = System.getProperty("browser") != null ?
-                    System.getProperty("browser") : getProperty(path, "browser");
+                        System.getProperty("browser") : getProperty(path, "browser");
                 driver = setBrowserDriver(browserType);
                 driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
-                driver.get(setDomain(getProperty(path, "env"), getProperty(path, "product"),productEntity));
+                driver.get(setDomain(productEnv, productType, productEntity));
             } else if (mobilePlatform.getPlatform().equalsIgnoreCase("ANDROID")) {
                 // Initialize Android driver
                 driver = mobileDriver.initializeAndroidDriver();
@@ -145,11 +152,12 @@ public class BaseTest {
      */
     public List<HashMap<String, String>> getJsonDataToMap() throws IOException {
         String jsonContent = FileUtils.readFileToString(
-            new File(System.getProperty("user.dir") + "//src//test//java//Data//Crendential.json"),
-            StandardCharsets.UTF_8
+                new File(System.getProperty("user.dir") + "//src//test//java//Data//Crendential.json"),
+                StandardCharsets.UTF_8
         );
         ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(jsonContent, new TypeReference<List<HashMap<String, String>>>() {});
+        return mapper.readValue(jsonContent, new TypeReference<List<HashMap<String, String>>>() {
+        });
     }
 
     public ApplicationListPage applicationPage() {
@@ -194,7 +202,7 @@ public class BaseTest {
         try (FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + path)) {
             prop.load(fis);
             return System.getProperty(propertyItem) != null ?
-                System.getProperty(propertyItem) : prop.getProperty(propertyItem);
+                    System.getProperty(propertyItem) : prop.getProperty(propertyItem);
         }
     }
 
@@ -311,7 +319,7 @@ public class BaseTest {
             return new RemoteWebDriver(new URI("http://localhost:4444/wd/hub").toURL(), caps);
         } catch (Exception e) {
             return new ChromeDriver(options);
-       }
+        }
     }
 
     private WebDriver createRemoteOrLocalFirefoxDriver(FirefoxOptions options, DesiredCapabilities caps) throws Exception {
@@ -352,7 +360,7 @@ public class BaseTest {
         File appVideoRecordingFileDir = createFolder("app_Video");
         File videoFile = new File(appVideoRecordingFileDir, appVideoName + ".mp4");
 
-        String base64Video = ((CanRecordScreen)driver).stopRecordingScreen();
+        String base64Video = ((CanRecordScreen) driver).stopRecordingScreen();
         byte[] data = Base64.getDecoder().decode(base64Video);
         try (FileOutputStream stream = new FileOutputStream(videoFile)) {
             stream.write(data);
@@ -460,10 +468,19 @@ public class BaseTest {
 
         // Get browser type from system property or config file
         browserType = getProperty(path, "browser");
+
+        // Get product test env from system property or config file
+        productEnv = System.getProperty("env") != null ?
+                System.getProperty("env") : getProperty(path, "env");
+
+        // Get product entity from system property or config file
+        productEntity = System.getProperty("entity") != null ?
+                System.getProperty("entity") : getProperty(path, "entity");
+
         try {
             Playwright playwright = Playwright.create();
             page = setBrowserPage(browserType, playwright);
-            page.navigate(setDomain(getProperty(path, "env"), getProperty(path, "product"),productEntity));
+            page.navigate(setDomain(productEnv, productType, productEntity));
             page.waitForLoadState(LoadState.NETWORKIDLE);
         } catch (Exception e) {
             System.err.println("Failed to initalize page" + e.getMessage());
@@ -479,8 +496,7 @@ public class BaseTest {
             page = initializeFirefoxPage(playwright);
         } else if (browserType.contains("webkit")) {
             page = initializeWebkitPage(playwright);
-        }
-        else if (browserType.contains("edge")) {
+        } else if (browserType.contains("edge")) {
             page = initializeEdgePage(playwright);
         }
 
@@ -563,8 +579,7 @@ public class BaseTest {
 
     }
 
-    public String retrieveLocalStorageVal()
-    {
+    public String retrieveLocalStorageVal() {
         String value = "";
         Map<String, Object> matchedTokens = (Map<String, Object>) page.evaluate("() => { " +
                 "const result = {}; " +
@@ -576,8 +591,16 @@ public class BaseTest {
                 "}");
         for (Map.Entry<String, Object> entry : matchedTokens.entrySet()) {
             value = (String) entry.getValue();
-          //  System.out.println("Key: " + entry.getKey() + " | Value: " + value);
+            //  System.out.println("Key: " + entry.getKey() + " | Value: " + value);
         }
         return value;
+    }
+
+    public void setRetrievedData(String retrieveData){
+        retrievedData = retrieveData;
+    }
+
+    public static String getRetrievedData(){
+        return retrievedData;
     }
 }

@@ -43,6 +43,12 @@ public class ApplicationListPagePW {
         return this.menuTitle;
     }
 
+    public void createIndividual(){
+        clickButton("Create Account");
+        clickRadioButton("Individual");
+        clickButton("Submit");
+    }
+
     public void clickButton(String buttonName) {
         buttons.filter(new Locator.FilterOptions().setHasText(buttonName)).click();
     }
