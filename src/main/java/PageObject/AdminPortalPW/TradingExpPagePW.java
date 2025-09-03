@@ -16,6 +16,7 @@ public class TradingExpPagePW {
     public final Locator buttons;
     public final Locator reasonDropdown;
     public final Locator settlementCurrencyDropdown;
+    public final Locator rejectReasonDropdown;
 
     public TradingExpPagePW(Page page)
     {
@@ -27,6 +28,7 @@ public class TradingExpPagePW {
         this.buttons = page.getByRole(AriaRole.BUTTON);
         this.reasonDropdown = page.locator("#mui-component-select-verify");
         this.settlementCurrencyDropdown = page.locator("#mui-component-select-settlementCurrency");
+        this.rejectReasonDropdown = page.locator("#mui-component-select-reason");
     }
 
     public void fillTradingExp() throws IOException {
@@ -49,13 +51,18 @@ public class TradingExpPagePW {
                 new Page.GetByTextOptions().setExact(true)))).click();
     }
 
-    public void submitApplication(String buttonName) {
+    public void clickButtonByText(String buttonName) {
         buttons.filter(new Locator.FilterOptions().setHasText(buttonName)).click();
     }
 
     public void selectReason(String reason)
     {
         reasonDropdown.click();
+        dropdownOption.filter(new Locator.FilterOptions().setHasText(reason)).click();
+    }
+
+    public void selectRejectReason(String reason){
+        rejectReasonDropdown.click();
         dropdownOption.filter(new Locator.FilterOptions().setHasText(reason)).click();
     }
 
