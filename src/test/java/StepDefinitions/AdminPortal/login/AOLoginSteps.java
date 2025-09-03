@@ -28,6 +28,7 @@ public class AOLoginSteps extends BaseTest {
      //   Thread.sleep(2000);
         page = initializePage();
         aopoManager = new AOPOManager(page);
+        coreService = new CoreService(page,productEnv);
     }
 
     @Given("the user fills in with username {string} and password {string}")
@@ -51,7 +52,7 @@ public class AOLoginSteps extends BaseTest {
 
     @Then("the user sees Menu display on the screen")
     public void the_user_sees_Menu_display_on_the_screen() throws IOException {
-        coreService = new CoreService(page);
+        coreService = new CoreService(page,productEnv);
      //   Assert.assertTrue(applicationListPage.menuTitle().isDisplayed());
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
       //  coreService.getAccountStatus(retrieveLocalStorageVal("modules-permission"));

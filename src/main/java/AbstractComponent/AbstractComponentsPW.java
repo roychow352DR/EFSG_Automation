@@ -4,6 +4,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import utils.BaseTest;
 
 import java.io.IOException;
@@ -26,11 +27,11 @@ public class AbstractComponentsPW {
         int randomEmailSeed = (int) (Math.random() * 10001);
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
-        info.put("email", "qaauto" + BaseTest.getProperty(path, "entity") +  "_" + randomEmailSeed + "@yopmail.com");
+        info.put("email", "qaauto" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
         info.put("existedEmail", "eieuatapproved@yopmail.com");
         info.put("phoneNumber", Integer.toString(randomPhoneNo));
         info.put("existedPhoneNumber", "96553209");
-        info.put("entity", BaseTest.getProperty(path, "entity"));
+        info.put("entity", BaseTest.productEntity);
         info.put("promoCode", "Test");
         info.put("referCode", "Test123");
         info.put("countryCode", "+852");
@@ -59,8 +60,7 @@ public class AbstractComponentsPW {
         info.put("expiredYear", Integer.toString(localDate.getYear()));
         info.put("expiryDay", Integer.toString(localDate.get(ChronoField.DAY_OF_MONTH)));
         info.put("validExpiryYear", Integer.toString(localDate.getYear() + 2));
-       // info.put("username",randomString((int)(Math.random() * 100) + 1));
-        info.put("username",randomString(4) +(int) (Math.random() * 1001) );
+        info.put("username", randomString(10));
         return info;
     }
 
@@ -85,7 +85,23 @@ public class AbstractComponentsPW {
 
 
     public String randomString(int length) {
-        return RandomStringUtils.randomAlphanumeric(length);
+        char letter = RandomStringUtils.randomAlphabetic(1).charAt(0);
+        char digit = RandomStringUtils.randomNumeric(1).charAt(0);
+        String combinedString = "" + letter + digit + RandomStringUtils.randomAlphanumeric(length - 2);
+
+        List<Character> characters = new ArrayList<>();
+        for (char c : combinedString.toCharArray()) {
+            characters.add(c);
+        }
+
+        Collections.shuffle(characters);
+
+        StringBuilder shuffledString = new StringBuilder();
+        for (char c : characters) {
+            shuffledString.append(c);
+        }
+
+        return shuffledString.toString();
     }
 
     public void waitForLocatorVisible(Locator locator) {
@@ -162,6 +178,33 @@ public class AbstractComponentsPW {
             }
         }
         return attribute;
+    }
+
+    public String getApiEndpointDomain(String env) {
+        return switch (env) {
+            case "bauuat" -> "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
+            case "mt5sit" -> "https://2f1lmm1qqi.execute-api.ap-southeast-1.amazonaws.com/sit/core-service/";
+            case "mt5uat" -> "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
+            default -> "";
+        };
+    }
+
+    public String toFullWidth(String halfWidth) {
+        if (halfWidth == null || halfWidth.isEmpty()) {
+            return halfWidth;
+        }
+
+        StringBuilder fullWidthBuilder = new StringBuilder();
+        for (char c : halfWidth.toCharArray()) {
+            if (c >= '!' && c <= '~') {
+                fullWidthBuilder.append((char) (c + 65248));
+            } else if (c == ' ') { // Convert half-width space to full-width space
+                fullWidthBuilder.append('\u3000'); // Full-width space Unicode
+            } else {
+                fullWidthBuilder.append(c);
+            }
+        }
+        return fullWidthBuilder.toString();
     }
 
 }

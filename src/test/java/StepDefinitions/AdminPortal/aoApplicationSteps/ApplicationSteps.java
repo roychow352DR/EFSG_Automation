@@ -28,7 +28,6 @@ public class ApplicationSteps extends BaseTest {
     public SQLDatabase sqlDb = new SQLDatabase();
 
 
-
     @Given("the user logged in to Admin Portal as username {string} and password {string}")
     public void the_user_logged_in_to_Admin_Portal(String username, String password) throws IOException, SQLException {
         page = initializePage();
@@ -87,7 +86,7 @@ public class ApplicationSteps extends BaseTest {
 
     @When("the user clicks {string} button on the trading experience page")
     public void the_user_clicks_button_on_trading_experience(String buttonName) {
-        aopoManager.getTradingExpPage().submitApplication(buttonName);
+        aopoManager.getTradingExpPage().clickButtonByText(buttonName);
     }
 
     @Then("the user sees a record in {string} status is created on the application list")
@@ -157,7 +156,6 @@ public class ApplicationSteps extends BaseTest {
         aopoManager.getApplicationInfoPage().fillMandatory(SetCondition.isExistedEmail(),
                 SetCondition.isExistedPhoneNumber(),
                 SetCondition.isCrossEntity());
-
     }
 
     @And("the user lands on Application Information page")
@@ -290,32 +288,79 @@ public class ApplicationSteps extends BaseTest {
             case "Expired date before current date" -> isExpiredBeforeCurrent = true;
             case "Cross Entity" -> isCrossEntity = true;
         }
-         new SetCondition(isExistedEmail, isExistedPhoneNumber, isBelow18, isExpired, isEdd,isExpiredBeforeCurrent,isCrossEntity);
+        new SetCondition(isExistedEmail, isExistedPhoneNumber, isBelow18, isExpired, isEdd, isExpiredBeforeCurrent, isCrossEntity);
     }
 
     @And("the user selects entity {string} on the application information page")
     public void the_user_selects_entity_on_the_application_information_page(String entity) throws IOException {
-        aopoManager.getApplicationInfoPage().selectEntity(isCrossEntity,entity);
+        aopoManager.getApplicationInfoPage().selectEntity(isCrossEntity, entity);
     }
 
     @And("the user fills username {string} on application information page")
-    public void the_user_fills_username_on_application_information_page(String username){
+    public void the_user_fills_username_on_application_information_page(String username) {
         aopoManager.getApplicationInfoPage().fillUsername(username);
     }
 
     @Then("the user sees an error dialogue with wordings {string} on the application information page")
-    public void the_user_sees_an_error_dialogue_with_wordings_on_the_application_information_page(String errorText){
-        Assert.assertEquals(aopoManager.getApplicationInfoPage().getToastMsg().textContent(),errorText);
+    public void the_user_sees_an_error_dialogue_with_wordings_on_the_application_information_page(String errorText) {
+        Assert.assertEquals(aopoManager.getApplicationInfoPage().getToastMsg().textContent(), errorText);
     }
 
     @Then("the text field {string} is not editable")
-    public void the_text_field_is_not_editable(String textFieldName){
+    public void the_text_field_is_not_editable(String textFieldName) {
         assertThat(aopoManager.getApplicationInfoPage().getTextField(textFieldName)).isDisabled();
     }
 
     @Then("the text field {string} is editable")
-    public void the_text_field_is_editable(String textFieldName){
+    public void the_text_field_is_editable(String textFieldName) {
         assertThat(aopoManager.getApplicationInfoPage().getTextField(textFieldName)).isEnabled();
+    }
+
+    @And("the user fills username with digits number {int} on application information page")
+    public void the_user_fills_username_with_digits_number_on_application_information_page(int length) throws IOException {
+        aopoManager.getApplicationInfoPage().fillRandomUsername(length);
+    }
+
+    @And("the user fills full width username with digits number {int} on application information page")
+    public void the_user_fills_full_width_username_with_digits_number_on_application_information_page(int length) throws IOException {
+        aopoManager.getApplicationInfoPage().fillFullWidthRandomUsername(length);
+    }
+
+    @And("the record in status {string} is created in the application list")
+    public void the_record_in_status_is_created_in_the_application_list(String status) throws IOException, InterruptedException {
+        aopoManager.getApplicationListPage().createIndividual();
+        aopoManager.getApplicationInfoPage().fillApplicationInfo(SetCondition.isExistedEmail(),
+                SetCondition.isExistedPhoneNumber(),
+                SetCondition.isCrossEntity());
+        if (status.equalsIgnoreCase("Draft")) {
+            aopoManager.getMenuPagePW().clickMenu("AO Application List");
+        }
+            aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
+                    SetCondition.isExpired(),
+                    SetCondition.isExpiredBeforeCurrent(),
+                    SetCondition.isEdd());
+            aopoManager.getContactInfoPage().fillContactInfo();
+            aopoManager.getEmployeeFinInfoPage().fillEmployeeFinInfo();
+            aopoManager.getTradingExpPage().fillTradingExp();
+            aopoManager.getTradingExpPage().clickButtonByText("Submit");
+         if (status.equalsIgnoreCase("Rejected")) {
+            aopoManager.getApplicationListPage().clickDetailBtn("Pending Verification");
+            aopoManager.getApplicationInfoPage().clickButtonByText("Next To Personal Information");
+            aopoManager.getPersonalInfoPage().clickButtonByText("Next To Contact Information");
+            aopoManager.getPersonalInfoPage().clickButtonByText("Next To Employee and Financial Information");
+            aopoManager.getEmployeeFinInfoPage().clickButtonByText("Next To Trading Experience");
+            aopoManager.getTradingExpPage().clickButtonByText("Reject");
+            aopoManager.getTradingExpPage().selectRejectReason("ID/Passport No. match with the EDD/AML list");
+            aopoManager.getTradingExpPage().clickButtonByText("Confirm");
+        }
+    }
+
+    @And("the user fills textField {string} retrieved from api endpoint on the application information page")
+    public void the_user_fills_textField_retrieved_from_api_endpoint_on_the_application_information_page(String textFieldName){
+        System.out.println(getRetrievedData());
+        if (textFieldName.equalsIgnoreCase("username")){
+            aopoManager.getApplicationInfoPage().fillUsername(getRetrievedData());
+        }
     }
 
 

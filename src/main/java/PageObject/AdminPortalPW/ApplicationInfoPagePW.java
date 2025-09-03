@@ -131,6 +131,10 @@ public class ApplicationInfoPagePW {
         } else if (errorText.contains("phone") && !isExistedPhoneNumber) {
             phoneNumberField.fill("");
             phoneNumberField.fill(abs.userinfoList().get("phoneNumber"));
+
+        } else if (errorText.contains("username")) {
+            usernameField.fill("");
+            usernameField.fill(abs.userinfoList().get("username"));
         }
     }
 
@@ -191,8 +195,17 @@ public class ApplicationInfoPagePW {
         usernameField.fill(username);
     }
 
+
     public void fillRandomUsername() throws IOException {
         usernameField.fill(abs.userinfoList().get("username"));
+    }
+
+    public void fillRandomUsername(int length) throws IOException {
+        usernameField.fill(abs.randomString(length));
+    }
+
+    public void fillFullWidthRandomUsername(int length) throws IOException {
+        usernameField.fill(abs.toFullWidth(abs.randomString(length)));
     }
 
     public Locator getTextField(String fieldName){

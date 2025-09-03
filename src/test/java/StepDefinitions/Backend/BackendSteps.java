@@ -15,7 +15,8 @@ import static StepDefinitions.AdminPortal.aoApplicationSteps.ApplicationSteps.ao
 
 public class BackendSteps extends BaseTest {
     SQLDatabase sqlDb = new SQLDatabase();
-    CoreService coreService = new CoreService(page);
+    CoreService coreService = new CoreService(page,productEnv);
+    public static String data;
 
     public BackendSteps() throws IOException {
     }
@@ -45,5 +46,17 @@ public class BackendSteps extends BaseTest {
     @And("the parameter {string} is set to the value {string}")
     public void the_parameter_is_set_to_the_value(String param, String value) {
         coreService.setParamVal(param, value);
+    }
+
+    @And("the App client data {string} is found in the AO application list")
+    public void App_client_account_is_registered_in_AO_list(String retrieveVal){
+        data = coreService.getAoListItem(retrieveLocalStorageVal(),retrieveVal,"createdBy","Customer");
+        Assert.assertNotNull(data);
+    }
+
+    @And("value {string} is retrieved according to the param value {string} of param {string} from the ao page api")
+    public void value_is_retrieved_according_to_the_param_value_of_param_from_the_ao_page_api(String retrieveVal,String paramVal,String param){
+        data = coreService.getAoListItem(retrieveLocalStorageVal(),retrieveVal,param,paramVal);
+        setRetrievedData(data);
     }
 }

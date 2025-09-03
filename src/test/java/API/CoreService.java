@@ -3,7 +3,6 @@ package API;
 import AbstractComponent.AbstractComponentsPW;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.microsoft.playwright.APIRequestContext;
 import com.microsoft.playwright.APIResponse;
@@ -12,6 +11,7 @@ import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.RequestOptions;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class CoreService {
 
@@ -19,11 +19,12 @@ public class CoreService {
     private final String entity;
     public static String clientType;
     public static String status;
-    public String domain = "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
+    private final String domain;
 
-    public CoreService(Page page) throws IOException {
+    public CoreService(Page page,String productEnv) throws IOException {
         abs = new AbstractComponentsPW(page);
         entity = abs.userinfoList().get("entity");
+        this.domain = abs.getApiEndpointDomain(productEnv);
     }
 
     public void getAccountStatus(String token)
@@ -51,14 +52,31 @@ public class CoreService {
         JsonObject json = gson.fromJson(responseBody, JsonObject.class);
         JsonObject responseObj = json.getAsJsonObject("response");
         JsonArray contentArray = responseObj.getAsJsonArray("content");
-//        for (int i = 0 ; i < contentArray.size() ; i++){
-//            JsonObject firstItem = contentArray.get(i).getAsJsonObject();
-//            if (firstItem.get(condition).getAsString().equalsIgnoreCase(conditionValue)){
-//                return firstItem.get(value).getAsString();
-//            }
-//        }
         JsonObject firstItem = contentArray.get(0).getAsJsonObject();
         return firstItem.get(value).getAsString();
+    }
+
+    public String getValFromJsonArray(String responseBody,String extractVal,String conditionVal,String conditionParam)
+    {
+        Gson gson = new Gson();
+        JsonObject json = gson.fromJson(responseBody, JsonObject.class);
+        JsonObject responseObj = json.getAsJsonObject("response");
+        JsonArray contentArray = responseObj.getAsJsonArray("content");
+        String retrieveValue = "";
+        try {
+            for (int i = 0; i < contentArray.size(); i++) {
+                JsonObject firstItem = contentArray.get(i).getAsJsonObject();
+                if (firstItem.get(conditionVal).getAsString().equalsIgnoreCase(conditionParam)) {
+                    retrieveValue = firstItem.get(extractVal).getAsString();
+                    return retrieveValue;
+                }
+            }
+        } catch (Exception e){
+            System.err.println("Matched Record not found :" + e.getMessage());
+        }
+//        JsonObject firstItem = contentArray.get(0).getAsJsonObject();
+//        return firstItem.get(value).getAsString();
+        return retrieveValue;
     }
 
     public void getAccountId(String token)
@@ -107,6 +125,61 @@ public class CoreService {
                 pageNum++;
             }
         } while (value == null);
+    }
+
+    public String getAoList(String token, String extractVal) {
+        int pageNum = 0;
+        String jsonBody ;
+        String endPoint = domain + "account-opening/page";
+        String authToken = "Bearer " + token;
+        String value;
+        Playwright playwright = Playwright.create();
+        APIRequestContext request = playwright.request().newContext();
+        APIResponse response;
+        do {
+            jsonBody = "{\"filter\":{},\"page\":"+pageNum+",\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}";
+          // System.out.println(jsonBody);
+            response = request.post(
+                    endPoint,
+                    RequestOptions.create()
+                            .setHeader("Authorization", authToken)
+                            .setHeader("Content-Type", "application/json")
+                            .setData(jsonBody)
+            );
+            System.out.println(response.text());
+            value = getValFromJsonArray(response.text(),extractVal);
+            if (value == null) {
+                pageNum++;
+            }
+        } while (value == null);
+        return value;
+    }
+
+    public String getAoListItem(String token, String extractVal,String conditionVal,String conditionParam) {
+        int pageNum = 0;
+        String jsonBody ;
+        String endPoint = domain + "account-opening/page";
+        String authToken = "Bearer " + token;
+        String value;
+        Playwright playwright = Playwright.create();
+        APIRequestContext request = playwright.request().newContext();
+        APIResponse response;
+        do {
+            jsonBody = "{\"filter\":{},\"page\":"+pageNum+",\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}";
+            // System.out.println(jsonBody);
+            response = request.post(
+                    endPoint,
+                    RequestOptions.create()
+                            .setHeader("Authorization", authToken)
+                            .setHeader("Content-Type", "application/json")
+                            .setData(jsonBody)
+            );
+            value = getValFromJsonArray(response.text(),extractVal,conditionVal,conditionParam);
+            if (value == null) {
+                pageNum++;
+            }
+        } while (value == null);
+        return value;
     }
 
     public void setParamVal(String param, String value){
