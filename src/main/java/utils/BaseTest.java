@@ -181,7 +181,7 @@ public class BaseTest {
                 case "bausit" -> "https://d13ckj22o5rgah.cloudfront.net/login";
                 case "bauuat" -> "https://uat-aocm-ap.empfs.net/login";
                 case "mt5sit" -> "https://d3lyp6p86bdjbb.cloudfront.net/login";
-                case "mt5uat" -> "";
+                case "mt5uat" -> "https://bau-uat-aocm-ap.empfs.net/login";
                 default -> throw new IllegalArgumentException("Invalid environment: " + env);
             };
         } else if (product.equalsIgnoreCase("mio")) {

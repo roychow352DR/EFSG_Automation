@@ -2,7 +2,7 @@ Feature: AO Application List
 
   @Regression @L3Creation @AdminPortal @Smoke @AO @Username @EBL
   Scenario: Individual - Username in Rejected status is reusable for applicant creation
-    Given the user logged in to Admin Portal as username "samuellai" and password "Aa12345678!"
+    Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the record in status "Rejected" is created in the application list
     And value "username" is retrieved according to the param value "REJECTED" of param "status" from the ao page api
     When the user clicks "Create Account" button on the application page

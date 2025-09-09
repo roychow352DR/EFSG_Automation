@@ -1,13 +1,13 @@
-Feature: AO Username
+Feature: AO Application List
 
   @Regression @AdminPortal @AO @Username @EBL
-  Scenario: Create Individual Account with status in Pending Verification with valid username inputs - Length: with at least 3 Digits
+  Scenario: Create Individual Account with status in Pending Verification with duplicated email address
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up
     And the user clicks "submit" button on the create account pop up
     And the user fills mandatory information on application information page
-    And the user fills username with digits number 3 on application information page
+    And the user fills value "qaautol3app@yopmail.com" in the text field "email" on application information page
     And the user clicks "Next to Personal Information" button on the application information page
     And the user fills personal information page
     And the user fills contact information page
