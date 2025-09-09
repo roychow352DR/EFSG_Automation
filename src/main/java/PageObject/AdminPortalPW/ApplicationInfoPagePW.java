@@ -64,6 +64,9 @@ public class ApplicationInfoPagePW {
 
     public void fillMandatory(boolean isExistedEmail,boolean isExistedPhoneNumber,boolean isCrossEntity) throws IOException {
         selectEntity(isCrossEntity);
+        if (abs.userinfoList().get("entity").contains("EBL")){
+            fillRandomUsername();
+        }
         fillEmail(isExistedEmail);
         fillPhoneNumber(isExistedPhoneNumber);
     }
@@ -102,6 +105,11 @@ public class ApplicationInfoPagePW {
         emailField.fill(applicantEmail);
     }
 
+    public void fillEmail(String email) throws IOException {
+        applicantEmail = email;
+        emailField.fill(email);
+    }
+
     public void fillPhoneNumber(boolean isExistedPhoneNumber) throws IOException {
         countryCodeField.click();
         listItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("countryCode"))).click();
@@ -111,6 +119,13 @@ public class ApplicationInfoPagePW {
         else {
             phoneNumberField.fill(abs.userinfoList().get("existedPhoneNumber"));
         }
+    }
+
+    public void fillPhoneNumber(String phoneNumber) throws IOException {
+        countryCodeField.click();
+        listItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("countryCode"))).click();
+        phoneNumberField.fill(phoneNumber);
+
     }
 
     public String submittedApplicantEmail() {

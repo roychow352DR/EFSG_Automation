@@ -296,9 +296,17 @@ public class ApplicationSteps extends BaseTest {
         aopoManager.getApplicationInfoPage().selectEntity(isCrossEntity, entity);
     }
 
-    @And("the user fills username {string} on application information page")
-    public void the_user_fills_username_on_application_information_page(String username) {
-        aopoManager.getApplicationInfoPage().fillUsername(username);
+    @And("the user fills value {string} in the text field {string} on application information page")
+    public void the_user_fills_value_in_the_text_field_on_application_information_page(String value,String textFieldName) throws IOException {
+        if (textFieldName.equalsIgnoreCase("username")) {
+            aopoManager.getApplicationInfoPage().fillUsername(value);
+        }
+        else if (textFieldName.equalsIgnoreCase("email")){
+            aopoManager.getApplicationInfoPage().fillEmail(value);
+        }
+        else if (textFieldName.equalsIgnoreCase("mobileNumber")){
+            aopoManager.getApplicationInfoPage().fillPhoneNumber(value);
+        }
     }
 
     @Then("the user sees an error dialogue with wordings {string} on the application information page")
