@@ -27,7 +27,7 @@ public class AbstractComponentsPW {
         int randomEmailSeed = (int) (Math.random() * 10001);
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
-        info.put("email", "qaauto" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
+        info.put("email", "qaauto" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
         info.put("existedEmail", "eieuatapproved@yopmail.com");
         info.put("phoneNumber", Integer.toString(randomPhoneNo));
         info.put("existedPhoneNumber", "96553209");
@@ -184,7 +184,7 @@ public class AbstractComponentsPW {
         return switch (env) {
             case "bauuat" -> "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
             case "mt5sit" -> "https://2f1lmm1qqi.execute-api.ap-southeast-1.amazonaws.com/sit/core-service/";
-            case "mt5uat" -> "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
+            case "mt5uat" -> "https://bau-uat-aocm-api.empfs.net/bau-uat/core-service/";
             default -> "";
         };
     }
