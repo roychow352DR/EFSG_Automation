@@ -7,6 +7,8 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.cucumber.java.en_scouse.An;
+import org.checkerframework.checker.units.qual.A;
 import org.testng.Assert;
 import utils.BaseTest;
 import utils.SetCondition;
@@ -342,6 +344,7 @@ public class ApplicationSteps extends BaseTest {
                 SetCondition.isCrossEntity());
         if (status.equalsIgnoreCase("Draft")) {
             aopoManager.getMenuPagePW().clickMenu("AO Application List");
+            return;
         }
             aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
                     SetCondition.isExpired(),
@@ -369,6 +372,19 @@ public class ApplicationSteps extends BaseTest {
         if (textFieldName.equalsIgnoreCase("username")){
             aopoManager.getApplicationInfoPage().fillUsername(getRetrievedData());
         }
+    }
+
+    @When("the user logout Admin Portal")
+    public void the_user_logout_Admin_Portal(){
+        aopoManager.getMenuPagePW().clickLogout();
+        page.waitForTimeout(500);
+    }
+
+    @And("the user re-logged in to Admin Portal as username {string} and password {string}")
+    public void the_user_re_logged_in_to_Admin_Portal_as_username_and_password(String username, String password){
+        aopoManager.getAdminLoginPage().loginETE(username, password);
+     //   page.pause();
+        assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
     }
 
 

@@ -60,5 +60,4 @@ public class CmApplicationInfoPage {
     public Locator getButtonByText(String buttonText){
         return buttons.filter(new Locator.FilterOptions().setHas(page.getByText(buttonText,new Page.GetByTextOptions().setExact(true))));
     }
-
 }

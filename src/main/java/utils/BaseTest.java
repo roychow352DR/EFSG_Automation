@@ -83,10 +83,9 @@ public class BaseTest {
     public static String retrievedData;
 
 
-    public SetCondition initializeCondition;
-
     public BaseTest() {
-        this.initializeCondition = new SetCondition(isBelow18, isExistedPhoneNumber, isBelow18, isExpired, isEdd, isExpiredBeforeCurrent, isCrossEntity);
+        new SetCondition(false, false, false, false, false, false, false);
+
     }
 
 

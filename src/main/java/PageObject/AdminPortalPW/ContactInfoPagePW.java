@@ -14,6 +14,7 @@ public class ContactInfoPagePW {
     public final Locator cityField;
     public final Locator nextBtn;
     public final Locator buttons;
+    public final Locator tabs;
 
     public ContactInfoPagePW(Page page) {
         this.page = page;
@@ -22,6 +23,7 @@ public class ContactInfoPagePW {
         this.cityField = page.locator("input[name='city']");
         this.nextBtn = page.getByRole(AriaRole.BUTTON);
         this.buttons = page.getByRole(AriaRole.BUTTON);
+        this.tabs = page.getByRole(AriaRole.TAB);
     }
 
     public void fillContactInfo() throws IOException {
@@ -44,6 +46,10 @@ public class ContactInfoPagePW {
 
     public void clickButtonByText(String buttonText) {
         buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).click();
+    }
+
+    public Locator getTab(String buttonText){
+        return tabs.filter(new Locator.FilterOptions().setHasText(buttonText));
     }
 
 }
