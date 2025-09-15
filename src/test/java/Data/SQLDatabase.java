@@ -1,17 +1,23 @@
 package Data;
 
+import utils.SQLConnection;
+
 import java.sql.*;
+
+import static utils.BaseTest.productEnv;
+
 
 public class SQLDatabase {
     public String count;
+    private final SQLConnection sqlConnection;
+
+    public SQLDatabase(){
+        this.sqlConnection = new SQLConnection(productEnv);
+    }
 
     public Statement sqlDatabaseConnection() throws SQLException {
-
-        String url = "jdbc:mysql://empsg-uat-aocm-sql-db.cg8qhq5ec18a.ap-southeast-1.rds.amazonaws.com:3306/cm?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=UTC"; // or jdbc:postgresql://...
-        String user = "admin";
-        String password = "jHt03$pQ5f";
         try {
-            Connection conn = DriverManager.getConnection(url, user, password);
+            Connection conn = DriverManager.getConnection(sqlConnection.getUrl(), sqlConnection.getUsername(), sqlConnection.getPassword());
             return conn.createStatement();
 
         } catch (Exception e) {
