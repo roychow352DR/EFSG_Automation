@@ -24,22 +24,22 @@ public class AOLoginSteps extends BaseTest {
 
     @Given("the user lands on Admin Portal login page")
     public void the_user_lands_on_Admin_Portal_login_page() throws IOException, URISyntaxException, InterruptedException {
-    //    login =  launchApplication();
-     //   Thread.sleep(2000);
+        //    login =  launchApplication();
+        //   Thread.sleep(2000);
         page = initializePage();
         aopoManager = new AOPOManager(page);
-        coreService = new CoreService(page,productEnv);
+        coreService = new CoreService(page, productEnv);
     }
 
     @Given("the user fills in with username {string} and password {string}")
-    public void the_user_fills_in_with_username_and_password(String username,String password) throws IOException, InterruptedException {
-       // login.loginApplication(username,password);
-        aopoManager.getAdminLoginPage().fillCredential(username,password);
+    public void the_user_fills_in_with_username_and_password(String username, String password) throws IOException, InterruptedException {
+        // login.loginApplication(username,password);
+        aopoManager.getAdminLoginPage().fillCredential(username, password);
     }
 
     @Given("the user input nothing as username and password")
     public void the_user_input_nothing_as_username_and_password() throws InterruptedException {
-        login.loginApplication("","");
+        login.loginApplication("", "");
     }
 
     @When("the user clicks Sign In button")
@@ -52,33 +52,28 @@ public class AOLoginSteps extends BaseTest {
 
     @Then("the user sees Menu display on the screen")
     public void the_user_sees_Menu_display_on_the_screen() throws IOException {
-        coreService = new CoreService(page,productEnv);
-     //   Assert.assertTrue(applicationListPage.menuTitle().isDisplayed());
+        coreService = new CoreService(page, productEnv);
+        //   Assert.assertTrue(applicationListPage.menuTitle().isDisplayed());
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
-      //  coreService.getAccountStatus(retrieveLocalStorageVal("modules-permission"));
+        //  coreService.getAccountStatus(retrieveLocalStorageVal("modules-permission"));
     }
 
     @Then("the user sees {string} message pop up")
-    public void the_user_sees_message_pop_up(String error)
-    {
-          //  Assert.assertTrue(login.loginErrorValidation().equalsIgnoreCase(string));
-            assertThat(aopoManager.getAdminLoginPage().loginErrorValidation(error)).containsText(error);
+    public void the_user_sees_message_pop_up(String error) {
+        //  Assert.assertTrue(login.loginErrorValidation().equalsIgnoreCase(string));
+        assertThat(aopoManager.getAdminLoginPage().loginErrorValidation(error)).containsText(error);
     }
 
     @Then("the user sees the Sign In button is unclickable")
-    public void the_user_sees_the_Sign_In_button_is_unclickable()
-    {
-       // Assert.assertFalse(unclickableCTA(login.ctaButton()));
+    public void the_user_sees_the_Sign_In_button_is_unclickable() {
+        // Assert.assertFalse(unclickableCTA(login.ctaButton()));
         assertThat(aopoManager.getAdminLoginPage().getLoginButton()).isDisabled();
 
     }
 
     @Given("webpage launch")
     public void webpage_launch() throws IOException {
-           Page page = initializePage();
-           aopoManager = new AOPOManager(page);
+        Page page = initializePage();
+        aopoManager = new AOPOManager(page);
     }
-
-
-
 }

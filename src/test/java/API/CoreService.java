@@ -11,7 +11,6 @@ import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.RequestOptions;
 
 import java.io.IOException;
-import java.util.Objects;
 
 public class CoreService {
 
@@ -56,7 +55,7 @@ public class CoreService {
         return firstItem.get(value).getAsString();
     }
 
-    public String getValFromJsonArray(String responseBody,String extractVal,String conditionVal,String conditionParam)
+    public String getValFromJsonArray(String responseBody, String extractVal, String conditionVal, String conditionParam)
     {
         Gson gson = new Gson();
         JsonObject json = gson.fromJson(responseBody, JsonObject.class);
@@ -175,10 +174,10 @@ public class CoreService {
                             .setData(jsonBody)
             );
             value = getValFromJsonArray(response.text(),extractVal,conditionVal,conditionParam);
-            if (value == null) {
+            if (value.isEmpty()) {
                 pageNum++;
             }
-        } while (value == null);
+        } while (value.isEmpty());
         return value;
     }
 

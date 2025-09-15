@@ -36,6 +36,8 @@ public class Hooks extends BaseTest {
     public static String product;
     public static Path videoPath;
 
+    public static String productEntity;
+
     @BeforeAll
     public static void createQaseTestRun() throws IOException {
         initializeConfigurations();
@@ -48,7 +50,8 @@ public class Hooks extends BaseTest {
     private static void initializeConfigurations() throws IOException {
         globalConfig = new GlobalConfig();
         product = GlobalConfig.getProperty(GlobalConfig.getGlobalPropertyPath("globalPropertyPath"), "product");
-        qaseConfig = new QASEConfig(product);
+        productEntity = GlobalConfig.getProperty(GlobalConfig.getGlobalPropertyPath("globalPropertyPath"), "entity");
+        qaseConfig = new QASEConfig(product, productEntity);
         apiToken = qaseConfig.getQaseConfig().get("apiToken");
         projectCode = qaseConfig.getQaseConfig().get("projectCode");
     }
@@ -83,7 +86,7 @@ public class Hooks extends BaseTest {
      * Handles test cleanup and reporting
      */
 
-   // @After
+    // @After
     public void cleanupAndReport(Scenario scenario) throws Exception {
         handleVideoRecording(scenario);
         cleanupDriver();

@@ -1,8 +1,10 @@
 package StepDefinitions.AdminPortal.cm;
 
+import com.microsoft.playwright.options.LoadState;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.testng.Assert;
 import utils.BaseTest;
 
 import java.io.IOException;
@@ -55,13 +57,17 @@ public class CMSteps extends BaseTest {
 
     @And("the user fills {string} as reject reason on the CM trading experience page")
     public void the_user_fills_as_reject_reason_on_the_CM_trading_experience_page(String reason) {
-        aopoManager.cmTradingExpPage.fillReason(reason);
+        aopoManager.getCmTradingExpPage().fillReason(reason);
     }
 
-    @And("the user edit {string} on the CM personal information page")
-    public void the_user_edit_on_the_CM_personal_information_page(String editField) throws IOException {
-        if (editField.contains("Mobile")) {
-            aopoManager.cmPersonalInfoPage.fillMobile();
+    @And("the user edit text field {string} on the CM personal information page")
+    public void the_user_edit_text_field_on_the_CM_personal_information_page(String editField) throws IOException {
+        if (editField.equalsIgnoreCase("mobile")) {
+            aopoManager.getCmPersonalInfoPage().fillMobile();
+            setRetrievedData(aopoManager.getCmPersonalInfoPage().getTextFieldValue(editField));
+        } else if (editField.equalsIgnoreCase("username")) {
+            aopoManager.getCmPersonalInfoPage().fillUsername();
+            setRetrievedData(aopoManager.getCmPersonalInfoPage().getTextFieldValue(editField));
         }
     }
 
@@ -97,23 +103,75 @@ public class CMSteps extends BaseTest {
     }
 
     @And("the user uncheck {string} checkbox on the CM personal information page")
-    public void the_user_uncheck_checkbox_on_the_CM_personal_information_page(String checkboxName){
+    public void the_user_uncheck_checkbox_on_the_CM_personal_information_page(String checkboxName) {
         aopoManager.getCmPersonalInfoPage().uncheckBox(checkboxName);
     }
 
     @Then("the user sees {string} error message displayed on the CM personal information page")
-    public void the_user_sees_error_message_displayed_on_the_CM_personal_information_page(String errorText){
+    public void the_user_sees_error_message_displayed_on_the_CM_personal_information_page(String errorText) {
         assertThat(aopoManager.getCmPersonalInfoPage().errorValidation()).hasText(errorText);
     }
 
     @Then("the user sees {string} dialogue is prompted on the customer management page")
-    public void the_user_sees_dialogue_is_prompted_on_the_customer_management_page(String dialogueText){
+    public void the_user_sees_dialogue_is_prompted_on_the_customer_management_page(String dialogueText) {
         assertThat(aopoManager.getCustomerManagementPage().getDialogue()).hasText(dialogueText);
     }
 
     @When("the user sees a record in {string} status with {string} client type on the customer management page")
-    public void the_user_sees_a_record_in_status_with_client_type_on_the_customer_management_page(String cmStatus,String clientType) throws IOException {
-        aopoManager.getCustomerManagementPage().getStatusEmail(cmStatus,clientType);
+    public void the_user_sees_a_record_in_status_with_client_type_on_the_customer_management_page(String cmStatus, String clientType) throws IOException {
+        aopoManager.getCustomerManagementPage().getStatusEmail(cmStatus, clientType);
     }
 
+    @And("the user fills value {string} in the text field {string} on the CM application information page")
+    public void the_user_fills_value_in_the_text_field_on_the_CM_application_information_page(String value, String textField) {
+        if (textField.equalsIgnoreCase("username")) {
+            aopoManager.getCmPersonalInfoPage().fillUsername(value);
+        }
+    }
+
+    @Then("the user sees dialogue text {string} is prompted on the CM personal information page")
+    public void the_user_sees_dialogue_text_is_prompted_on_the_CM_personal_information_page(String toastMsg) {
+        assertThat(aopoManager.getCmPersonalInfoPage().getToastMsg()).containsText(toastMsg);
+    }
+
+    @And("the user performs first approval on cm page")
+    public void the_user_performs_first_approval_on_cm_page() throws InterruptedException {
+        aopoManager.getCmApplicationInfoPage().clickButtonByText("Next To Personal Information");
+        aopoManager.getCmPersonalInfoPage().clickButtonByText("Next To Contact Information");
+        aopoManager.getCmContactInfoPage().clickButtonByText("Next To Employee and Financial Information");
+        aopoManager.getCmEmployeeInfoPage().clickButtonByText("Next To Trading Experience");
+        aopoManager.getCmTradingExpPage().clickButtonByText("Verify");
+        aopoManager.getCmTradingExpPage().clickButtonByText("Confirm");
+    }
+
+    @And("the user performs second approval on cm page")
+    public void the_user_performs_second_approval_on_cm_page() throws InterruptedException {
+        aopoManager.getCmApplicationInfoPage().clickButtonByText("Next To Personal Information");
+        aopoManager.getCmPersonalInfoPage().clickButtonByText("Next To Contact Information");
+        aopoManager.getCmContactInfoPage().clickButtonByText("Next To Employee and Financial Information");
+        aopoManager.getCmEmployeeInfoPage().clickButtonByText("Next To Trading Experience");
+        aopoManager.getCmTradingExpPage().clickButtonByText("Approve");
+        aopoManager.getCmTradingExpPage().clickButtonByText("Confirm");
+    }
+
+    @Then("the user sees text field {string} value is updated on the CM personal information page")
+    public void the_user_sees_text_field_value_is_updated_on_the_CM_personal_information_page(String textFieldName) {
+        Assert.assertEquals(aopoManager.getCmPersonalInfoPage().getTextFieldValue(textFieldName), getRetrievedData());
+    }
+
+    @And("the user fills value {string} in the text field {string} on the cm customer management page")
+    public void the_user_fills_value_in_the_text_field_on_the_cm_customer_management_page(String value, String textFieldName) throws IOException {
+        if (textFieldName.equalsIgnoreCase("username")) {
+            aopoManager.getCmPersonalInfoPage().fillUsername(value);
+        } else if (textFieldName.equalsIgnoreCase("email")) {
+            aopoManager.getCmPersonalInfoPage().fillEmail(value);
+        } else if (textFieldName.equalsIgnoreCase("mobile")) {
+            aopoManager.getCmPersonalInfoPage().fillMobile(value);
+        }
+    }
+
+    @Then("the user lands on next tab {string} of customer management edit page")
+    public void the_user_lands_on_next_tab_of_customer_management_edit_page(String buttonText) {
+        assertThat(aopoManager.getContactInfoPage().getTab(buttonText)).hasAttribute("aria-selected", "true");
+    }
 }

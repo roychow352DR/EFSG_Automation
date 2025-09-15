@@ -35,7 +35,7 @@ public class BackendSteps extends BaseTest {
     @Then("{string} is updated to modified value in CM {string} database table where {string} retrieved by {string}")
     public void is_updated_to_modified_value_in_CM_database_table_where_retrieved_by(String columnName, String tableName, String filterCol, String filterVal) throws SQLException {
         String retrievedValue = sqlDb.retrieveValueFromDb(columnName, tableName, filterCol, sqlDb.getValueBasedOnEmail(filterVal, aopoManager.getCustomerManagementPage().email));
-        Assert.assertEquals(retrievedValue, aopoManager.cmPersonalInfoPage.changeValue);
+        Assert.assertEquals(retrievedValue, getRetrievedData());
     }
 
     @And("the user extracts value {string} from the cm page api")

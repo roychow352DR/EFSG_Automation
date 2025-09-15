@@ -11,12 +11,14 @@ import java.util.Map;
 public class QASEConfig extends GlobalConfig {
 
     public static QaseApiClient qaseApiClient;
-    public String product;
+    private final String product;
+    private final String productEntity;
     public String path;
 
-    public QASEConfig(String product)
+    public QASEConfig(String product,String productEntity)
     {
         this.product = product;
+        this.productEntity = productEntity;
     }
 
 
@@ -27,8 +29,8 @@ public class QASEConfig extends GlobalConfig {
         qaseConfig.put("qasePropertyPath",path);
         qaseConfig.put("apiToken",getProperty(path,"qase.api.token"));
         qaseConfig.put("projectCode",getProperty(path,"qase.project.code"));
-        qaseConfig.put("testPlanId",getTestPlanId(getProperty(path, "testType"), path));
-        qaseConfig.put("runTitle",qaseApiClient.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "testType"), path)), getProperty(path,"qase.project.code")));
+        qaseConfig.put("testPlanId",getTestPlanId(getProperty(path, "testType"),path,productEntity));
+        qaseConfig.put("runTitle",qaseApiClient.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "testType"), path,productEntity)), getProperty(path,"qase.project.code")));
         return qaseConfig;
 
     }
@@ -43,12 +45,23 @@ public class QASEConfig extends GlobalConfig {
         };
 
     }
-    public static String getTestPlanId(String testType, String path) throws IOException {
-        return switch (testType) {
-            case "Regression" -> getProperty(path, "qase.regression.testPlanId");
-            case "Smoke" -> getProperty(path, "qase.smoke.testPlanId");
-            default -> "";
-        };
+    public static String getTestPlanId(String testType, String path,String entity) throws IOException {
+        if (entity.equalsIgnoreCase("EIEHK")) {
+            return switch (testType) {
+                case "Regression" -> getProperty(path, "qase.regression.testPlanId");
+                case "Smoke" -> getProperty(path, "qase.smoke.testPlanId");
+                default -> "";
+            };
+        }
+        else if (entity.equalsIgnoreCase("EBL_MT5")) {
+            return switch (testType) {
+                case "Regression" -> getProperty(path, "qase.ebl.regression.testPlanId");
+                case "Smoke" -> getProperty(path, "qase.smoke.testPlanId");
+                default -> "";
+            };
+        }
+
+        return testType;
     }
 
     public int getTestRunId(String property,String testPlanId,String runTitle,String product) throws IOException {
