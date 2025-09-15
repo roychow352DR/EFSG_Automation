@@ -28,7 +28,7 @@ public class AbstractComponentsPW {
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
         info.put("email", "qaauto" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
-        info.put("existedEmail", "eieuatapproved@yopmail.com");
+        info.put("existedEmail", "uatapproved@yopmail.com");
         info.put("phoneNumber", Integer.toString(randomPhoneNo));
         info.put("existedPhoneNumber", "96553209");
         info.put("entity", BaseTest.productEntity);

@@ -32,6 +32,8 @@ public class CmPersonalInfoPage {
     public final Locator historyDialogue;
     public final Locator textField;
     public final Locator label;
+    public final Locator toastMsg;
+    public final Locator usernameField;
     public String changeValue;
 
     public CmPersonalInfoPage(Page page) {
@@ -60,6 +62,8 @@ public class CmPersonalInfoPage {
         this.historyDialogue = page.getByRole(AriaRole.DIALOG, new Page.GetByRoleOptions().setName("History"));
         this.textField = page.locator("input");
         this.label = page.locator("label");
+        this.toastMsg = page.locator(".Toastify__toast-body div").nth(1);
+        this.usernameField = page.locator("input[name='username']");
     }
 
     public void fillPersonalInfo(boolean isBelow18, boolean isExpired, String expiredCondition, boolean isEdd) throws IOException {
@@ -159,7 +163,7 @@ public class CmPersonalInfoPage {
     }
 
     public void uncheckBox(String label) {
-        checkbox.filter(new Locator.FilterOptions().setHas(page.locator("input[name='"+label+"']"))).click();
+        checkbox.filter(new Locator.FilterOptions().setHas(page.locator("input[name='" + label + "']"))).click();
     }
 
     public void fillBlacklistName(String firstname, String lastname) {
@@ -178,6 +182,10 @@ public class CmPersonalInfoPage {
 
     public void fillMobile() throws IOException {
         mobileField.fill(abs.userinfoList().get("phoneNumber"));
+    }
+
+    public void fillMobile(String mobile) throws IOException {
+        mobileField.fill(mobile);
     }
 
     public Locator getHistoryButton() {
@@ -206,5 +214,28 @@ public class CmPersonalInfoPage {
 
     public void getFieldTextByLabel(String labelName) {
         changeValue = abs.getInputValueByAttribute(textField, "name", labelName);
+    }
+
+    public Locator getToastMsg() {
+        return toastMsg;
+    }
+
+    public void fillUsername(String username) {
+        usernameField.fill(username);
+    }
+
+    public void fillUsername() throws IOException {
+        usernameField.fill(abs.userinfoList().get("username"));
+    }
+
+    public String getTextFieldValue(String textFieldName) {
+        if (textFieldName.equalsIgnoreCase("username")) {
+            return usernameField.inputValue();
+        }
+        return textFieldName;
+    }
+
+    public void fillEmail(String email) throws IOException {
+        emailField.fill(email);
     }
 }
