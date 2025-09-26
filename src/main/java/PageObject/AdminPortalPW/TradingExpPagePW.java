@@ -17,6 +17,7 @@ public class TradingExpPagePW {
     public final Locator reasonDropdown;
     public final Locator settlementCurrencyDropdown;
     public final Locator rejectReasonDropdown;
+    public final Locator textField;
 
     public TradingExpPagePW(Page page)
     {
@@ -29,6 +30,7 @@ public class TradingExpPagePW {
         this.reasonDropdown = page.locator("#mui-component-select-verify");
         this.settlementCurrencyDropdown = page.locator("#mui-component-select-settlementCurrency");
         this.rejectReasonDropdown = page.locator("#mui-component-select-reason");
+        this.textField = page.locator("input");
     }
 
     public void fillTradingExp() throws IOException {
@@ -69,5 +71,18 @@ public class TradingExpPagePW {
     public void selectSettlement(){
         settlementCurrencyDropdown.click();
         dropdownOption.filter(new Locator.FilterOptions().setHasText("USD")).click();
+    }
+
+    public String getFieldValByLabel(String labelName) {
+        return abs.getInputValueByAttribute(textField, "name", labelName);
+    }
+
+    public String editDropdownVal(String dropdownName){
+        if (dropdownName.equalsIgnoreCase("settlementCurrency")){
+            settlementCurrencyDropdown.click();
+            abs.selectUnselectedDropdownOption();
+            return getFieldValByLabel(dropdownName);
+        }
+        return dropdownName;
     }
 }

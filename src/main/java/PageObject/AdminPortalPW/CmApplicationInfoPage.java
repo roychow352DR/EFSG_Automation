@@ -26,6 +26,8 @@ public class CmApplicationInfoPage {
     public final Locator promoCodeField;
     public final Locator referralCodeField;
     public final Locator labels;
+    public final Locator inputFieldSession;
+    public final Locator textField;
     String applicantEmail;
 
     public CmApplicationInfoPage(Page page) {
@@ -45,6 +47,8 @@ public class CmApplicationInfoPage {
         this.promoCodeField = page.locator("input[name='promoCode']");
         this.referralCodeField = page.locator("input[name='upperIbAcc']");
         this.labels = page.locator(".css-9iedg7");
+        this.inputFieldSession = page.locator(".css-hp68mp");
+        this.textField = page.locator("input");
     }
 
     public void clickButtonByText(String buttonText) throws InterruptedException {
@@ -59,5 +63,9 @@ public class CmApplicationInfoPage {
 
     public Locator getButtonByText(String buttonText){
         return buttons.filter(new Locator.FilterOptions().setHas(page.getByText(buttonText,new Page.GetByTextOptions().setExact(true))));
+    }
+
+    public boolean checkTextFieldIsEditable() {
+        return abs.checkElementIsEditable(textField);
     }
 }
