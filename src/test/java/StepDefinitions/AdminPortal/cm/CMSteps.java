@@ -1,6 +1,5 @@
 package StepDefinitions.AdminPortal.cm;
 
-import com.microsoft.playwright.options.LoadState;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -122,13 +121,6 @@ public class CMSteps extends BaseTest {
         aopoManager.getCustomerManagementPage().getStatusEmail(cmStatus, clientType);
     }
 
-    @And("the user fills value {string} in the text field {string} on the CM application information page")
-    public void the_user_fills_value_in_the_text_field_on_the_CM_application_information_page(String value, String textField) {
-        if (textField.equalsIgnoreCase("username")) {
-            aopoManager.getCmPersonalInfoPage().fillUsername(value);
-        }
-    }
-
     @Then("the user sees dialogue text {string} is prompted on the CM personal information page")
     public void the_user_sees_dialogue_text_is_prompted_on_the_CM_personal_information_page(String toastMsg) {
         assertThat(aopoManager.getCmPersonalInfoPage().getToastMsg()).containsText(toastMsg);
@@ -159,19 +151,44 @@ public class CMSteps extends BaseTest {
         Assert.assertEquals(aopoManager.getCmPersonalInfoPage().getTextFieldValue(textFieldName), getRetrievedData());
     }
 
-    @And("the user fills value {string} in the text field {string} on the cm customer management page")
-    public void the_user_fills_value_in_the_text_field_on_the_cm_customer_management_page(String value, String textFieldName) throws IOException {
-        if (textFieldName.equalsIgnoreCase("username")) {
-            aopoManager.getCmPersonalInfoPage().fillUsername(value);
-        } else if (textFieldName.equalsIgnoreCase("email")) {
-            aopoManager.getCmPersonalInfoPage().fillEmail(value);
-        } else if (textFieldName.equalsIgnoreCase("mobile")) {
-            aopoManager.getCmPersonalInfoPage().fillMobile(value);
-        }
+    @And("the user fills value {string} in the text field {string} on the CM personal information page")
+    public void the_user_fills_value_in_the_text_field_on_the_CM_personal_information_page(String value, String textFieldName) throws IOException {
+        aopoManager.getCmPersonalInfoPage().fillInputFieldByName(value, textFieldName);
     }
 
     @Then("the user lands on next tab {string} of customer management edit page")
     public void the_user_lands_on_next_tab_of_customer_management_edit_page(String buttonText) {
         assertThat(aopoManager.getContactInfoPage().getTab(buttonText)).hasAttribute("aria-selected", "true");
+    }
+
+    @Then("the user sees text field {string} is editable on the CM personal information page")
+    public void the_user_sees_text_field_is_editable_on_the_CM_personal_information_page(String textFieldName) {
+        assertThat(aopoManager.getCmPersonalInfoPage().getTextField(textFieldName)).isEditable();
+    }
+
+    @Then("the user sees text field {string} is not editable on the CM personal information page")
+    public void the_user_sees_text_field_is_not_editable_on_the_CM_personal_information_page(String textFieldName) {
+        assertThat(aopoManager.getCmPersonalInfoPage().getTextField(textFieldName)).isDisabled();
+    }
+
+    @And("the user edit text field {string} on the CM trading experience page")
+    public void the_user_edit_text_field_on_the_CM_trading_experience_page(String textFieldName) {
+        setRetrievedData(aopoManager.getCmTradingExpPage().editDropdownVal(textFieldName));
+    }
+
+    @Then("the user sees text field {string} value is updated on the CM trading experience page")
+    public void the_user_sees_text_field_value_is_updated_on_the_CM_trading_experience_page(String textFieldName) {
+        Assert.assertEquals(aopoManager.getCmTradingExpPage().getFieldValByLabel(textFieldName), getRetrievedData());
+    }
+
+    @Then("the user sees all elements are not editable on the CM personal information page")
+    public void the_user_sees_all_elements_are_not_editable_on_the_CM_personal_information_page() {
+        Assert.assertFalse(aopoManager.getCmPersonalInfoPage().checkTextFieldIsEditable());
+        Assert.assertFalse(aopoManager.getCmPersonalInfoPage().checkElementIsClickable());
+    }
+
+    @Then("the user sees all elements are not editable on the CM application information page")
+    public void the_user_sees_all_elements_are_not_editable_on_the_CM_application_information_page() {
+        Assert.assertFalse(aopoManager.getCmApplicationInfoPage().checkTextFieldIsEditable());
     }
 }
