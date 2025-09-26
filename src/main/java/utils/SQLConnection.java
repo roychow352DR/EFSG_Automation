@@ -21,7 +21,7 @@ public class SQLConnection {
     public String getUsername() {
         return switch (env) {
             case "bauuat" -> "admin";
-            case "mt5uat" -> "admin";
+            case "mt5uat" -> "cm_readonly";
             default -> "";
         };
     }
@@ -29,7 +29,7 @@ public class SQLConnection {
     public String getPassword() {
         return switch (env) {
             case "bauuat" -> "jHt03$pQ5f";
-            case "mt5uat" -> "eDe:A|MYReKKD.dt*)2((2Z#V_hR";
+            case "mt5uat" -> "WI4R3n)caXi:?B><";
             default -> "";
         };
     }

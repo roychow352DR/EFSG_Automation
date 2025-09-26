@@ -78,8 +78,8 @@ public class ApplicationInfoPagePW {
             listItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("entity"),
                     new Page.GetByTextOptions().setExact(true)))).click();
         }
-        else if (!abs.userinfoList().get("entity").equalsIgnoreCase("Xpro")){
-            listItems.filter(new Locator.FilterOptions().setHas(page.getByText("Xpro",
+        else if (!abs.userinfoList().get("entity").equalsIgnoreCase("XPro")){
+            listItems.filter(new Locator.FilterOptions().setHas(page.getByText("XPro",
                     new Page.GetByTextOptions().setExact(true)))).click();
         }
         else {

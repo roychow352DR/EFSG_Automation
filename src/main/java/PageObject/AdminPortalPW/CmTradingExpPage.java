@@ -16,6 +16,9 @@ public class CmTradingExpPage {
     public final Locator buttons;
     public final Locator reasonField;
     public final Locator toastMsg;
+    public final Locator settlementCurrencyDropdown;
+    public String changeValue;
+    public final Locator textField;
 
     public CmTradingExpPage(Page page) {
         this.page = page;
@@ -26,6 +29,8 @@ public class CmTradingExpPage {
         this.buttons = page.getByRole(AriaRole.BUTTON);
         this.reasonField = page.locator("input[name='reason']");
         this.toastMsg = page.locator(".Toastify__toast-body div").nth(1);
+        this.settlementCurrencyDropdown = page.locator("#mui-component-select-settlementCurrency");
+        this.textField = page.locator("input");
     }
 
     public void fillTradingExp() throws IOException {
@@ -55,5 +60,24 @@ public class CmTradingExpPage {
 
     public Locator getDialogueText() {
         return toastMsg;
+    }
+
+
+    public void selectSettlement(){
+        settlementCurrencyDropdown.click();
+        dropdownOption.filter(new Locator.FilterOptions().setHasText("USD")).click();
+    }
+
+    public String getFieldValByLabel(String labelName) {
+        return abs.getInputValueByAttribute(textField, "name", labelName);
+    }
+
+    public String editDropdownVal(String dropdownName){
+        if (dropdownName.equalsIgnoreCase("settlementCurrency")){
+            settlementCurrencyDropdown.click();
+            abs.selectUnselectedDropdownOption();
+            return getFieldValByLabel(dropdownName);
+        }
+        return dropdownName;
     }
 }

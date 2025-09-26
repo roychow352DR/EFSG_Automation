@@ -109,7 +109,6 @@ public class ApplicationSteps extends BaseTest {
     @And("the user clicks {string} button on the personal information page")
     public void the_user_clicks_button_on_personal_information(String buttonName) {
         aopoManager.personalInfoPagePW.clickButtonByText(buttonName);
-
     }
 
     @And("the user clicks {string} button on the contact information page")
@@ -316,14 +315,14 @@ public class ApplicationSteps extends BaseTest {
         Assert.assertEquals(aopoManager.getApplicationInfoPage().getToastMsg().textContent(), errorText);
     }
 
-    @Then("the text field {string} is not editable")
-    public void the_text_field_is_not_editable(String textFieldName) {
+    @Then("the user sees text field {string} is not editable on the application information page")
+    public void the_user_sees_text_field_is_not_editable_on_the_application_information_page(String textFieldName) {
         assertThat(aopoManager.getApplicationInfoPage().getTextField(textFieldName)).isDisabled();
     }
 
-    @Then("the text field {string} is editable")
-    public void the_text_field_is_editable(String textFieldName) {
-        assertThat(aopoManager.getApplicationInfoPage().getTextField(textFieldName)).isEnabled();
+    @Then("the user sees text field {string} is editable on the application information page")
+    public void the_user_sees_text_field_is_editable_on_the_application_information_page(String textFieldName) {
+        assertThat(aopoManager.getApplicationInfoPage().getTextField(textFieldName)).isEditable();
     }
 
     @And("the user fills username with digits number {int} on application information page")
@@ -386,6 +385,22 @@ public class ApplicationSteps extends BaseTest {
      //   page.pause();
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
     }
+
+    @When("the user edit text field {string} on the trading experience page")
+    public void the_user_edit_text_field_on_the_trading_experience_page(String textFieldName){
+        setRetrievedData(aopoManager.getTradingExpPage().editDropdownVal(textFieldName));
+    }
+
+    @Then("the user sees text field {string} value is updated on the trading experience page")
+    public void the_user_sees_text_field_value_is_updated_on_the_trading_experience_page(String textFieldName){
+        Assert.assertEquals(aopoManager.getTradingExpPage().getFieldValByLabel(textFieldName),getRetrievedData());
+    }
+
+    @And("the user clicks detail button of modified record on the application page")
+    public void the_user_clicks_detail_button_of_modified_record_on_the_application_page(){
+        aopoManager.getApplicationListPage().clickDetailBtn();
+    }
+
 
 
 }
