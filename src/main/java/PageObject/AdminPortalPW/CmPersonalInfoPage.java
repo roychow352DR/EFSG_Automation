@@ -25,7 +25,7 @@ public class CmPersonalInfoPage {
     public final Locator buttons;
     public final Locator errorText;
     public final Locator datePickerArrow;
-    public final Locator checkbox;
+    public final Locator checkboxSession;
     public final Locator mobileField;
     public final Locator historyBtn;
     public final Locator emailField;
@@ -35,6 +35,9 @@ public class CmPersonalInfoPage {
     public final Locator toastMsg;
     public final Locator usernameField;
     public String changeValue;
+    public final Locator dropdownField;
+    public final Locator checkbox;
+    public final Locator radioButtons;
 
     public CmPersonalInfoPage(Page page) {
         this.page = page;
@@ -55,7 +58,7 @@ public class CmPersonalInfoPage {
         this.errorText = page.locator(".css-1wercf4");
         this.datePickerArrow = page.locator("button[title='Next month']");
         //this.checkbox = page.getByRole(AriaRole.CHECKBOX);
-        this.checkbox = page.locator(".css-15j76c0");
+        this.checkboxSession = page.locator(".css-15j76c0");
         this.mobileField = page.locator("input[name='mobile']");
         this.historyBtn = page.locator(".css-1xktw9");
         this.emailField = page.locator("input[name='email']");
@@ -64,6 +67,9 @@ public class CmPersonalInfoPage {
         this.label = page.locator("label");
         this.toastMsg = page.locator(".Toastify__toast-body div").nth(1);
         this.usernameField = page.locator("input[name='username']");
+        this.dropdownField = page.locator(".css-1tz4v7m div");
+        this.checkbox = page.locator("input[type='checkbox']");
+        this.radioButtons = page.locator("input[type='radio']");
     }
 
     public void fillPersonalInfo(boolean isBelow18, boolean isExpired, String expiredCondition, boolean isEdd) throws IOException {
@@ -163,7 +169,7 @@ public class CmPersonalInfoPage {
     }
 
     public void uncheckBox(String label) {
-        checkbox.filter(new Locator.FilterOptions().setHas(page.locator("input[name='" + label + "']"))).click();
+        checkboxSession.filter(new Locator.FilterOptions().setHas(page.locator("input[name='" + label + "']"))).click();
     }
 
     public void fillBlacklistName(String firstname, String lastname) {
@@ -237,5 +243,24 @@ public class CmPersonalInfoPage {
 
     public void fillEmail(String email) throws IOException {
         emailField.fill(email);
+    }
+
+    public Locator getTextField(String textFieldName) {
+        return page.locator("input[name='" + textFieldName + "']");
+    }
+
+    public void fillInputFieldByName(String value, String textFieldName) {
+        page.locator("input[name='" + textFieldName + "']").fill(value);
+    }
+
+    public boolean checkTextFieldIsEditable() {
+        return abs.checkElementIsEditable(textField);
+    }
+
+    public boolean checkElementIsClickable() {
+        return abs.checkElementIsEnable(dropdownField) &&
+                abs.checkElementIsEnable(checkbox) &&
+                abs.checkElementIsEnable(radioButtons) &&
+                abs.checkElementIsEnable(calendarButton);
     }
 }

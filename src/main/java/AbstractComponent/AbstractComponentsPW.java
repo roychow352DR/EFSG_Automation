@@ -207,4 +207,28 @@ public class AbstractComponentsPW {
         return fullWidthBuilder.toString();
     }
 
+    public void selectUnselectedDropdownOption() {
+        Locator unselectedOptions = page.locator("[role='option'][aria-selected='false']");
+        unselectedOptions.first().click();
+    }
+
+    public boolean checkElementIsEditable(Locator locator){
+        for (int i = 0 ; i < locator.count() ; i++){
+            boolean isEditable = locator.nth(i).isEditable();
+            if (isEditable) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean checkElementIsEnable(Locator locator){
+        for (int i = 0 ; i < locator.count() ; i++){
+            boolean isClickable = locator.nth(i).isEnabled();
+            if (isClickable) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

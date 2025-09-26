@@ -22,6 +22,7 @@ public class ApplicationListPagePW {
     public final Locator nextPageBtn;
     public final Locator status;
     public final Locator entityRow;
+    public final Locator emailRow;
 
     public ApplicationListPagePW(Page page) throws IOException {
         this.page = page;
@@ -37,6 +38,7 @@ public class ApplicationListPagePW {
         this.status = page.locator(".css-9iedg7");
         this.entityRow = page.locator(".css-ff6t81:nth-child(1)");
         this.entity = abs.userinfoList().get("entity");
+        this.emailRow = page.locator(".css-ff6t81:nth-child(2)");
     }
 
     public Locator getMenuText() {
@@ -77,5 +79,11 @@ public class ApplicationListPagePW {
         abs.getItemsByText(applicationStatus, status, nextPageBtn,entity,entityRow);
         email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(1).textContent();
         return email;
+    }
+
+    public void clickDetailBtn(){
+        abs.getItemsByText(email, emailRow, nextPageBtn,entity,entityRow);
+        row.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
 }
