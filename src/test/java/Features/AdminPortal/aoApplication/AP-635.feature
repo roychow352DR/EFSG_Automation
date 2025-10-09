@@ -1,7 +1,7 @@
 Feature: AO Application List
 
 
-  @Regression @AdminPortal @AO
+  @Regression @AdminPortal @AO @EBL @EIE @XPro
   Scenario: Create Individual Account with status in Awaiting Response
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the "EDD" condition is satisfied

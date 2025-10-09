@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @Blacklist
+  @Regression @AdminPortal @AO @Blacklist @EIE @XPro
   Scenario: Individual - Individual - User sees blacklist label on AO Application Detail if Passport no. matched with AO Blacklist
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     And the user clicks "Create Account" button on the application page

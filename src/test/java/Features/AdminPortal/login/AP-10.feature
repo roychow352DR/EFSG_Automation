@@ -1,7 +1,7 @@
 Feature: Admin Portal login
 
 
-  @Regression @AdminPortal @Smoke
+  @Regression @AdminPortal @Smoke @EBL @EIE @XPro
   Scenario: Login as suspended account
     Given the user lands on Admin Portal login page
     And the user fills in with username "qaautosuspend" and password "Test1234@"

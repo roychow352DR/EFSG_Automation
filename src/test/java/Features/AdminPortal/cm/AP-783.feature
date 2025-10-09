@@ -1,6 +1,6 @@
 Feature: Customer Management
 
-  @Regression @AdminPortal @CM
+  @Regression @AdminPortal @CM @EBL @EIE @XPro
   Scenario: Prompted error after the invalid promotion code is entered on CM
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the menu
