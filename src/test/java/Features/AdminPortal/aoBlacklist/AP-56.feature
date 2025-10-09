@@ -1,6 +1,6 @@
 Feature: AO Blacklist
 
-  @Regression @AdminPortal @Blacklist
+  @Regression @AdminPortal @Blacklist @EBL @EIE @XPro
   Scenario: User can update status successfully
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     And the user clicks "AO Blacklist" on the menu

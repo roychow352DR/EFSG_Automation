@@ -1,7 +1,7 @@
 Feature: Customer Management
 
-  @Regression @AdminPortal @CM
-  Scenario: User sees a error message upon uncheck declare US Citizen button
+  @Regression @AdminPortal @CM @EBL @EIE @XPro
+  Scenario: User sees an error message upon uncheck declare US Citizen button
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     And the user clicks "Customer Management" on the menu
     When the user clicks detail button of "Activated" record with "LEVEL_3_INDIVIDUAL" client type on the customer management page

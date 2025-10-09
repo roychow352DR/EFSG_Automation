@@ -1,7 +1,7 @@
 Feature: AO Application List
 
 
-  @Regression @AdminPortal @AO
+  @Regression @AdminPortal @AO @EIE @XPro
   Scenario: Prompt error if email already in used
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     And the "Exist Email" condition is satisfied
