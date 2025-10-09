@@ -382,7 +382,6 @@ public class ApplicationSteps extends BaseTest {
     @And("the user re-logged in to Admin Portal as username {string} and password {string}")
     public void the_user_re_logged_in_to_Admin_Portal_as_username_and_password(String username, String password){
         aopoManager.getAdminLoginPage().loginETE(username, password);
-     //   page.pause();
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
     }
 
@@ -399,6 +398,11 @@ public class ApplicationSteps extends BaseTest {
     @And("the user clicks detail button of modified record on the application page")
     public void the_user_clicks_detail_button_of_modified_record_on_the_application_page(){
         aopoManager.getApplicationListPage().clickDetailBtn();
+    }
+
+    @Then("the user sees text field {string} is not editable on the trading experience page")
+    public void the_user_sees_text_field_is_not_editable_on_the_trading_experience_page(String textFieldName){
+        assertThat(aopoManager.getTradingExpPage().getTextField(textFieldName)).isDisabled();
     }
 
 

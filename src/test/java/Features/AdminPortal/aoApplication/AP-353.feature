@@ -1,7 +1,7 @@
 Feature: AO Application List
 
 
-  @Regression @L3Creation @AdminPortal @Smoke @AO
+  @Regression @L3Creation @AdminPortal @Smoke @AO @EBL @EIE @XPro
   Scenario: Account status in Pending Approval after first approval
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     When the user clicks detail button of "Pending Verification" record on the application page
