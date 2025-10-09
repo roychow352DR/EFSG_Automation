@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO
+  @Regression @AdminPortal @AO @EBL @EIE @XPro
   Scenario: User sees account status in Approved after Active Live Trading Account is second approved
     Given the user logged in to Admin Portal as username "aoadmin02" and password "P@ssw0rd!"
     When the user clicks detail button of "Spec. Approval for Pending Deposit" record on the application page

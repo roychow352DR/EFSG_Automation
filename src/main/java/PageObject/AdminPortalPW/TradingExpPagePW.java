@@ -85,4 +85,8 @@ public class TradingExpPagePW {
         }
         return dropdownName;
     }
+
+    public Locator getTextField(String fieldName){
+        return page.locator("input[name='"+fieldName+"']");
+    }
 }

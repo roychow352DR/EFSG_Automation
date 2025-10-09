@@ -1,7 +1,7 @@
 Feature: Admin Portal login
 
 
-  @Regression @AdminPortal @Smoke
+  @Regression @AdminPortal @Smoke @EBL @EIE @XPro
   Scenario: Login with unauthorized account credentials - invalid username and password
     Given the user lands on Admin Portal login page
     And the user fills in with username "qaauto" and password "Test1234@@"

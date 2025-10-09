@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO
+  @Regression @AdminPortal @AO @EBL @EIE @XPro
   Scenario: Cannot create Individual account with unchecked US Citizen checkbox
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     And the user clicks "Create Account" button on the application page
