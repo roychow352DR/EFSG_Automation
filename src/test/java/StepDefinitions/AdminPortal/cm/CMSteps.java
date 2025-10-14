@@ -94,6 +94,7 @@ public class CMSteps extends BaseTest {
     @When("the user clicks detail button of specific entity record on the customer management page")
     public void the_user_clicks_detail_button_of_specific_entity_record_on_the_customer_management_page() throws IOException {
         aopoManager.getCustomerManagementPage().clickDetailBtn();
+        page.waitForTimeout(2000);
     }
 
     @Then("the user sees an error dialogue with wordings {string} on the trading experience page")
@@ -190,5 +191,15 @@ public class CMSteps extends BaseTest {
     @Then("the user sees all elements are not editable on the CM application information page")
     public void the_user_sees_all_elements_are_not_editable_on_the_CM_application_information_page() {
         Assert.assertFalse(aopoManager.getCmApplicationInfoPage().checkTextFieldIsEditable());
+    }
+
+    @Then("the user sees dropdown {string} is not editable on the CM trading experience page")
+    public void the_user_sees_dropdown_is_not_editable_on_the_CM_trading_experience_page(String dropdownName) {
+        assertThat(aopoManager.getCmTradingExpPage().getDropdown(dropdownName)).isDisabled();
+    }
+
+    @Then("the user sees dropdown {string} is editable on the CM trading experience page")
+    public void the_user_sees_dropdown_is_editable_on_the_CM_trading_experience_page(String dropdownName) {
+        assertThat(aopoManager.getCmTradingExpPage().getDropdown(dropdownName)).isEnabled();
     }
 }

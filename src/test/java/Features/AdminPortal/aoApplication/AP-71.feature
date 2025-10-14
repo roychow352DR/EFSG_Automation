@@ -7,5 +7,5 @@ Feature: AO Application List
     And the user selects "Individual" radio button on the create account pop up
     And the user clicks "submit" button on the create account pop up
     And the user fills application information page
-    When the user clicks "AO Application List" on the menu
+    When the user clicks "AO Application List" on the ao admin portal menu
     Then the user sees a record in "Draft" status is created on the application list
