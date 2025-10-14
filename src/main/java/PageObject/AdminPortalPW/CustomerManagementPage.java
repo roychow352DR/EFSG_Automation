@@ -84,7 +84,8 @@ public class CustomerManagementPage {
         return switch(entity){
             case "EIEHK" -> "qaeiecmtest@yopmail.com";
             case "XPRO" -> "qaxprocmtest@yopmail.com";
-            case "EBL_MT5" -> "qaeblcmtest@yopmail.com";
+            case "EBL_MT5" -> "uatapproved@yopmail.com";
+            //"qaeblcmtest@yopmail.com";
             default -> null;
         };
     }

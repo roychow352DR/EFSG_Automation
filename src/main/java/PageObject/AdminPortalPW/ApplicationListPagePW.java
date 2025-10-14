@@ -4,6 +4,7 @@ import AbstractComponent.AbstractComponentsPW;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
+import io.opentelemetry.exporter.logging.SystemOutLogRecordExporter;
 
 import java.io.IOException;
 
@@ -23,6 +24,8 @@ public class ApplicationListPagePW {
     public final Locator status;
     public final Locator entityRow;
     public final Locator emailRow;
+    public final Locator filterInputField;
+    public final Locator searchField;
 
     public ApplicationListPagePW(Page page) throws IOException {
         this.page = page;
@@ -39,13 +42,15 @@ public class ApplicationListPagePW {
         this.entityRow = page.locator(".css-ff6t81:nth-child(1)");
         this.entity = abs.userinfoList().get("entity");
         this.emailRow = page.locator(".css-ff6t81:nth-child(2)");
+        this.filterInputField = page.locator(".css-1svhit8");
+        this.searchField = page.locator(".css-1ixds2g");
     }
 
     public Locator getMenuText() {
         return this.menuTitle;
     }
 
-    public void createIndividual(){
+    public void createIndividual() {
         clickButton("Create Account");
         clickRadioButton("Individual");
         clickButton("Submit");
@@ -76,14 +81,41 @@ public class ApplicationListPagePW {
     }
 
     public String getStatusEmail(String applicationStatus) throws IOException {
-        abs.getItemsByText(applicationStatus, status, nextPageBtn,entity,entityRow);
+        abs.getItemsByText(applicationStatus, status, nextPageBtn, entity, entityRow);
         email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(1).textContent();
         return email;
     }
 
-    public void clickDetailBtn(){
-        abs.getItemsByText(email, emailRow, nextPageBtn,entity,entityRow);
+    public void clickDetailBtn() {
+        abs.getItemsByText(email, emailRow, nextPageBtn, entity, entityRow);
         row.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
+    }
+
+    public void clickNewlyRecordDetailBtn(String email) {
+        abs.getItemsByText(email, emailRow, nextPageBtn, entity, entityRow);
+        row.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName("Detail")).first().click();
+    }
+
+    public void inputFilterValue(String filterVal, String filterField) {
+        page.locator("input[name='" + filterField + "']").fill(filterVal);
+    }
+
+    public boolean filteredVal(String col, String filterVal) {
+        int counts = row.count();
+        if (col.equalsIgnoreCase("Email")) {
+            for (int i = 0; i < counts; i++) {
+                String rowText = row.nth(i).locator(".css-ff6t81").nth(1).textContent();
+                if (rowText.contains(filterVal)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public void fillSearchVal(String value) {
+        searchField.fill(value);
     }
 }

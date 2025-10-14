@@ -3,12 +3,11 @@ package StepDefinitions.AdminPortal.aoApplicationSteps;
 import Data.SQLDatabase;
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
+import io.cucumber.java.bs.A;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.java.en_scouse.An;
-import org.checkerframework.checker.units.qual.A;
 import org.testng.Assert;
 import utils.BaseTest;
 import utils.SetCondition;
@@ -104,6 +103,7 @@ public class ApplicationSteps extends BaseTest {
     @And("the user clicks {string} button on the application information page")
     public void the_user_clicks_button_on_application_information(String buttonName) throws InterruptedException {
         aopoManager.applicationInfoPagePW.clickButtonByText(buttonName);
+        page.waitForTimeout(2000);
     }
 
     @And("the user clicks {string} button on the personal information page")
@@ -209,8 +209,8 @@ public class ApplicationSteps extends BaseTest {
         aopoManager.getApplicationInfoPage().selectReason(reason);
     }
 
-    @When("the user clicks {string} on the menu")
-    public void the_user_clicks_on_the_menu(String menu) {
+    @When("the user clicks {string} on the ao admin portal menu")
+    public void the_user_clicks_on_the__ao_admin_portal_menu(String menu) {
         aopoManager.getMenuPagePW().clickMenu(menu);
     }
 
@@ -298,16 +298,18 @@ public class ApplicationSteps extends BaseTest {
     }
 
     @And("the user fills value {string} in the text field {string} on application information page")
-    public void the_user_fills_value_in_the_text_field_on_application_information_page(String value,String textFieldName) throws IOException {
+    public void the_user_fills_value_in_the_text_field_on_application_information_page(String value, String textFieldName) throws IOException {
         if (textFieldName.equalsIgnoreCase("username")) {
             aopoManager.getApplicationInfoPage().fillUsername(value);
-        }
-        else if (textFieldName.equalsIgnoreCase("email")){
+        } else if (textFieldName.equalsIgnoreCase("email")) {
             aopoManager.getApplicationInfoPage().fillEmail(value);
-        }
-        else if (textFieldName.equalsIgnoreCase("mobileNumber")){
+        } else if (textFieldName.equalsIgnoreCase("mobileNumber")) {
             aopoManager.getApplicationInfoPage().fillPhoneNumber(value);
         }
+        else{
+            aopoManager.getApplicationInfoPage().fillNonMandaField(value,textFieldName);
+        }
+
     }
 
     @Then("the user sees an error dialogue with wordings {string} on the application information page")
@@ -345,15 +347,15 @@ public class ApplicationSteps extends BaseTest {
             aopoManager.getMenuPagePW().clickMenu("AO Application List");
             return;
         }
-            aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
-                    SetCondition.isExpired(),
-                    SetCondition.isExpiredBeforeCurrent(),
-                    SetCondition.isEdd());
-            aopoManager.getContactInfoPage().fillContactInfo();
-            aopoManager.getEmployeeFinInfoPage().fillEmployeeFinInfo();
-            aopoManager.getTradingExpPage().fillTradingExp();
-            aopoManager.getTradingExpPage().clickButtonByText("Submit");
-         if (status.equalsIgnoreCase("Rejected")) {
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
+                SetCondition.isExpired(),
+                SetCondition.isExpiredBeforeCurrent(),
+                SetCondition.isEdd());
+        aopoManager.getContactInfoPage().fillContactInfo();
+        aopoManager.getEmployeeFinInfoPage().fillEmployeeFinInfo();
+        aopoManager.getTradingExpPage().fillTradingExp();
+        aopoManager.getTradingExpPage().clickButtonByText("Submit");
+        if (status.equalsIgnoreCase("Rejected")) {
             aopoManager.getApplicationListPage().clickDetailBtn("Pending Verification");
             aopoManager.getApplicationInfoPage().clickButtonByText("Next To Personal Information");
             aopoManager.getPersonalInfoPage().clickButtonByText("Next To Contact Information");
@@ -366,45 +368,80 @@ public class ApplicationSteps extends BaseTest {
     }
 
     @And("the user fills textField {string} retrieved from api endpoint on the application information page")
-    public void the_user_fills_textField_retrieved_from_api_endpoint_on_the_application_information_page(String textFieldName){
+    public void the_user_fills_textField_retrieved_from_api_endpoint_on_the_application_information_page(String textFieldName) {
         System.out.println(getRetrievedData());
-        if (textFieldName.equalsIgnoreCase("username")){
+        if (textFieldName.equalsIgnoreCase("username")) {
             aopoManager.getApplicationInfoPage().fillUsername(getRetrievedData());
         }
     }
 
     @When("the user logout Admin Portal")
-    public void the_user_logout_Admin_Portal(){
+    public void the_user_logout_Admin_Portal() {
         aopoManager.getMenuPagePW().clickLogout();
         page.waitForTimeout(500);
     }
 
     @And("the user re-logged in to Admin Portal as username {string} and password {string}")
-    public void the_user_re_logged_in_to_Admin_Portal_as_username_and_password(String username, String password){
+    public void the_user_re_logged_in_to_Admin_Portal_as_username_and_password(String username, String password) {
         aopoManager.getAdminLoginPage().loginETE(username, password);
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
     }
 
     @When("the user edit text field {string} on the trading experience page")
-    public void the_user_edit_text_field_on_the_trading_experience_page(String textFieldName){
+    public void the_user_edit_text_field_on_the_trading_experience_page(String textFieldName) {
         setRetrievedData(aopoManager.getTradingExpPage().editDropdownVal(textFieldName));
     }
 
     @Then("the user sees text field {string} value is updated on the trading experience page")
-    public void the_user_sees_text_field_value_is_updated_on_the_trading_experience_page(String textFieldName){
-        Assert.assertEquals(aopoManager.getTradingExpPage().getFieldValByLabel(textFieldName),getRetrievedData());
+    public void the_user_sees_text_field_value_is_updated_on_the_trading_experience_page(String textFieldName) {
+        Assert.assertEquals(aopoManager.getTradingExpPage().getFieldValByLabel(textFieldName), getRetrievedData());
     }
 
     @And("the user clicks detail button of modified record on the application page")
-    public void the_user_clicks_detail_button_of_modified_record_on_the_application_page(){
+    public void the_user_clicks_detail_button_of_modified_record_on_the_application_page() {
         aopoManager.getApplicationListPage().clickDetailBtn();
     }
 
     @Then("the user sees text field {string} is not editable on the trading experience page")
-    public void the_user_sees_text_field_is_not_editable_on_the_trading_experience_page(String textFieldName){
-        assertThat(aopoManager.getTradingExpPage().getTextField(textFieldName)).isDisabled();
+    public void the_user_sees_text_field_is_not_editable_on_the_trading_experience_page(String textFieldName) {
+        assertThat(aopoManager.getTradingExpPage().getDropdown(textFieldName)).isDisabled();
     }
 
+    @And("the user selects dropdown value {string} for the dropdown field {string} on the trading experience page")
+    public void the_user_selects_dropdown_value_for_the_dropdown_field_on_the_trading_experience_page(String dropdownVal, String dropdownFieldName) {
+        aopoManager.getTradingExpPage().selectDropdownOption(dropdownVal, dropdownFieldName);
+    }
 
+    @Then("the user sees dropdown value {string} for the dropdown field {string} on the trading experience page")
+    public void the_user_sees_dropdown_value_for_the_dropdown_field_on_the_trading_experience_page(String dropdownVal, String dropdownFieldName) {
+        assertThat(aopoManager.getTradingExpPage().getDropdown(dropdownFieldName)).hasValue(dropdownVal);
+    }
 
+    @And("the user clicks detail button of newly created record on the application page")
+    public void the_user_clicks_detail_button_of_newly_created_record_on_the_application_page() {
+        aopoManager.getApplicationListPage().clickNewlyRecordDetailBtn(aopoManager.getApplicationInfoPage().submittedApplicantEmail());
+    }
+
+    @And("the user fills value {string} in the text field {string} on the application filter dialogue")
+    public void the_user_fills_value_in_the_text_field_on_the_application_filter_dialogue(String filterVal, String filerField) {
+        aopoManager.getApplicationListPage().inputFilterValue(filterVal, filerField);
+    }
+
+    @Then("the application list displays {string} in the {string} column as a filtered result")
+    public void the_application_list_displays_in_the_column_as_a_filtered_result(String result, String column) {
+        Assert.assertTrue((aopoManager.getApplicationListPage().filteredVal(column, result)));
+    }
+
+    @When("the user fills value {string} on the application search field")
+    public void the_user_fills_value_in_the_text_field_on_the_application_search_field(String searchVal) {
+        page.waitForTimeout(2000);
+        aopoManager.getApplicationListPage().fillSearchVal(searchVal);
+        page.keyboard().press("Enter");
+    }
+
+    @Then("the user sees value {string} is displayed at the text field {string} on the application information page")
+    public void the_user_sees_value_is_displayed_at_the_text_field_on_the_application_information_page(String value,String textField){
+        page.waitForTimeout(2000);
+        Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textField).inputValue(),value);
+    }
 }
