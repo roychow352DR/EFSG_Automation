@@ -1,7 +1,7 @@
 Feature: Customer Management
 
   @Regression @AdminPortal @CM @EBL
-  Scenario: The settlement Currency value can be applied to CM Database after being modified
+  Scenario: Settlement currency value can be applied to CM Database after being modified
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the ao admin portal menu
     And the user clicks detail button of specific entity record on the customer management page
@@ -24,5 +24,6 @@ Feature: Customer Management
     And the user clicks "Next To Contact Information" button on the CM personal information page
     And the user clicks "Next To Employee and Financial Information" button on the CM contact information page
     And the user clicks "Next To Trading Experience" button on the CM employee & financial page
-    Then the user sees text field "settlementCurrency" value is updated on the CM trading experience page
+    Then the user sees text field "settlementCurrency" value is updated on the trading experience page
     And "settlement_currency" is updated to modified value in CM "trade" database table where "account_id" retrieved by "Account ID"
+
