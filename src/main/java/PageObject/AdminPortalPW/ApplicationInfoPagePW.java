@@ -27,7 +27,6 @@ public class ApplicationInfoPagePW {
     public final Locator referralCodeField;
     public final Locator labels;
     public final Locator usernameField;
-    public final Locator textFields;
     String applicantEmail;
     public SetCondition setCondition;
 
@@ -39,7 +38,7 @@ public class ApplicationInfoPagePW {
         this.emailField = page.locator("input[name='email']");
         this.countryCodeField = page.locator("#mui-component-select-mobileCountryCode");
         this.phoneNumberField = page.locator("input[name='mobile']");
-       // this.nextButton = page.locator(".css-15j76c0");
+        // this.nextButton = page.locator(".css-15j76c0");
         this.errorText = page.locator(".css-1wercf4").first();
         this.toastMsg = page.locator(".Toastify__toast-body div").nth(1);
         this.buttons = page.getByRole(AriaRole.BUTTON);
@@ -49,22 +48,21 @@ public class ApplicationInfoPagePW {
         this.referralCodeField = page.locator("input[name='upperIbAcc']");
         this.labels = page.locator(".css-9iedg7");
         this.usernameField = page.locator("input[name='username']");
-        this.textFields = page.getByRole(AriaRole.TEXTBOX);
     }
 
-    public void fillApplicationInfo(boolean isExistedEmail,boolean isExistedPhoneNumber,boolean isCrossEntity) throws IOException {
+    public void fillApplicationInfo(boolean isExistedEmail, boolean isExistedPhoneNumber, boolean isCrossEntity) throws IOException {
         selectEntity(isCrossEntity);
-        if (abs.userinfoList().get("entity").contains("EBL")){
+        if (abs.userinfoList().get("entity").contains("EBL")) {
             fillRandomUsername();
         }
         fillEmail(isExistedEmail);
         fillPhoneNumber(isExistedPhoneNumber);
-        submitApplicantInfo(isExistedEmail,isExistedPhoneNumber);
+        submitApplicantInfo(isExistedEmail, isExistedPhoneNumber);
     }
 
-    public void fillMandatory(boolean isExistedEmail,boolean isExistedPhoneNumber,boolean isCrossEntity) throws IOException {
+    public void fillMandatory(boolean isExistedEmail, boolean isExistedPhoneNumber, boolean isCrossEntity) throws IOException {
         selectEntity(isCrossEntity);
-        if (abs.userinfoList().get("entity").contains("EBL")){
+        if (abs.userinfoList().get("entity").contains("EBL")) {
             fillRandomUsername();
         }
         fillEmail(isExistedEmail);
@@ -77,19 +75,17 @@ public class ApplicationInfoPagePW {
         if (!isCrossEntity) {
             listItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("entity"),
                     new Page.GetByTextOptions().setExact(true)))).click();
-        }
-        else if (!abs.userinfoList().get("entity").equalsIgnoreCase("XPro")){
+        } else if (!abs.userinfoList().get("entity").equalsIgnoreCase("XPro")) {
             listItems.filter(new Locator.FilterOptions().setHas(page.getByText("XPro",
                     new Page.GetByTextOptions().setExact(true)))).click();
-        }
-        else {
-           // listItems.filter(new Locator.FilterOptions().setHasText("EIEHK")).click();
+        } else {
+            // listItems.filter(new Locator.FilterOptions().setHasText("EIEHK")).click();
             listItems.filter(new Locator.FilterOptions().setHas(page.getByText("EIEHK",
                     new Page.GetByTextOptions().setExact(true)))).click();
         }
     }
 
-    public void selectEntity(boolean isCrossEntity,String entity) throws IOException {
+    public void selectEntity(boolean isCrossEntity, String entity) throws IOException {
         entityDropdown.click();
         listItems.filter(new Locator.FilterOptions().setHasText(entity)).click();
     }
@@ -98,8 +94,7 @@ public class ApplicationInfoPagePW {
     public void fillEmail(boolean isExistedEmail) throws IOException {
         if (!isExistedEmail) {
             applicantEmail = abs.userinfoList().get("email");
-        }
-        else {
+        } else {
             applicantEmail = abs.userinfoList().get("existedEmail");
         }
         emailField.fill(applicantEmail);
@@ -115,8 +110,7 @@ public class ApplicationInfoPagePW {
         listItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("countryCode"))).click();
         if (!isExistedPhoneNumber) {
             phoneNumberField.fill(abs.userinfoList().get("phoneNumber"));
-        }
-        else {
+        } else {
             phoneNumberField.fill(abs.userinfoList().get("existedPhoneNumber"));
         }
     }
@@ -137,7 +131,7 @@ public class ApplicationInfoPagePW {
         return errorText;
     }
 
-    public void refill(String errorText,boolean isExistedEmail,boolean isExistedPhoneNumber) throws IOException {
+    public void refill(String errorText, boolean isExistedEmail, boolean isExistedPhoneNumber) throws IOException {
         if (errorText.contains("email") && !isExistedEmail) {
             emailField.fill("");
             applicantEmail = abs.userinfoList().get("email");
@@ -157,13 +151,13 @@ public class ApplicationInfoPagePW {
         buttons.filter(new Locator.FilterOptions().setHasText("Next To Personal Information")).click();
     }
 
-    public void submitApplicantInfo(boolean isExistedEmail,boolean isExistedPhoneNumber) throws IOException {
+    public void submitApplicantInfo(boolean isExistedEmail, boolean isExistedPhoneNumber) throws IOException {
         String toastMsg;
         do {
             buttons.filter(new Locator.FilterOptions().setHasText("Next To Personal Information")).click();
             toastMsg = getToastMsg().textContent();
             if (toastMsg.contains("in use")) {
-                refill(toastMsg,isExistedEmail,isExistedPhoneNumber);
+                refill(toastMsg, isExistedEmail, isExistedPhoneNumber);
                 if (!isExistedEmail && !isExistedPhoneNumber) {
                     buttons.filter(new Locator.FilterOptions().setHasText("Next To Personal Information")).click();
                 }
@@ -182,31 +176,28 @@ public class ApplicationInfoPagePW {
         dropdownOptions.filter(new Locator.FilterOptions().setHasText(reason)).click();
     }
 
-    public void fillPromoCode(String promoCode)
-    {
+    public void fillPromoCode(String promoCode) {
         promoCodeField.fill(promoCode);
     }
 
-    public void fillReferralCode(String referralCode){
+    public void fillReferralCode(String referralCode) {
         referralCodeField.fill(referralCode);
     }
 
-    public Locator getToastMsg()
-    {
+    public Locator getToastMsg() {
         abs.waitForLocatorVisible(toastMsg);
         return toastMsg.first();
     }
 
-    public Locator getLabel(String labelText)
-    {
+    public Locator getLabel(String labelText) {
         return labels.filter(new Locator.FilterOptions().setHasText(labelText));
     }
 
-    public Locator getButtonByText(String buttonText){
-        return buttons.filter(new Locator.FilterOptions().setHas(page.getByText(buttonText,new Page.GetByTextOptions().setExact(true))));
+    public Locator getButtonByText(String buttonText) {
+        return buttons.filter(new Locator.FilterOptions().setHas(page.getByText(buttonText, new Page.GetByTextOptions().setExact(true))));
     }
 
-    public void fillUsername(String username){
+    public void fillUsername(String username) {
         usernameField.fill(username);
     }
 
@@ -223,8 +214,12 @@ public class ApplicationInfoPagePW {
         usernameField.fill(abs.toFullWidth(abs.randomString(length)));
     }
 
-    public Locator getTextField(String fieldName){
-        return page.locator("input[name='"+fieldName+"']");
+    public Locator getTextField(String fieldName) {
+        return page.locator("input[name='" + fieldName + "']");
+    }
+
+    public void fillNonMandaField(String value, String fieldName) {
+        page.locator("input[name='" + fieldName + "']").fill(value);
     }
 
 }

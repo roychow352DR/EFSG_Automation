@@ -63,7 +63,7 @@ public class CmTradingExpPage {
     }
 
 
-    public void selectSettlement(){
+    public void selectSettlement() {
         settlementCurrencyDropdown.click();
         dropdownOption.filter(new Locator.FilterOptions().setHasText("USD")).click();
     }
@@ -72,12 +72,16 @@ public class CmTradingExpPage {
         return abs.getInputValueByAttribute(textField, "name", labelName);
     }
 
-    public String editDropdownVal(String dropdownName){
-        if (dropdownName.equalsIgnoreCase("settlementCurrency")){
+    public String editDropdownVal(String dropdownName) {
+        if (dropdownName.equalsIgnoreCase("settlementCurrency")) {
             settlementCurrencyDropdown.click();
             abs.selectUnselectedDropdownOption();
             return getFieldValByLabel(dropdownName);
         }
         return dropdownName;
+    }
+
+    public Locator getDropdown(String fieldName) {
+        return page.locator("input[name='" + fieldName + "']");
     }
 }
