@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @L3Creation @AdminPortal @Smoke @AO @Username @EBL
+  @Regression @AdminPortal @Smoke @AO @Username @EBL
   Scenario: Create Individual Account with status in Pending Verification with valid username inputs - Alphanumeric characters
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page

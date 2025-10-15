@@ -1,7 +1,7 @@
 Feature: Customer Management
 
   @Regression @AdminPortal @CM @EBL @EIE @XPro
-  Scenario: Prompted error after the invalid referral code is entered on CM
+  Scenario: Prompted error after the invalid referral IB code is entered on CM
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the ao admin portal menu
     And the user clicks detail button of specific entity record on the customer management page
