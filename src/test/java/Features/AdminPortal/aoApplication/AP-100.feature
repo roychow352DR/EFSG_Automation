@@ -2,7 +2,7 @@ Feature: AO Application List
 
   @Regression @L3Creation @AdminPortal @Smoke @AO @EBL @EIE @XPro
   Scenario: Create Individual Account with status in Pending Verification
-    Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
+    Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up
     And the user clicks "submit" button on the create account pop up

@@ -2,6 +2,7 @@ package PageObject.AdminPortalPW;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.LoadState;
 
 public class AdminLoginPagePW {
 
@@ -51,6 +52,7 @@ public class AdminLoginPagePW {
     {
         fillCredential(username,password);
         clickLogin();
+        page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
 }
