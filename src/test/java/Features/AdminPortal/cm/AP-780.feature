@@ -16,7 +16,7 @@ Feature: Customer Management
     And the user performs first approval on cm page
     And the user logout Admin Portal
     And the user re-logged in to Admin Portal as username "samuellai" and password "Aa12345678!"
-    And the user clicks "Customer Management" on the menu
+    And the user clicks "Customer Management" on the ao admin portal menu
     And the user clicks detail button of specific entity record on the customer management page
     And the user performs second approval on cm page
     When the user clicks detail button of specific entity record on the customer management page

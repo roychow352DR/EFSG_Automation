@@ -48,9 +48,10 @@ public class BackendSteps extends BaseTest {
         coreService.setParamVal(param, value);
     }
 
-    @And("the App client data {string} is found in the AO application list")
-    public void App_client_account_is_registered_in_AO_list(String retrieveVal) {
-        data = coreService.getAoListItem(retrieveLocalStorageVal(), retrieveVal, "createdBy", "Customer");
+    @And("the data created by {string} in status {string} is found in the AO application list")
+    public void the_App_client_data_in_status_is_found_in_the_AO_application_list(String createType,String status) throws IOException {
+        data = coreService.getAoAppClient(retrieveLocalStorageVal(), "email", "statusLabel", status,createType);
+        setRetrievedData(data);
         Assert.assertNotNull(data);
     }
 

@@ -193,6 +193,17 @@ public class CMSteps extends BaseTest {
         Assert.assertFalse(aopoManager.getCmApplicationInfoPage().checkTextFieldIsEditable());
     }
 
+    @Then("the user sees all elements are not editable on the CM contact information page")
+    public void the_user_sees_all_elements_are_not_editable_on_the_CM_contact_information_page() {
+        Assert.assertFalse(aopoManager.getCmContactInfoPage().checkTextFieldIsEditable());
+        Assert.assertFalse(aopoManager.getCmContactInfoPage().checkElementIsClickable());
+    }
+
+    @Then("the user sees all elements are not editable on the CM employee and financial information page")
+    public void the_user_sees_all_elements_are_not_editable_on_the_CM_employee_and_financial_information_page() {
+        Assert.assertFalse(aopoManager.getCmEmployeeInfoPage().checkElementIsClickable());
+    }
+
     @Then("the user sees dropdown {string} is not editable on the CM trading experience page")
     public void the_user_sees_dropdown_is_not_editable_on_the_CM_trading_experience_page(String dropdownName) {
         assertThat(aopoManager.getCmTradingExpPage().getDropdown(dropdownName)).isDisabled();
