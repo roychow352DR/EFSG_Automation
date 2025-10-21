@@ -20,8 +20,10 @@ public class CmEmployeeFinInfoPage {
     public final Locator industrial;
     public final Locator nextBtn;
     public final Locator buttons;
+    public final Locator dropdownField;
+    public final Locator checkbox;
 
-    public CmEmployeeFinInfoPage(Page page){
+    public CmEmployeeFinInfoPage(Page page) {
         this.page = page;
         abs = new AbstractComponentsPW(page);
         this.employeeStatus = page.locator("#mui-component-select-employmentStatus");
@@ -33,6 +35,8 @@ public class CmEmployeeFinInfoPage {
         this.industrial = page.locator("#mui-component-select-industrial");
         this.nextBtn = page.getByRole(AriaRole.BUTTON);
         this.buttons = page.getByRole(AriaRole.BUTTON);
+        this.dropdownField = page.locator(".css-1tz4v7m div");
+        this.checkbox = page.locator("input[type='checkbox']");
     }
 
     public void fillEmployeeFinInfo() throws IOException {
@@ -91,5 +95,10 @@ public class CmEmployeeFinInfoPage {
 
     public void clickButtonByText(String buttonText) {
         buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).click();
+    }
+
+    public boolean checkElementIsClickable() {
+        return abs.checkElementIsEnable(dropdownField) &&
+                abs.checkElementIsEnable(checkbox);
     }
 }

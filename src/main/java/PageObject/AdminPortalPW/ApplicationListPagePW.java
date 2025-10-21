@@ -4,7 +4,6 @@ import AbstractComponent.AbstractComponentsPW;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import io.opentelemetry.exporter.logging.SystemOutLogRecordExporter;
 
 import java.io.IOException;
 
@@ -92,7 +91,8 @@ public class ApplicationListPagePW {
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
 
-    public void clickNewlyRecordDetailBtn(String email) {
+    public void clickClientRecordDetailBtn(String email) {
+        this.email = email;
         abs.getItemsByText(email, emailRow, nextPageBtn, entity, entityRow);
         row.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
