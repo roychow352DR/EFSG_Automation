@@ -1,7 +1,7 @@
 Feature: AO Username
 
   @Regression @AdminPortal @AO @Username @EBL
-  Scenario: Username text field is not editable in Approved status
+  Scenario: Cannot create account if username is used in app account registration
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up
