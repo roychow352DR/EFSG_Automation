@@ -14,14 +14,20 @@ public class CmContactInfoPage {
     public final Locator cityField;
     public final Locator nextBtn;
     public final Locator buttons;
-    public CmContactInfoPage(Page page){
+    public final Locator textField;
+    public final Locator dropdownField;
+
+    public CmContactInfoPage(Page page) {
         this.page = page;
         abs = new AbstractComponentsPW(page);
         this.addressField = page.locator("input[name='addressLine1']");
         this.cityField = page.locator("input[name='city']");
         this.nextBtn = page.getByRole(AriaRole.BUTTON);
         this.buttons = page.getByRole(AriaRole.BUTTON);
+        this.textField = page.locator("input");
+        this.dropdownField = page.locator(".css-1tz4v7m div");
     }
+
     public void fillContactInfo() throws IOException {
         fillAddress();
         clickNext();
@@ -35,8 +41,16 @@ public class CmContactInfoPage {
     public void clickNext() {
         nextBtn.filter(new Locator.FilterOptions().setHasText("Next To Employee and Financial Information")).click();
     }
+
     public void clickButtonByText(String buttonText) {
         buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).click();
     }
 
+    public boolean checkTextFieldIsEditable() {
+        return abs.checkElementIsEditable(textField);
+    }
+
+    public boolean checkElementIsClickable() {
+        return abs.checkElementIsEnable(dropdownField);
+    }
 }

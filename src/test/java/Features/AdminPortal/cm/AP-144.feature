@@ -1,7 +1,7 @@
   Feature: Customer Management
 
-    @Regression @AdminPortal @CM
-    Scenario: CM status in Activated after second approval @EBL @EIE @XPro
+    @Regression @AdminPortal @CM @EBL @EIE @XPro
+    Scenario: CM status in Activated after second approval
       Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
       And the user clicks "Customer Management" on the ao admin portal menu
       When the user clicks detail button of "Pending Approval" record with "LEVEL_3_INDIVIDUAL" client type on the customer management page

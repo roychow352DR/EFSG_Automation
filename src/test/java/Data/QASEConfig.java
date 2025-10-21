@@ -60,6 +60,13 @@ public class QASEConfig extends GlobalConfig {
                 default -> "";
             };
         }
+        else if (entity.equalsIgnoreCase("XPro")) {
+            return switch (testType) {
+                case "Regression" -> getProperty(path, "qase.xpro.regression.testPlanId");
+                case "Smoke" -> getProperty(path, "qase.smoke.testPlanId");
+                default -> "";
+            };
+        }
 
         return testType;
     }

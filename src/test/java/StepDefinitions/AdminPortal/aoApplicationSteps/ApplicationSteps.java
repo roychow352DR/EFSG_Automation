@@ -1,13 +1,14 @@
 package StepDefinitions.AdminPortal.aoApplicationSteps;
 
+import API.CoreService;
 import Data.SQLDatabase;
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
-import io.cucumber.java.bs.A;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import okio.JvmSystemFileSystem;
 import org.testng.Assert;
 import utils.BaseTest;
 import utils.SetCondition;
@@ -305,9 +306,8 @@ public class ApplicationSteps extends BaseTest {
             aopoManager.getApplicationInfoPage().fillEmail(value);
         } else if (textFieldName.equalsIgnoreCase("mobileNumber")) {
             aopoManager.getApplicationInfoPage().fillPhoneNumber(value);
-        }
-        else{
-            aopoManager.getApplicationInfoPage().fillNonMandaField(value,textFieldName);
+        } else {
+            aopoManager.getApplicationInfoPage().fillNonMandaField(value, textFieldName);
         }
 
     }
@@ -389,11 +389,13 @@ public class ApplicationSteps extends BaseTest {
 
     @When("the user edit text field {string} on the trading experience page")
     public void the_user_edit_text_field_on_the_trading_experience_page(String textFieldName) {
-        setRetrievedData(aopoManager.getTradingExpPage().editDropdownVal(textFieldName));
+        String editVal = aopoManager.getTradingExpPage().editDropdownVal(textFieldName);
+        setRetrievedData(editVal);
     }
 
     @Then("the user sees text field {string} value is updated on the trading experience page")
     public void the_user_sees_text_field_value_is_updated_on_the_trading_experience_page(String textFieldName) {
+        page.waitForTimeout(500);
         Assert.assertEquals(aopoManager.getTradingExpPage().getFieldValByLabel(textFieldName), getRetrievedData());
     }
 
@@ -419,7 +421,7 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user clicks detail button of newly created record on the application page")
     public void the_user_clicks_detail_button_of_newly_created_record_on_the_application_page() {
-        aopoManager.getApplicationListPage().clickNewlyRecordDetailBtn(aopoManager.getApplicationInfoPage().submittedApplicantEmail());
+        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(aopoManager.getApplicationInfoPage().submittedApplicantEmail());
     }
 
     @And("the user fills value {string} in the text field {string} on the application filter dialogue")
@@ -440,8 +442,21 @@ public class ApplicationSteps extends BaseTest {
     }
 
     @Then("the user sees value {string} is displayed at the text field {string} on the application information page")
-    public void the_user_sees_value_is_displayed_at_the_text_field_on_the_application_information_page(String value,String textField){
+    public void the_user_sees_value_is_displayed_at_the_text_field_on_the_application_information_page(String value, String textField) {
         page.waitForTimeout(2000);
-        Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textField).inputValue(),value);
+        Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textField).inputValue(), value);
+    }
+
+    @And("the user clicks detail button of app client on the application page")
+    public void the_user_clicks_detail_button_of_app_client_on_the_application_page() {
+        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(getRetrievedData());
+    }
+
+    @Then("the user sees text field {string} displayed expected value as trade group info {string} obtain from eCRM on the application information page")
+    public void the_user_sees_text_field_displayed_expected_value_as_trade_group_info_obtain_from_eCRM_on_the_application_information_page(String textFieldName, String tradeGroupInfo) throws IOException {
+        CoreService coreService = new CoreService(page, productEnv);
+        page.waitForTimeout(2000);
+        Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textFieldName).inputValue(),
+                coreService.getTradeGroupInfo(tradeGroupInfo, retrieveLocalStorageVal()));
     }
 }
