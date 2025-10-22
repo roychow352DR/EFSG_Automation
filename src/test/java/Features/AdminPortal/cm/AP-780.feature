@@ -1,6 +1,6 @@
 Feature: Customer Management
 
-  @Regression @AdminPortal @CM @EBL @Username
+  @Regression @AdminPortal @CM @EBL_MT5 @Username
   Scenario: Username value can be applied to CM Database after being modified
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the ao admin portal menu

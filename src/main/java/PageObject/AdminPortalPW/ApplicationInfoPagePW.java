@@ -78,6 +78,12 @@ public class ApplicationInfoPagePW {
         } else if (!abs.userinfoList().get("entity").equalsIgnoreCase("XPro")) {
             listItems.filter(new Locator.FilterOptions().setHas(page.getByText("XPro",
                     new Page.GetByTextOptions().setExact(true)))).click();
+        } else if (!abs.userinfoList().get("entity").equalsIgnoreCase("EIEHK")) {
+            listItems.filter(new Locator.FilterOptions().setHas(page.getByText("EIEHK",
+                    new Page.GetByTextOptions().setExact(true)))).click();
+        } else if (!abs.userinfoList().get("entity").equalsIgnoreCase("EBL_MT5")) {
+            listItems.filter(new Locator.FilterOptions().setHas(page.getByText("EBL_MT5",
+                    new Page.GetByTextOptions().setExact(true)))).click();
         } else {
             // listItems.filter(new Locator.FilterOptions().setHasText("EIEHK")).click();
             listItems.filter(new Locator.FilterOptions().setHas(page.getByText("EIEHK",

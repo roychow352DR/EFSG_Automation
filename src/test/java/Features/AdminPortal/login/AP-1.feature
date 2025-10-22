@@ -1,7 +1,7 @@
 Feature: Admin Portal login
 
 
-  @Regression @AdminPortal @Smoke @EBL @EIE @XPro
+  @Regression @AdminPortal @Smoke @EBL_MT5 @EIEHK @XPro
   Scenario: Login with empty value
     Given the user lands on Admin Portal login page
     When the user fills in with username "" and password ""

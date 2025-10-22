@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @EBL
+  @Regression @AdminPortal @AO @EBL_MT5
   Scenario: Application record is created with the settlement currency value in HKD
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
