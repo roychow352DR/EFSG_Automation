@@ -1,6 +1,6 @@
 Feature: AO Username
 
-  @Regression @AdminPortal @AO @Username @EBL
+  @Regression @AdminPortal @AO @Username @EBL_MT5
   Scenario: Prompted error text for invalid username inputs - Full-width character
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page

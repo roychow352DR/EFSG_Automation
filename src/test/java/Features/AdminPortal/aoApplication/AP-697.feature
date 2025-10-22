@@ -1,6 +1,6 @@
 Feature: AO Username
 
-  @Regression @AdminPortal @AO @Username @EBL
+  @Regression @AdminPortal @AO @Username @EBL_MT5
   Scenario: Username text field is editable in Draft status
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the record in status "Draft" is created in the application list
