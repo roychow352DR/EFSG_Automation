@@ -1,6 +1,6 @@
 Feature: AO Username
 
-  @Regression @AdminPortal @AO @Username @EBL
+  @Regression @AdminPortal @AO @Username @EBL_MT5
   Scenario: Cannot create account if username already in used in L3 account
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page

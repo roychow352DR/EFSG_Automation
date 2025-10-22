@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @EBL
+  @Regression @AdminPortal @AO @EBL_MT5
   Scenario: User able to edit Default deposit/withdrawal currency in "Pending Verification" status after MT5 account is created by mobile app
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the data created by "app" in status "Pending Verification" is found in the AO application list

@@ -1,6 +1,6 @@
 Feature: Customer Management
 
-  @Regression @AdminPortal @CM @EBL @EIE @XPro
+  @Regression @AdminPortal @CM @EBL_MT5 @EIEHK
   Scenario: CM status is Locked for the Pending Deposit record in AO
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     When the user sees a record in "Pending Deposit" status on the application list

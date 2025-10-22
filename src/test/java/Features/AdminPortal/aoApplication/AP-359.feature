@@ -1,7 +1,7 @@
 Feature: AO Application List
 
 
-  @Regression @AdminPortal @AO @EBL @EIE @XPro
+  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK
   Scenario: Account status in Spec. Approval for Pending Deposit after first approve reason
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     When the user clicks detail button of "Pending Deposit" record on the application page

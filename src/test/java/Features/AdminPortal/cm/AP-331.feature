@@ -1,6 +1,6 @@
 Feature: Customer Management
 
-  @Regression @AdminPortal @CM @EBL @EBL @EIE @XPro
+  @Regression @AdminPortal @CM @EBL_MT5 @EIEHK @XPro
   Scenario: All elements on CM employee & financial information page of Locked status are non-editable
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the ao admin portal menu

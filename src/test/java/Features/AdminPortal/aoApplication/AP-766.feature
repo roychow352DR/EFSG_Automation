@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @EBL @EIE @XPro
+  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro
   Scenario: User sees the default Upper IB MT5 Acc obtain from eCRM
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page

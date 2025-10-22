@@ -1,6 +1,6 @@
 Feature: CM Username
 
-  @Regression @AdminPortal @CM @Username @EBL
+  @Regression @AdminPortal @CM @Username @EBL_MT5
   Scenario: Username text field is not editable in Locked status on CM
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the ao admin portal menu
