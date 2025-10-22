@@ -1,6 +1,6 @@
 Feature: Customer Management
 
-  @Regression @AdminPortal @CM @EBL
+  @Regression @AdminPortal @CM @EBL_MT5
   Scenario: The Default deposit/withdrawal currency field is not editable on CM Trading Experience page in "Locked" status
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the ao admin portal menu

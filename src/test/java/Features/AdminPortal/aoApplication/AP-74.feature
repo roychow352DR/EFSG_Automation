@@ -1,9 +1,9 @@
 Feature: AO Application List
 
 
-  @Regression @AdminPortal @AO @EBL @EIE @XPro
+  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro
   Scenario: Prompt error if expiry date before current date
-    Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
+    Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the "Expired date before current date" condition is satisfied
     When the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up

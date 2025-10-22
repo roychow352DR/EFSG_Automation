@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @Username @EBL
+  @Regression @AdminPortal @AO @Username @EBL_MT5
   Scenario: Create Individual Account with status in Pending Verification with duplicated email address
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
