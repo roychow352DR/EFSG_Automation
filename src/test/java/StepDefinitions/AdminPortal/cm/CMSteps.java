@@ -3,8 +3,10 @@ package StepDefinitions.AdminPortal.cm;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.cucumber.java.en_scouse.An;
 import org.testng.Assert;
 import utils.BaseTest;
+import utils.SetCondition;
 
 import java.io.IOException;
 
@@ -65,6 +67,7 @@ public class CMSteps extends BaseTest {
             aopoManager.getCmPersonalInfoPage().fillMobile();
             setRetrievedData(aopoManager.getCmPersonalInfoPage().getTextFieldValue(editField));
         } else if (editField.equalsIgnoreCase("username")) {
+            setOriginData(aopoManager.getCmPersonalInfoPage().getTextFieldValue(editField));
             aopoManager.getCmPersonalInfoPage().fillUsername();
             setRetrievedData(aopoManager.getCmPersonalInfoPage().getTextFieldValue(editField));
         }
@@ -212,5 +215,20 @@ public class CMSteps extends BaseTest {
     @Then("the user sees dropdown {string} is editable on the CM trading experience page")
     public void the_user_sees_dropdown_is_editable_on_the_CM_trading_experience_page(String dropdownName) {
         assertThat(aopoManager.getCmTradingExpPage().getDropdown(dropdownName)).isEnabled();
+    }
+
+    @And("the user clicks detail button of amended record on the customer management page")
+    public void the_user_clicks_detail_button_of_amended_record_on_the_customer_management_page() {
+        aopoManager.getCustomerManagementPage().clickAmendDetailBtn();
+    }
+
+    @Then("the user sees an error dialogue with wordings {string} is prompted on the CM trading experience page")
+    public void the_user_sees_an_error_dialogue_with_wordings_is_prompted_on_the_CM_trading_experience_page(String dialogueText){
+        assertThat(aopoManager.getCmTradingExpPage().getDialogue()).hasText(dialogueText);
+    }
+
+    @And("the user selects ID Type {string} on the CM personal information page")
+    public void the_user_selects_ID_Type_on_the_CM_personal_information_page(String idType) throws IOException {
+        aopoManager.getCmPersonalInfoPage().selectIdType(idType);
     }
 }

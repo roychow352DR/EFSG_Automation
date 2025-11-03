@@ -118,4 +118,8 @@ public class ApplicationListPagePW {
     public void fillSearchVal(String value) {
         searchField.fill(value);
     }
+
+    public Locator getButton(String buttonText) {
+        return buttons.filter(new Locator.FilterOptions().setHasText(buttonText));
+    }
 }

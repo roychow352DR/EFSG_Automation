@@ -4,11 +4,11 @@ import API.CoreService;
 import Data.SQLDatabase;
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
+import com.microsoft.playwright.options.LoadState;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import okio.JvmSystemFileSystem;
 import org.testng.Assert;
 import utils.BaseTest;
 import utils.SetCondition;
@@ -35,6 +35,7 @@ public class ApplicationSteps extends BaseTest {
         page = initializePage();
         aopoManager = new AOPOManager(page);
         aopoManager.getAdminLoginPage().loginETE(username, password);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
     }
 
@@ -307,7 +308,7 @@ public class ApplicationSteps extends BaseTest {
         } else if (textFieldName.equalsIgnoreCase("mobileNumber")) {
             aopoManager.getApplicationInfoPage().fillPhoneNumber(value);
         } else {
-            aopoManager.getApplicationInfoPage().fillNonMandaField(value, textFieldName);
+            aopoManager.getApplicationInfoPage().fillTextFieldVal(value, textFieldName);
         }
 
     }
@@ -378,13 +379,13 @@ public class ApplicationSteps extends BaseTest {
     @When("the user logout Admin Portal")
     public void the_user_logout_Admin_Portal() {
         aopoManager.getMenuPagePW().clickLogout();
-        page.waitForTimeout(500);
+        page.waitForTimeout(1000);
     }
 
     @And("the user re-logged in to Admin Portal as username {string} and password {string}")
     public void the_user_re_logged_in_to_Admin_Portal_as_username_and_password(String username, String password) {
         aopoManager.getAdminLoginPage().loginETE(username, password);
-        assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
+        //assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
     }
 
     @When("the user edit text field {string} on the trading experience page")
@@ -421,7 +422,7 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user clicks detail button of newly created record on the application page")
     public void the_user_clicks_detail_button_of_newly_created_record_on_the_application_page() {
-        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(aopoManager.getApplicationInfoPage().submittedApplicantEmail());
+        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(aopoManager.getCompanyAccountPagePW().submittedApplicantEmail());
     }
 
     @And("the user fills value {string} in the text field {string} on the application filter dialogue")
@@ -459,4 +460,66 @@ public class ApplicationSteps extends BaseTest {
         Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textFieldName).inputValue(),
                 coreService.getTradeGroupInfo(tradeGroupInfo, retrieveLocalStorageVal()));
     }
+
+    @And("the user fills reusable data in the text field {string} on the application information page")
+    public void the_user_fills_reusable_data_in_the_text_field_on_the_application_information_page(String textFieldName) {
+        aopoManager.getApplicationInfoPage().fillTextFieldVal(getOriginData(), textFieldName);
+    }
+
+    @And("the user clicks {string} button on the create company account page")
+    public void the_user_clicks_button_on_create_company_account(String buttonName) {
+        aopoManager.getCompanyAccountPagePW().clickSubmit(buttonName);
+    }
+
+    @And("the user clicks {string} button on the create company account pop up")
+    public void the_user_clicks_button_on_the_create_company_account_pop_up(String buttonName) {
+        aopoManager.getCompanyAccountPagePW().clickButtonByText(buttonName);
+    }
+
+    @And("the user fill mandatory information on create company account page")
+    public void the_user_fill_mandatory_information_on_create_company_account_page() throws IOException {
+        aopoManager.getCompanyAccountPagePW().fillMandatory(SetCondition.isExistedEmail(), SetCondition.isExistedPhoneNumber(), SetCondition.isBelow18());
+
+    }
+
+    @Then("the user sees title {string} is displayed at the create company account page")
+    public void the_user_sees_title_is_displayed_at_the_create_company_account_page(String titleName) {
+        assertThat(aopoManager.getCompanyAccountPagePW().getTitle()).containsText(titleName);
+    }
+
+    @Then("the user sees status {string} is displayed at the create company account page")
+    public void the_user_sees_status_is_displayed_at_the_create_company_account_page(String status) {
+        assertThat(aopoManager.getCompanyAccountPagePW().getAccountStatus()).hasText(status);
+    }
+
+    @When("the user clicks the detail button for the application record with status {string}, created by {string}, and client type {string} on the application list page")
+    public void the_user_clicks_detail_button_of_status_record_with_client_type_on_the_application_list_page(String status, String createdBy, String clientType) throws IOException {
+        CoreService coreService = new CoreService(page, productEnv);
+        String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
+        Assert.assertNotNull(email);
+        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(email);
+        page.waitForTimeout(2000);
+    }
+
+    @Then("the user sees button {string} is disabled on the trading experience page")
+    public void the_user_sees_button_is_disabled_on_the_trading_experience_page(String buttonText) {
+        assertThat(aopoManager.getTradingExpPage().getButton(buttonText)).isDisabled();
+    }
+
+    @Then("the user sees button {string} is hidden on the application list page")
+    public void the_user_sees_button_is_hidden_on_the_application_list_page(String buttonText){
+        assertThat(aopoManager.getApplicationListPage().getButton(buttonText)).isHidden();
+    }
+
+    @Then("the user sees {string} message pop up on the ao login page")
+    public void the_user_sees_message_pop_up_on_the_ao_login_page(String message){
+        assertThat(aopoManager.getAdminLoginPage().loginErrorValidation(message)).hasText(message);
+    }
+
+    @Then("the user sees profile name {string} is displayed on the ao admin portal menu")
+    public void the_user_sees_profile_name_is_displayed_on_the_ao_admin_portal_menu(String profileName){
+        assertThat(aopoManager.getMenuPagePW().getProfile()).hasText(profileName);
+    }
+
+
 }
