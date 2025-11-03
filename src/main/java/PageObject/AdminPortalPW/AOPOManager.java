@@ -21,6 +21,8 @@ public class AOPOManager {
     public final CmEmployeeFinInfoPage cmEmployeeFinInfoPage;
     public final CmTradingExpPage cmTradingExpPage;
     public final BlackListPage blackListPage;
+    public final CompanyAccountPagePW companyAccountPagePW;
+    public final UserManagementPage userManagementPage;
 
     public AOPOManager(Page page) throws IOException {
         this.page = page;
@@ -39,6 +41,8 @@ public class AOPOManager {
         this.cmEmployeeFinInfoPage = new CmEmployeeFinInfoPage(page);
         this.cmTradingExpPage = new CmTradingExpPage(page);
         this.blackListPage = new BlackListPage(page);
+        this.companyAccountPagePW = new CompanyAccountPagePW(page);
+        this.userManagementPage = new UserManagementPage(page);
 
     }
 
@@ -74,30 +78,39 @@ public class AOPOManager {
         return menuPagePW;
     }
 
-    public CustomerManagementPage getCustomerManagementPage(){
+    public CustomerManagementPage getCustomerManagementPage() {
         return customerManagementPage;
     }
 
-    public CmApplicationInfoPage getCmApplicationInfoPage(){
+    public CmApplicationInfoPage getCmApplicationInfoPage() {
         return cmApplicationInfoPage;
     }
 
-    public CmPersonalInfoPage getCmPersonalInfoPage(){
+    public CmPersonalInfoPage getCmPersonalInfoPage() {
         return cmPersonalInfoPage;
     }
-    public CmContactInfoPage getCmContactInfoPage(){
+
+    public CmContactInfoPage getCmContactInfoPage() {
         return cmContactInfoPage;
     }
 
-    public CmEmployeeFinInfoPage getCmEmployeeInfoPage(){
+    public CmEmployeeFinInfoPage getCmEmployeeInfoPage() {
         return cmEmployeeFinInfoPage;
     }
 
-    public CmTradingExpPage getCmTradingExpPage(){
+    public CmTradingExpPage getCmTradingExpPage() {
         return cmTradingExpPage;
     }
 
     public BlackListPage getBlackListPage() {
         return blackListPage;
+    }
+
+    public CompanyAccountPagePW getCompanyAccountPagePW() {
+        return companyAccountPagePW;
+    }
+
+    public UserManagementPage getUserManagementPage() {
+        return userManagementPage;
     }
 }

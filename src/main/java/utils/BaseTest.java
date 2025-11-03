@@ -81,6 +81,7 @@ public class BaseTest {
     public boolean isExpiredBeforeCurrent;
     public boolean isCrossEntity;
     public static String retrievedData;
+    public static String originData;
 
 
     public BaseTest() {
@@ -595,11 +596,19 @@ public class BaseTest {
         return value;
     }
 
-    public void setRetrievedData(String retrieveData){
+    public void setRetrievedData(String retrieveData) {
         retrievedData = retrieveData;
     }
 
-    public static String getRetrievedData(){
+    public static String getRetrievedData() {
         return retrievedData;
+    }
+
+    public void setOriginData(String originData) {
+        BaseTest.originData = originData;
+    }
+
+    public static String getOriginData() {
+        return originData;
     }
 }
