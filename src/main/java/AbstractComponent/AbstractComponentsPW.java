@@ -28,6 +28,7 @@ public class AbstractComponentsPW {
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
         info.put("email", "qaauto" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
+        info.put("companyEmail", "qaautocompany" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
         info.put("existedEmail", "uatapproved@yopmail.com");
         info.put("phoneNumber", Integer.toString(randomPhoneNo));
         info.put("existedPhoneNumber", "96553209");
@@ -41,7 +42,7 @@ public class AbstractComponentsPW {
         info.put("eddCountry", "Malaysia");
         info.put("nationality", "Hong Kong, China");
         info.put("gender", "Male");
-        info.put("idType", "ID Card");
+        info.put("idType", "Passport");
         info.put("dateOfBirthYear", "1990");
         info.put("dateOfBirthDay", "20");
         info.put("dateOfBirthYearBelow18", Integer.toString(localDate.getYear() - 15));
@@ -61,6 +62,7 @@ public class AbstractComponentsPW {
         info.put("expiryDay", Integer.toString(localDate.get(ChronoField.DAY_OF_MONTH)));
         info.put("validExpiryYear", Integer.toString(localDate.getYear() + 2));
         info.put("username", randomString(10));
+        info.put("companyLegal", BaseTest.productEntity + " Legal" + System.currentTimeMillis());
         return info;
     }
 
@@ -121,6 +123,33 @@ public class AbstractComponentsPW {
                 String itemText = locator.textContent();
                 String entityText = entityLocator.textContent();
                 if (itemText != null && itemText.equalsIgnoreCase(text) && entityText.equalsIgnoreCase(entity)) {
+                    isFound = true;
+                    break;
+                }
+            }
+            if (isFound) {
+                break;
+            }
+            if (nextPageBtn.isEnabled()) {
+                nextPageBtn.click();
+                waitForLocatorVisible(items.first());
+            } else {
+                System.out.println("No more pages. " + text + " not found.");
+                break;
+            }
+        }
+    }
+
+    public void getItemsByText(String text, Locator items, Locator nextPageBtn) {
+        boolean isFound = false;
+        waitForLocatorVisible(items.first());
+        while (true) {
+            int count = items.count();
+            for (int i = 0; i < count; i++) {
+                Locator locator = items.nth(i);
+                String itemText = locator.textContent();
+
+                if (itemText != null && itemText.equalsIgnoreCase(text)) {
                     isFound = true;
                     break;
                 }

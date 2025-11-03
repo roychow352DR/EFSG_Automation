@@ -20,8 +20,7 @@ public class TradingExpPagePW {
     public final Locator textField;
     public final Locator dropdownField;
 
-    public TradingExpPagePW(Page page)
-    {
+    public TradingExpPagePW(Page page) {
         this.page = page;
         abs = new AbstractComponentsPW(page);
         this.tradeExp = page.locator("#mui-component-select-fiveOrMorTransactionLastThreeYears");
@@ -36,7 +35,7 @@ public class TradingExpPagePW {
     }
 
     public void fillTradingExp() throws IOException {
-        if (abs.userinfoList().get("entity").contains("EBL")){
+        if (abs.userinfoList().get("entity").contains("EBL")) {
             selectSettlement();
         }
         selectTradeExp();
@@ -59,18 +58,17 @@ public class TradingExpPagePW {
         buttons.filter(new Locator.FilterOptions().setHasText(buttonName)).click();
     }
 
-    public void selectReason(String reason)
-    {
+    public void selectReason(String reason) {
         reasonDropdown.click();
         dropdownOption.filter(new Locator.FilterOptions().setHasText(reason)).click();
     }
 
-    public void selectRejectReason(String reason){
+    public void selectRejectReason(String reason) {
         rejectReasonDropdown.click();
         dropdownOption.filter(new Locator.FilterOptions().setHasText(reason)).click();
     }
 
-    public void selectSettlement(){
+    public void selectSettlement() {
         settlementCurrencyDropdown.click();
         dropdownOption.filter(new Locator.FilterOptions().setHasText("USD")).click();
     }
@@ -79,8 +77,8 @@ public class TradingExpPagePW {
         return abs.getInputValueByAttribute(textField, "name", labelName);
     }
 
-    public String editDropdownVal(String dropdownName){
-        if (dropdownName.equalsIgnoreCase("settlementCurrency")){
+    public String editDropdownVal(String dropdownName) {
+        if (dropdownName.equalsIgnoreCase("settlementCurrency")) {
             settlementCurrencyDropdown.click();
             abs.selectUnselectedDropdownOption();
             return getFieldValByLabel(dropdownName);
@@ -88,12 +86,16 @@ public class TradingExpPagePW {
         return dropdownName;
     }
 
-    public Locator getDropdown(String fieldName){
-        return page.locator("input[name='"+fieldName+"']");
+    public Locator getDropdown(String fieldName) {
+        return page.locator("input[name='" + fieldName + "']");
     }
 
-    public void selectDropdownOption(String dropdownVal, String dropdownFieldName){
-        dropdownField.filter(new Locator.FilterOptions().setHas(page.locator("input[name='"+dropdownFieldName+"']"))).click();
+    public void selectDropdownOption(String dropdownVal, String dropdownFieldName) {
+        dropdownField.filter(new Locator.FilterOptions().setHas(page.locator("input[name='" + dropdownFieldName + "']"))).click();
         dropdownOption.filter(new Locator.FilterOptions().setHasText(dropdownVal)).click();
+    }
+
+    public Locator getButton(String buttonText) {
+        return buttons.filter(new Locator.FilterOptions().setHasText(buttonText));
     }
 }

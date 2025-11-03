@@ -17,7 +17,6 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 
 public class AOLoginSteps extends BaseTest {
     public AdminLoginPage login;
-    public ApplicationListPage applicationListPage;
     public AOPOManager aopoManager;
     Page page;
     public CoreService coreService;

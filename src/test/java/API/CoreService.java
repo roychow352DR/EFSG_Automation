@@ -74,18 +74,19 @@ public class CoreService {
         return retrieveValue;
     }
 
-    public String getAppClientFromJsonArray(String responseBody, String extractVal, String conditionVal, String conditionParam, String conditionVal2, String conditionParam2, String entity, String entityVal) {
+    public String getClientFromJsonArray(String responseBody, String extractVal, String conditionVal, String conditionParam, String conditionVal2, String conditionParam2, String entity, String entityVal,String createType) {
         Gson gson = new Gson();
         JsonObject json = gson.fromJson(responseBody, JsonObject.class);
         JsonObject responseObj = json.getAsJsonObject("response");
         JsonArray contentArray = responseObj.getAsJsonArray("content");
         String retrieveValue = "";
+        String createdParam = "createdBy";
         try {
             for (int i = 0; i < contentArray.size(); i++) {
                 JsonObject firstItem = contentArray.get(i).getAsJsonObject();
                 if (firstItem.get(conditionVal).getAsString().equalsIgnoreCase(conditionParam) &&
                         firstItem.get(conditionVal2).getAsString().equalsIgnoreCase(conditionParam2) &&
-                        firstItem.get(entity).getAsString().equalsIgnoreCase(entityVal)) {
+                        firstItem.get(entity).getAsString().equalsIgnoreCase(entityVal) && firstItem.get(createdParam).getAsString().equalsIgnoreCase(createType) ) {
                     retrieveValue = firstItem.get(extractVal).getAsString();
                     return retrieveValue;
                 }
@@ -198,11 +199,40 @@ public class CoreService {
         return value;
     }
 
-    public String getAoAppClient(String token, String extractVal, String conditionVal, String conditionParam, String createType) throws IOException {
+//    public String getAoAppClient(String token, String extractVal, String conditionVal, String conditionParam, String createType) throws IOException {
+//        int pageNum = 0;
+//        String appParam = "createdBy";
+//        String createdBy = createType.equalsIgnoreCase("app") ? "Customer" : "Admin";
+//        String jsonBody;
+//        String endPoint = domain + "account-opening/page";
+//        String authToken = "Bearer " + token;
+//        String value;
+//        Playwright playwright = Playwright.create();
+//        APIRequestContext request = playwright.request().newContext();
+//        APIResponse response;
+//        do {
+//            jsonBody = "{\"filter\":{},\"page\":" + pageNum + ",\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}";
+//            // System.out.println(jsonBody);
+//            response = request.post(
+//                    endPoint,
+//                    RequestOptions.create()
+//                            .setHeader("Authorization", authToken)
+//                            .setHeader("Content-Type", "application/json")
+//                            .setData(jsonBody)
+//            );
+//            value = getClientFromJsonArray(response.text(), extractVal, conditionVal, conditionParam, appParam, createdBy, "entity", abs.userinfoList().get("entity"));
+//            if (value.isEmpty()) {
+//                pageNum++;
+//            }
+//        } while (value.isEmpty());
+//        return value;
+//    }
+
+    public String getAoClient(String token, String extractVal, String conditionVal, String conditionParam, String createType, String clientType ) throws IOException {
         int pageNum = 0;
+        String jsonBody;
         String appParam = "createdBy";
         String createdBy = createType.equalsIgnoreCase("app") ? "Customer" : "Admin";
-        String jsonBody;
         String endPoint = domain + "account-opening/page";
         String authToken = "Bearer " + token;
         String value;
@@ -219,7 +249,7 @@ public class CoreService {
                             .setHeader("Content-Type", "application/json")
                             .setData(jsonBody)
             );
-            value = getAppClientFromJsonArray(response.text(), extractVal, conditionVal, conditionParam, appParam, createdBy, "entity", abs.userinfoList().get("entity"));
+            value = getClientFromJsonArray(response.text(), extractVal, conditionVal, conditionParam, "clientType", clientType, "entity", abs.userinfoList().get("entity"),createType);
             if (value.isEmpty()) {
                 pageNum++;
             }
@@ -265,7 +295,6 @@ public class CoreService {
                         .setHeader("Key", "YXBpZ2F0ZXdheTpwYXNzd29yZA==")
                         .setData(jsonBody)
         );
-        System.out.println(response.text());
         return parseJson(response.text(), extractVal);
     }
 
