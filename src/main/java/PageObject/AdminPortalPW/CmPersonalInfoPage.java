@@ -72,7 +72,7 @@ public class CmPersonalInfoPage {
         this.radioButtons = page.locator("input[type='radio']");
     }
 
-    public void fillPersonalInfo(boolean isBelow18, boolean isExpired, String expiredCondition, boolean isEdd) throws IOException {
+    public void fillPersonalInfo(boolean isBelow18, boolean isExpired, boolean isExpiredBeforeCurrent, boolean isEdd) throws IOException {
         fillName();
         selectGender();
         selectCountry(isEdd);
@@ -80,11 +80,11 @@ public class CmPersonalInfoPage {
         selectNationality();
         selectIdType();
         fillRandomId();
-        selectExpiryDate(isExpired, expiredCondition);
+        selectExpiryDate(isExpired, isExpiredBeforeCurrent);
         clickNext();
     }
 
-    public void fillMandatory(boolean isBelow18, boolean isExpired, String expiredCondition, boolean isEdd) throws IOException {
+    public void fillMandatory(boolean isBelow18, boolean isExpired, boolean isExpiredBeforeCurrent, boolean isEdd) throws IOException {
         fillName();
         selectGender();
         selectCountry(isEdd);
@@ -92,7 +92,7 @@ public class CmPersonalInfoPage {
         selectNationality();
         selectIdType();
         fillRandomId();
-        selectExpiryDate(isExpired, expiredCondition);
+        selectExpiryDate(isExpired, isExpiredBeforeCurrent);
     }
 
     public void fillName() throws IOException {
@@ -134,6 +134,7 @@ public class CmPersonalInfoPage {
         dropdownOption.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("idType"))).click();
     }
 
+
     public void fillRandomId() throws IOException {
         idNoField.fill(abs.userinfoList().get("id"));
     }
@@ -151,14 +152,14 @@ public class CmPersonalInfoPage {
         return errorText.first();
     }
 
-    public void selectExpiryDate(boolean isExpired, String expiredCondition) throws IOException {
+    public void selectExpiryDate(boolean isExpired, boolean isExpiredBeforeCurrent) throws IOException {
         calendarButton.last().click();
-        if (!isExpired) {
+        if (!isExpired && !isExpiredBeforeCurrent) {
             calendarExtendBtn.click();
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("validExpiryYear"))).click();
             dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
                     , new Page.GetByTextOptions().setExact(true)))).click();
-        } else if (!expiredCondition.contains("before")) {
+        } else if (!isExpiredBeforeCurrent) {
             datePickerArrow.click();
             dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
                     , new Page.GetByTextOptions().setExact(true)))).first().click();
@@ -181,7 +182,7 @@ public class CmPersonalInfoPage {
         idNoField.fill(id);
     }
 
-    public void selectIdType(String idType) {
+    public void selectIdType(String idType) throws IOException {
         idTypeDropdown.click();
         dropdownOption.filter(new Locator.FilterOptions().setHasText(idType)).click();
     }

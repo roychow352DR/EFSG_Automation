@@ -21,6 +21,7 @@ public class BackendSteps extends BaseTest {
     public BackendSteps() throws IOException {
     }
 
+
     @Then("{string} is {string} in CM {string} database table where {string} retrieved by {string}")
     public void is_in_CM_database_table(String columnName, String expectedVal, String tableName, String filterCol, String filterVal) throws SQLException {
         String retrievedValue = sqlDb.retrieveValueFromDb(columnName, tableName, filterCol, sqlDb.getValueBasedOnEmail(filterVal, aopoManager.getCustomerManagementPage().email));
@@ -48,16 +49,17 @@ public class BackendSteps extends BaseTest {
         coreService.setParamVal(param, value);
     }
 
-    @And("the data created by {string} in status {string} is found in the AO application list")
-    public void the_App_client_data_in_status_is_found_in_the_AO_application_list(String createType,String status) throws IOException {
-        data = coreService.getAoAppClient(retrieveLocalStorageVal(), "email", "statusLabel", status,createType);
-        setRetrievedData(data);
-        Assert.assertNotNull(data);
-    }
+//    @And("the data created by {string} in status {string} is found in the AO application list")
+//    public void the_App_client_data_in_status_is_found_in_the_AO_application_list(String createType,String status) throws IOException {
+//        data = coreService.getAoAppClient(retrieveLocalStorageVal(), "email", "statusLabel", status,createType);
+//        setRetrievedData(data);
+//        Assert.assertNotNull(data);
+//    }
 
     @And("value {string} is retrieved according to the param value {string} of param {string} from the ao page api")
     public void value_is_retrieved_according_to_the_param_value_of_param_from_the_ao_page_api(String retrieveVal, String paramVal, String param) {
         data = coreService.getAoListItem(retrieveLocalStorageVal(), retrieveVal, param, paramVal);
         setRetrievedData(data);
     }
+
 }

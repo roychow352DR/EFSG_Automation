@@ -62,6 +62,12 @@ public class CustomerManagementPage {
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
 
+    public void clickAmendDetailBtn(){
+        abs.getItemsByText(email, cmEmail, nextPageBtn,entity,entityRow);
+        rows.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName("Detail")).first().click();
+    }
+
 //    public void clickDetailBtn(String entity){
 //        email = getEntityEmail(entity);
 //        abs.getItemsByText(this.email, cmEmail, nextPageBtn);

@@ -1,7 +1,6 @@
 package PageObject.AdminPortalPW;
 
 import AbstractComponent.AbstractComponentsPW;
-import utils.BaseTest;
 import utils.SetCondition;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
@@ -38,7 +37,6 @@ public class ApplicationInfoPagePW {
         this.emailField = page.locator("input[name='email']");
         this.countryCodeField = page.locator("#mui-component-select-mobileCountryCode");
         this.phoneNumberField = page.locator("input[name='mobile']");
-        // this.nextButton = page.locator(".css-15j76c0");
         this.errorText = page.locator(".css-1wercf4").first();
         this.toastMsg = page.locator(".Toastify__toast-body div").nth(1);
         this.buttons = page.getByRole(AriaRole.BUTTON);
@@ -224,7 +222,7 @@ public class ApplicationInfoPagePW {
         return page.locator("input[name='" + fieldName + "']");
     }
 
-    public void fillNonMandaField(String value, String fieldName) {
+    public void fillTextFieldVal(String value, String fieldName) {
         page.locator("input[name='" + fieldName + "']").fill(value);
     }
 
