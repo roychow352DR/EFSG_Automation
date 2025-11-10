@@ -134,4 +134,19 @@ public class BlackListPage {
     public Locator getButton(String buttonName) {
         return buttons.filter(new Locator.FilterOptions().setHasText(buttonName));
     }
+
+    public void clickEntityCheckbox(String entity) {
+        page.locator("//input[@name='" + entity + "']").click();
+    }
+
+    public boolean filteredEntityVal(String entity) {
+        boolean nextBtnIsEnable = nextPageBtn.isEnabled();
+        boolean pageRecordsMatched = true;
+        while (nextBtnIsEnable && pageRecordsMatched) {
+            pageRecordsMatched = abs.getFilteredVal(entity, row, page.locator(".css-ff6t81").nth(0));
+            nextPageBtn.click();
+            nextBtnIsEnable = nextPageBtn.isEnabled();
+        }
+        return pageRecordsMatched;
+    }
 }

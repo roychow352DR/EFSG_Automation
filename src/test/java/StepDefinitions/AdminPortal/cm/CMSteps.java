@@ -1,5 +1,6 @@
 package StepDefinitions.AdminPortal.cm;
 
+import com.microsoft.playwright.options.LoadState;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -223,7 +224,7 @@ public class CMSteps extends BaseTest {
     }
 
     @Then("the user sees an error dialogue with wordings {string} is prompted on the CM trading experience page")
-    public void the_user_sees_an_error_dialogue_with_wordings_is_prompted_on_the_CM_trading_experience_page(String dialogueText){
+    public void the_user_sees_an_error_dialogue_with_wordings_is_prompted_on_the_CM_trading_experience_page(String dialogueText) {
         assertThat(aopoManager.getCmTradingExpPage().getDialogue()).hasText(dialogueText);
     }
 
@@ -231,4 +232,27 @@ public class CMSteps extends BaseTest {
     public void the_user_selects_ID_Type_on_the_CM_personal_information_page(String idType) throws IOException {
         aopoManager.getCmPersonalInfoPage().selectIdType(idType);
     }
+
+    @When("the user clicks button {string} on the customer management page")
+    public void the_user_clicks_button_on_the_customer_management_page(String buttonText) {
+        aopoManager.getCustomerManagementPage().clickBtnByText(buttonText);
+    }
+
+    @And("the user fills value {string} in the text field {string} on the customer management filter dialogue")
+    public void the_user_fills_value_in_the_text_field_on_the_customer_management_filter_dialogue(String filterVal, String inputField) {
+        aopoManager.getCustomerManagementPage().fillValToField(filterVal, inputField);
+    }
+
+    @Then("the customer management list displays {string} in the {string} column as a filtered result")
+    public void the_customer_management_list_displays_in_the_column_as_a_filtered_result(String result, String column) {
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        Assert.assertTrue((aopoManager.getCustomerManagementPage().filteredVal(column, result)));
+    }
+
+    @When("the user fills value {string} on the customer management search field")
+    public void the_user_fills_value_on_the_customer_management_search_field(String searchVal) {
+        aopoManager.getCustomerManagementPage().fillSearchVal(searchVal);
+        page.keyboard().press("Enter");
+    }
+
 }

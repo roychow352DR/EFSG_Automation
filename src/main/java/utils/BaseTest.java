@@ -85,7 +85,7 @@ public class BaseTest {
 
 
     public BaseTest() {
-        new SetCondition(false, false, false, false, false, false, false);
+        new SetCondition(false, false, false, false, false, false, false, false);
 
     }
 

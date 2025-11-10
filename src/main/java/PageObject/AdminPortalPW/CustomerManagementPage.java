@@ -14,13 +14,14 @@ public class CustomerManagementPage {
     public final Locator statusCol;
     public final Locator nextPageBtn;
     public final Locator cmEmail;
-    public String email;
     public final Locator buttons;
     public final Locator status;
     public final Locator clientType;
     public final Locator entityRow;
     public final Locator dialogue;
+    public final Locator searchField;
     public String entity;
+    public String email;
 
     public CustomerManagementPage(Page page) throws IOException {
         this.page = page;
@@ -35,6 +36,7 @@ public class CustomerManagementPage {
         this.entityRow = page.locator(".css-ff6t81:nth-child(2)");
         this.dialogue = page.locator(".Toastify__toast-body");
         this.entity = abs.userinfoList().get("entity");
+        this.searchField = page.locator(".css-1ixds2g");
 
     }
 
@@ -45,7 +47,7 @@ public class CustomerManagementPage {
         return cmStatus;
     }
 
-    public void getStatusEmail(String cmStatusText,String clientTypeText) throws IOException {
+    public void getStatusEmail(String cmStatusText, String clientTypeText) throws IOException {
         getEmail(cmStatusText, cmStatusText, status, cmEmail, clientTypeText);
     }
 
@@ -57,13 +59,13 @@ public class CustomerManagementPage {
 
     public void clickDetailBtn() throws IOException {
         email = getEntityEmail(entity);
-        abs.getItemsByText(email, cmEmail, nextPageBtn,entity,entityRow);
+        abs.getItemsByText(email, cmEmail, nextPageBtn, entity, entityRow);
         rows.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
 
-    public void clickAmendDetailBtn(){
-        abs.getItemsByText(email, cmEmail, nextPageBtn,entity,entityRow);
+    public void clickAmendDetailBtn() {
+        abs.getItemsByText(email, cmEmail, nextPageBtn, entity, entityRow);
         rows.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
@@ -82,12 +84,12 @@ public class CustomerManagementPage {
     }
 
     public void getEmail(String statusText, String filterText, Locator getItemlocator, Locator filterLocator) {
-        abs.getItemsByText(filterText, getItemlocator, nextPageBtn,entity,entityRow);
+        abs.getItemsByText(filterText, getItemlocator, nextPageBtn, entity, entityRow);
         email = rows.filter(new Locator.FilterOptions().setHasText(statusText)).first().locator(filterLocator).textContent();
     }
 
-    public String getEntityEmail(String entity){
-        return switch(entity){
+    public String getEntityEmail(String entity) {
+        return switch (entity) {
             case "EIEHK" -> "qaeiecmtest@yopmail.com";
             case "XPRO" -> "qaxprocmtest@yopmail.com";
             case "EBL_MT5" -> "uatapproved@yopmail.com";
@@ -96,10 +98,28 @@ public class CustomerManagementPage {
         };
     }
 
-    public Locator getDialogue(){
+    public Locator getDialogue() {
         abs.waitForLocatorVisible(dialogue);
         return dialogue;
     }
 
+    public void clickBtnByText(String buttonText) {
+        buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).click();
+    }
+
+    public void fillValToField(String value, String inputField) {
+        page.locator("//input[@name='" + inputField + "']").fill(value);
+    }
+
+    public boolean filteredVal(String col, String filterVal) {
+        if (col.equalsIgnoreCase("Email")) {
+            return abs.getFilteredVal(filterVal, rows, page.locator(".css-10morg3"));
+        }
+        return false;
+    }
+
+    public void fillSearchVal(String searchVal) {
+        searchField.fill(searchVal);
+    }
 
 }

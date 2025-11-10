@@ -4,7 +4,6 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
 import utils.BaseTest;
 
 import java.io.IOException;
@@ -44,8 +43,10 @@ public class AbstractComponentsPW {
         info.put("gender", "Male");
         info.put("idType", "Passport");
         info.put("dateOfBirthYear", "1990");
-        info.put("dateOfBirthDay", "20");
+        info.put("dateOfBirthDay", "1");
         info.put("dateOfBirthYearBelow18", Integer.toString(localDate.getYear() - 15));
+        info.put("dateOfBirthYearThirdParty", Integer.toString(localDate.getYear() - 80));
+        info.put("currentYear", Integer.toString(localDate.getYear()));
         info.put("id", randomString(6));
         info.put("passwordNo", randomString(6));
         info.put("addressLine1", "Mong Kok");
@@ -241,8 +242,8 @@ public class AbstractComponentsPW {
         unselectedOptions.first().click();
     }
 
-    public boolean checkElementIsEditable(Locator locator){
-        for (int i = 0 ; i < locator.count() ; i++){
+    public boolean checkElementIsEditable(Locator locator) {
+        for (int i = 0; i < locator.count(); i++) {
             boolean isEditable = locator.nth(i).isEditable();
             if (isEditable) {
                 return true;
@@ -251,13 +252,32 @@ public class AbstractComponentsPW {
         return false;
     }
 
-    public boolean checkElementIsEnable(Locator locator){
-        for (int i = 0 ; i < locator.count() ; i++){
+    public boolean checkElementIsEnable(Locator locator) {
+        for (int i = 0; i < locator.count(); i++) {
             boolean isClickable = locator.nth(i).isEnabled();
             if (isClickable) {
                 return true;
             }
         }
+        return false;
+    }
+
+    public String setIBCode(String entity) {
+        return switch (entity) {
+            case "EBL_MT5" -> "fJ4HdL";
+            case "EIEHK" -> "fJ4HdsL";
+            case "XPro" -> "djakd";
+            default -> "";
+        };
+    }
+    public boolean getFilteredVal(String filterVal,Locator row,Locator col) {
+        int counts = row.count();
+            for (int i = 0; i < counts; i++) {
+                String rowText = row.nth(i).locator(col).textContent();
+                if (rowText.contains(filterVal)) {
+                    return true;
+                }
+            }
         return false;
     }
 }

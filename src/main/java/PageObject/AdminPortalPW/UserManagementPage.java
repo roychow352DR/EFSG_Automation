@@ -88,6 +88,17 @@ public class UserManagementPage {
         return entityRoleDropdown.nth(index).textContent();
     }
 
+    public void setSelectedRole(String roleVal) throws IOException {
+        int index = switch (abs.userinfoList().get("entity")) {
+            case "EBL_MT5" -> 0;
+            case "EIEHK" -> 1;
+            case "XPro" -> 2;
+            default -> 0;
+        };
+        entityRoleDropdown.nth(index).click();
+        dropdownOption.filter(new Locator.FilterOptions().setHasText(roleVal)).click();
+    }
+
     public String getTextFieldVal(String textFieldName) throws IOException {
         int index = switch (abs.userinfoList().get("entity")) {
             case "EBL_MT5" -> 0;
@@ -95,6 +106,21 @@ public class UserManagementPage {
             case "XPro" -> 2;
             default -> 0;
         };
-        return page.locator("//input[@name='"+textFieldName+"']/parent::div").nth(index).textContent();
+        return page.locator("//input[@name='" + textFieldName + "']/parent::div").nth(index).textContent();
+    }
+
+    public void clickEntityCheckbox(String entity) {
+        page.locator("//input[@name='" + entity + "']").click();
+    }
+
+    public boolean filteredEntityVal(String entity) {
+        boolean nextBtnIsEnable = nextPageBtn.isEnabled();
+        boolean pageRecordsMatched = true;
+        while (nextBtnIsEnable && pageRecordsMatched) {
+            pageRecordsMatched = abs.getFilteredVal(entity, rows, page.locator(".css-er7ssv").nth(0));
+            nextPageBtn.click();
+            nextBtnIsEnable = nextPageBtn.isEnabled();
+        }
+        return pageRecordsMatched;
     }
 }
