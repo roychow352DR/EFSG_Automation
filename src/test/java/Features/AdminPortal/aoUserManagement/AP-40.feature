@@ -1,6 +1,6 @@
-Feature: Application List
+Feature: AO User Management
 
-  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @UserManagement @EBL_MT5 @EIEHK @XPro
     Scenario: User can not login to admin portal after the status changed to Inactive in user management
       Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
       And the user clicks "Admin Area" on the ao admin portal menu

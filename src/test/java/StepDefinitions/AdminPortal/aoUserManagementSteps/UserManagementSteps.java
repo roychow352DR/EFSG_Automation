@@ -64,7 +64,23 @@ public class UserManagementSteps extends BaseTest {
     }
 
     @Then("the user sees button {string} is hidden on the user management page")
-    public void the_user_sees_button_is_hidden_on_the_user_management_page(String buttonText){
+    public void the_user_sees_button_is_hidden_on_the_user_management_page(String buttonText) {
         assertThat(aopoManager.getUserManagementPage().getButton(buttonText)).isHidden();
+    }
+
+    @And("the user changes entity role to value {string} on the user management page")
+    public void the_user_changes_entity_role_to_value_on_the_user_management_page(String roleVal) throws IOException {
+        aopoManager.getUserManagementPage().setSelectedRole(roleVal);
+    }
+
+    @And("the user clicks entity checkbox on the user management filter dialogue")
+    public void the_user_clicks_entity_checkbox_on_the_user_management_filter_dialogue() {
+        aopoManager.getUserManagementPage().clickEntityCheckbox(productEntity);
+    }
+
+    @Then("the user sees relevant entity records displayed as filtered result on the user management page")
+    public void the_user_sees_relevant_entity_records_displayed_as_filtered_result_on_the_user_management_page() {
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        Assert.assertTrue(aopoManager.getUserManagementPage().filteredEntityVal(productEntity));
     }
 }
