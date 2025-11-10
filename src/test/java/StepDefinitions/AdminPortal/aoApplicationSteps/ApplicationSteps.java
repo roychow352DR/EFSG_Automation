@@ -9,6 +9,7 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.cucumber.java.eo.Se;
 import org.testng.Assert;
 import utils.BaseTest;
 import utils.SetCondition;
@@ -17,6 +18,8 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static utils.SetCondition.isThirdParty;
+
 
 public class ApplicationSteps extends BaseTest {
     public AdminLoginPage login;
@@ -27,6 +30,7 @@ public class ApplicationSteps extends BaseTest {
     public EmployeeFinancialPage employeeFinancialPage;
     public TradingExperiencePage tradingExperiencePage;
     public static AOPOManager aopoManager;
+    public static CoreService coreService;
     public SQLDatabase sqlDb = new SQLDatabase();
 
 
@@ -34,6 +38,7 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_logged_in_to_Admin_Portal(String username, String password) throws IOException, SQLException {
         page = initializePage();
         aopoManager = new AOPOManager(page);
+        coreService = new CoreService(page, productEnv);
         aopoManager.getAdminLoginPage().loginETE(username, password);
         page.waitForLoadState(LoadState.NETWORKIDLE);
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
@@ -67,7 +72,8 @@ public class ApplicationSteps extends BaseTest {
         aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
                 SetCondition.isExpired(),
                 SetCondition.isExpiredBeforeCurrent(),
-                SetCondition.isEdd());
+                SetCondition.isEdd(),
+                SetCondition.isThirdParty());
 
     }
 
@@ -175,7 +181,8 @@ public class ApplicationSteps extends BaseTest {
         aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
                 SetCondition.isExpired(),
                 SetCondition.isExpiredBeforeCurrent(),
-                SetCondition.isEdd());
+                SetCondition.isEdd(),
+                SetCondition.isThirdParty());
     }
 
     @Then("the user sees {string} error message displayed on personal information page")
@@ -185,7 +192,7 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user fills expiry date {string} than current date")
     public void the_user_fills_expiry_date(String condition) throws InterruptedException, IOException {
-        Thread.sleep(3000);
+       page.waitForTimeout(3000);
         int days;
         if (condition.equalsIgnoreCase("later")) {
             days = 1;
@@ -198,7 +205,6 @@ public class ApplicationSteps extends BaseTest {
 
     @When("the user submits mandatory information on application information page")
     public void the_user_submits_mandatory_information_with_on_application_information_page() throws IOException {
-        System.out.println(SetCondition.isExistedEmail());
         aopoManager.getApplicationInfoPage().fillApplicationInfo(SetCondition.isExistedEmail(),
                 SetCondition.isExistedPhoneNumber(),
                 SetCondition.isCrossEntity());
@@ -214,6 +220,7 @@ public class ApplicationSteps extends BaseTest {
     @When("the user clicks {string} on the ao admin portal menu")
     public void the_user_clicks_on_the__ao_admin_portal_menu(String menu) {
         aopoManager.getMenuPagePW().clickMenu(menu);
+        page.waitForTimeout(1000);
     }
 
     @And("the user fills mandatory information on personal information page")
@@ -221,7 +228,8 @@ public class ApplicationSteps extends BaseTest {
         aopoManager.getPersonalInfoPage().fillMandatory(SetCondition.isBelow18(),
                 SetCondition.isExpired(),
                 SetCondition.isExpiredBeforeCurrent(),
-                SetCondition.isEdd());
+                SetCondition.isEdd(),
+                SetCondition.isThirdParty());
     }
 
     @And("the user uncheck {string} checkbox on personal information page")
@@ -290,8 +298,9 @@ public class ApplicationSteps extends BaseTest {
             case "EDD" -> isEdd = true;
             case "Expired date before current date" -> isExpiredBeforeCurrent = true;
             case "Cross Entity" -> isCrossEntity = true;
+            case "3rd Party" -> isThirdParty = true;
         }
-        new SetCondition(isExistedEmail, isExistedPhoneNumber, isBelow18, isExpired, isEdd, isExpiredBeforeCurrent, isCrossEntity);
+        new SetCondition(isExistedEmail, isExistedPhoneNumber, isBelow18, isExpired, isEdd, isExpiredBeforeCurrent, isCrossEntity, isThirdParty);
     }
 
     @And("the user selects entity {string} on the application information page")
@@ -307,10 +316,16 @@ public class ApplicationSteps extends BaseTest {
             aopoManager.getApplicationInfoPage().fillEmail(value);
         } else if (textFieldName.equalsIgnoreCase("mobileNumber")) {
             aopoManager.getApplicationInfoPage().fillPhoneNumber(value);
-        } else {
+        }
+        else {
             aopoManager.getApplicationInfoPage().fillTextFieldVal(value, textFieldName);
         }
 
+    }
+
+    @And("the user fills entity IB Code in the text field {string} on application information page")
+    public void the_user_fills_entity_IB_Code_the_text_field_on_application_information_page(String textFieldName) {
+        aopoManager.getApplicationInfoPage().fillTextFieldVal(aopoManager.getApplicationInfoPage().getIbCode(productEntity), textFieldName);
     }
 
     @Then("the user sees an error dialogue with wordings {string} on the application information page")
@@ -351,7 +366,8 @@ public class ApplicationSteps extends BaseTest {
         aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
                 SetCondition.isExpired(),
                 SetCondition.isExpiredBeforeCurrent(),
-                SetCondition.isEdd());
+                SetCondition.isEdd(),
+                isThirdParty());
         aopoManager.getContactInfoPage().fillContactInfo();
         aopoManager.getEmployeeFinInfoPage().fillEmployeeFinInfo();
         aopoManager.getTradingExpPage().fillTradingExp();
@@ -370,7 +386,6 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user fills textField {string} retrieved from api endpoint on the application information page")
     public void the_user_fills_textField_retrieved_from_api_endpoint_on_the_application_information_page(String textFieldName) {
-        System.out.println(getRetrievedData());
         if (textFieldName.equalsIgnoreCase("username")) {
             aopoManager.getApplicationInfoPage().fillUsername(getRetrievedData());
         }
@@ -420,9 +435,15 @@ public class ApplicationSteps extends BaseTest {
         assertThat(aopoManager.getTradingExpPage().getDropdown(dropdownFieldName)).hasValue(dropdownVal);
     }
 
-    @And("the user clicks detail button of newly created record on the application page")
-    public void the_user_clicks_detail_button_of_newly_created_record_on_the_application_page() {
-        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(aopoManager.getCompanyAccountPagePW().submittedApplicantEmail());
+    @And("the user clicks detail button of newly created record with account type {string} on the application page")
+    public void the_user_clicks_detail_button_of_newly_created_record_on_the_application_page(String accountType) {
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        if (accountType.equalsIgnoreCase("Individual")) {
+            aopoManager.getApplicationListPage().clickClientRecordDetailBtn(aopoManager.getApplicationInfoPage().submittedApplicantEmail());
+        }
+        else {
+            aopoManager.getApplicationListPage().clickClientRecordDetailBtn(aopoManager.getCompanyAccountPagePW().submittedApplicantEmail());
+        }
     }
 
     @And("the user fills value {string} in the text field {string} on the application filter dialogue")
@@ -455,11 +476,18 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees text field {string} displayed expected value as trade group info {string} obtain from eCRM on the application information page")
     public void the_user_sees_text_field_displayed_expected_value_as_trade_group_info_obtain_from_eCRM_on_the_application_information_page(String textFieldName, String tradeGroupInfo) throws IOException {
-        CoreService coreService = new CoreService(page, productEnv);
         page.waitForTimeout(2000);
         Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textFieldName).inputValue(),
                 coreService.getTradeGroupInfo(tradeGroupInfo, retrieveLocalStorageVal()));
     }
+
+    @Then("the user sees text field {string} displayed expected value as entity trade group info {string} obtain from eCRM on the application information page")
+    public void the_user_sees_text_field_displayed_expected_value_as_entity_trade_group_info_obtain_from_eCRM_on_the_application_information_page(String textFieldName, String tradeGroupInfo) throws IOException {
+        page.waitForTimeout(2000);
+        Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textFieldName).inputValue(),
+                coreService.getTradeGroupInfoBasedOnEntity(tradeGroupInfo, retrieveLocalStorageVal(),productEntity));
+    }
+
 
     @And("the user fills reusable data in the text field {string} on the application information page")
     public void the_user_fills_reusable_data_in_the_text_field_on_the_application_information_page(String textFieldName) {
@@ -494,7 +522,7 @@ public class ApplicationSteps extends BaseTest {
 
     @When("the user clicks the detail button for the application record with status {string}, created by {string}, and client type {string} on the application list page")
     public void the_user_clicks_detail_button_of_status_record_with_client_type_on_the_application_list_page(String status, String createdBy, String clientType) throws IOException {
-        CoreService coreService = new CoreService(page, productEnv);
+        coreService = new CoreService(page, productEnv);
         String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
         Assert.assertNotNull(email);
         aopoManager.getApplicationListPage().clickClientRecordDetailBtn(email);
@@ -521,5 +549,21 @@ public class ApplicationSteps extends BaseTest {
         assertThat(aopoManager.getMenuPagePW().getProfile()).hasText(profileName);
     }
 
+    @And("the user fills age {string} on the personal information page")
+    public void the_user_fills_age_on_the_personal_information_page(String age) throws IOException {
+        page.waitForTimeout(1000);
+        aopoManager.getPersonalInfoPage().fillDob(age);
+    }
+
+    @And("the user clicks entity checkbox on the application filter dialogue")
+    public void the_user_clicks_entity_checkbox_on_the_application_filter_dialogue() {
+        aopoManager.getApplicationListPage().clickEntityCheckbox(productEntity);
+    }
+
+    @Then("the user sees relevant entity records displayed as filtered result on the application list")
+    public void the_user_sees_relevant_entity_records_displayed_as_filtered_result_on_the_application_list() {
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        Assert.assertTrue(aopoManager.getApplicationListPage().filteredEntityVal(productEntity));
+    }
 
 }

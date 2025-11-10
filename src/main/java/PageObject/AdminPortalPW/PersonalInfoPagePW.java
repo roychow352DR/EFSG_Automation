@@ -50,11 +50,11 @@ public class PersonalInfoPagePW {
 
     }
 
-    public void fillPersonalInfo(boolean isBelow18, boolean isExpired, boolean isExpiredBeforeCurrent, boolean isEdd) throws IOException {
+    public void fillPersonalInfo(boolean isBelow18, boolean isExpired, boolean isExpiredBeforeCurrent, boolean isEdd, boolean isThirdParty) throws IOException {
         fillName();
         selectGender();
         selectCountry(isEdd);
-        fillDob(isBelow18);
+        fillDob(isBelow18,isThirdParty);
         selectNationality();
         selectIdType();
         fillRandomId();
@@ -62,11 +62,11 @@ public class PersonalInfoPagePW {
         clickNext();
     }
 
-    public void fillMandatory(boolean isBelow18, boolean isExpired, boolean isExpiredBeforeCurrent, boolean isEdd) throws IOException {
+    public void fillMandatory(boolean isBelow18, boolean isExpired, boolean isExpiredBeforeCurrent, boolean isEdd, boolean isThirdParty) throws IOException {
         fillName();
         selectGender();
         selectCountry(isEdd);
-        fillDob(isBelow18);
+        fillDob(isBelow18,isThirdParty);
         selectNationality();
         selectIdType();
         fillRandomId();
@@ -91,15 +91,30 @@ public class PersonalInfoPagePW {
         }
     }
 
-    public void fillDob(boolean isBelow18) throws IOException {
+    public void fillDob(boolean isBelow18,boolean isThirdParty) throws IOException {
         calendarButton.first().click();
         calendarExtendBtn.click();
-        if (!isBelow18) {
+        if (!isBelow18 && !isThirdParty) {
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthYear"))).click();
-        } else {
+        }
+        else if (!isBelow18) {
+            yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthYearThirdParty"))).click();
+        }
+
+        else {
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthYearBelow18"))).click();
         }
-        dayItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthDay"))).click();
+        dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("dateOfBirthDay"),
+                new Page.GetByTextOptions().setExact(true)))).click();
+    }
+
+    public void fillDob(String age) throws IOException {
+        int yearOfBirth = Integer.parseInt(abs.userinfoList().get("currentYear")) - Integer.parseInt(age);
+        calendarButton.first().click();
+        calendarExtendBtn.click();
+        yearItems.filter(new Locator.FilterOptions().setHasText(Integer.toString(yearOfBirth))).click();
+        dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("dateOfBirthDay"),
+                new Page.GetByTextOptions().setExact(true)))).click();
     }
 
     public void selectNationality() throws IOException {

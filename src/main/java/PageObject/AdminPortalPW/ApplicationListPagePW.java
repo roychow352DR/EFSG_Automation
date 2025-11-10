@@ -103,14 +103,8 @@ public class ApplicationListPagePW {
     }
 
     public boolean filteredVal(String col, String filterVal) {
-        int counts = row.count();
         if (col.equalsIgnoreCase("Email")) {
-            for (int i = 0; i < counts; i++) {
-                String rowText = row.nth(i).locator(".css-ff6t81").nth(1).textContent();
-                if (rowText.contains(filterVal)) {
-                    return true;
-                }
-            }
+           return abs.getFilteredVal(filterVal,row,page.locator(".css-ff6t81").nth(1));
         }
         return false;
     }
@@ -121,5 +115,20 @@ public class ApplicationListPagePW {
 
     public Locator getButton(String buttonText) {
         return buttons.filter(new Locator.FilterOptions().setHasText(buttonText));
+    }
+
+    public void clickEntityCheckbox(String entity) {
+        page.locator("//input[@name='"+entity+"']").click();
+    }
+
+    public boolean filteredEntityVal(String entity) {
+        boolean nextBtnIsEnable = nextPageBtn.isEnabled();
+        boolean pageRecordsMatched = true;
+        while (nextBtnIsEnable && pageRecordsMatched) {
+            pageRecordsMatched = abs.getFilteredVal(entity, row, page.locator(".css-ff6t81").nth(0));
+            nextPageBtn.click();
+            nextBtnIsEnable = nextPageBtn.isEnabled();
+        }
+        return pageRecordsMatched;
     }
 }

@@ -9,8 +9,9 @@ public class SetCondition {
     public static boolean isEdd;
     public static boolean isExpiredBeforeCurrent;
     public static boolean isCrossEntity;
+    public static boolean isThirdParty;
 
-    public SetCondition(boolean isExistedEmail, boolean isExistedPhoneNumber, boolean isBelow18, boolean isExpired, boolean isEdd, boolean isExpiredBeforeCurrent, boolean isCrossEntity) {
+    public SetCondition(boolean isExistedEmail, boolean isExistedPhoneNumber, boolean isBelow18, boolean isExpired, boolean isEdd, boolean isExpiredBeforeCurrent, boolean isCrossEntity, boolean isThirdParty) {
         SetCondition.isExistedEmail = isExistedEmail;
         SetCondition.isExistedPhoneNumber = isExistedPhoneNumber;
         SetCondition.isBelow18 = isBelow18;
@@ -18,6 +19,7 @@ public class SetCondition {
         SetCondition.isEdd = isEdd;
         SetCondition.isExpiredBeforeCurrent = isExpiredBeforeCurrent;
         SetCondition.isCrossEntity = isCrossEntity;
+        SetCondition.isThirdParty = isThirdParty;
     }
 
     public static boolean isExistedEmail() {
@@ -47,4 +49,6 @@ public class SetCondition {
     public static boolean isCrossEntity() {
         return isCrossEntity;
     }
+
+    public static boolean isThirdParty() { return isThirdParty;}
 }

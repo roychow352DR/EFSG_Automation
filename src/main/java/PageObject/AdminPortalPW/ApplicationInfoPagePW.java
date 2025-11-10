@@ -226,4 +226,8 @@ public class ApplicationInfoPagePW {
         page.locator("input[name='" + fieldName + "']").fill(value);
     }
 
+    public String getIbCode(String entity){
+        return abs.setIBCode(entity);
+    }
+
 }

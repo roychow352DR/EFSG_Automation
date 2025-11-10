@@ -23,6 +23,7 @@ public class AOPOManager {
     public final BlackListPage blackListPage;
     public final CompanyAccountPagePW companyAccountPagePW;
     public final UserManagementPage userManagementPage;
+    public final AORolesPermissionPage aoRolesPermissionPage;
 
     public AOPOManager(Page page) throws IOException {
         this.page = page;
@@ -43,6 +44,7 @@ public class AOPOManager {
         this.blackListPage = new BlackListPage(page);
         this.companyAccountPagePW = new CompanyAccountPagePW(page);
         this.userManagementPage = new UserManagementPage(page);
+        this.aoRolesPermissionPage = new AORolesPermissionPage(page);
 
     }
 
@@ -112,5 +114,9 @@ public class AOPOManager {
 
     public UserManagementPage getUserManagementPage() {
         return userManagementPage;
+    }
+
+    public AORolesPermissionPage getAoRolesPermissionPage() {
+        return aoRolesPermissionPage;
     }
 }
