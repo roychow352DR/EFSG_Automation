@@ -298,4 +298,24 @@ public class CoreService {
         return parseJson(response.text(), extractVal);
     }
 
+    public String getTradeGroupInfoBasedOnEntity(String extractVal, String token, String entity) {
+        String endPoint = getCrmDomain(entity, env) + "admin-portal/api/user/referral-code/trading-group";
+        String authToken = "Bearer " + token;
+        String jsonBody;
+        Playwright playwright = Playwright.create();
+        APIRequestContext request = playwright.request().newContext();
+        APIResponse response;
+        jsonBody = "{\"code\":\""+abs.setIBCode(entity)+"\"}";
+        response = request.post(
+                endPoint,
+                RequestOptions.create()
+                        .setHeader("Authorization", authToken)
+                        .setHeader("Content-Type", "application/json")
+                        .setHeader("Key", "YXBpZ2F0ZXdheTpwYXNzd29yZA==")
+                        .setData(jsonBody)
+        );
+        return parseJson(response.text(), extractVal);
+    }
+
+
 }

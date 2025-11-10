@@ -1,6 +1,7 @@
 package StepDefinitions.AdminPortal.aoBlacklistSteps;
 
 import PageObject.AdminPortalPW.AOPOManager;
+import com.microsoft.playwright.options.LoadState;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import static StepDefinitions.AdminPortal.aoApplicationSteps.ApplicationSteps.aopoManager;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static utils.BaseTest.page;
+import static utils.BaseTest.productEntity;
 
 public class BlacklistSteps {
 
@@ -49,4 +51,16 @@ public class BlacklistSteps {
     public void the_button_is_not_displayed_on_the_blacklist_page(String buttonName){
         assertThat(aopoManager.getBlackListPage().getButton(buttonName)).isHidden();
     }
+
+    @And("the user clicks entity checkbox on the blacklist filter dialogue")
+    public void the_user_clicks_entity_checkbox_on_the_blacklist_filter_dialogue() {
+        aopoManager.getBlackListPage().clickEntityCheckbox(productEntity);
+    }
+
+    @Then("the user sees relevant entity records displayed as filtered result on the blacklist page")
+    public void the_user_sees_relevant_entity_records_displayed_as_filtered_result_on_the_blacklist_page() {
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        Assert.assertTrue(aopoManager.getBlackListPage().filteredEntityVal(productEntity));
+    }
+
 }
