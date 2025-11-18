@@ -68,9 +68,9 @@ public class TradingExpPagePW {
         dropdownOption.filter(new Locator.FilterOptions().setHasText(reason)).click();
     }
 
-    public void selectSettlement() {
+    public void selectSettlement() throws IOException {
         settlementCurrencyDropdown.click();
-        dropdownOption.filter(new Locator.FilterOptions().setHasText("USD")).click();
+        dropdownOption.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("settlementCurrency"))).click();
     }
 
     public String getFieldValByLabel(String labelName) {

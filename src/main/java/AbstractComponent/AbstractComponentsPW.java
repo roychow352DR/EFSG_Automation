@@ -34,7 +34,7 @@ public class AbstractComponentsPW {
         info.put("entity", BaseTest.productEntity);
         info.put("promoCode", "Test");
         info.put("referCode", "Test123");
-        info.put("countryCode", "+852");
+        info.put("countryCode", "+1");
         info.put("lastName", "Peter");
         info.put("firstName", "Chu");
         info.put("country", "Hong Kong, China");
@@ -64,6 +64,8 @@ public class AbstractComponentsPW {
         info.put("validExpiryYear", Integer.toString(localDate.getYear() + 2));
         info.put("username", randomString(10));
         info.put("companyLegal", BaseTest.productEntity + " Legal" + System.currentTimeMillis());
+        info.put("roleName","QaAutoRoleTest");
+        info.put("settlementCurrency","USD");
         return info;
     }
 
@@ -256,6 +258,16 @@ public class AbstractComponentsPW {
         for (int i = 0; i < locator.count(); i++) {
             boolean isClickable = locator.nth(i).isEnabled();
             if (isClickable) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean checkElementIsVisible(Locator locator) {
+        for (int i = 0; i < locator.count(); i++) {
+            boolean isVisible = locator.nth(i).isVisible();
+            if (isVisible) {
                 return true;
             }
         }

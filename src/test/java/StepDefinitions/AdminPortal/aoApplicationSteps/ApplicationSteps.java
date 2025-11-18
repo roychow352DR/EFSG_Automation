@@ -65,6 +65,7 @@ public class ApplicationSteps extends BaseTest {
         aopoManager.getApplicationInfoPage().fillApplicationInfo(SetCondition.isExistedEmail(),
                 SetCondition.isExistedPhoneNumber(),
                 SetCondition.isCrossEntity());
+        setRetrievedData(aopoManager.getApplicationInfoPage().submittedApplicantEmail());
     }
 
     @And("the user fills personal information page")
@@ -192,7 +193,7 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user fills expiry date {string} than current date")
     public void the_user_fills_expiry_date(String condition) throws InterruptedException, IOException {
-       page.waitForTimeout(3000);
+        page.waitForTimeout(3000);
         int days;
         if (condition.equalsIgnoreCase("later")) {
             days = 1;
@@ -212,8 +213,8 @@ public class ApplicationSteps extends BaseTest {
 
     }
 
-    @And("the user selects {string} as reason on the verify reason pop up")
-    public void the_user_selects_as_reason_on_the_verify_reason_pop_up(String reason) {
+    @And("the user selects {string} as reason on the verify reason pop up on application information page")
+    public void the_user_selects_as_reason_on_the_verify_reason_pop_up_on_application_information_page(String reason) {
         aopoManager.getApplicationInfoPage().selectReason(reason);
     }
 
@@ -264,7 +265,8 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees an existing record is updated to {string} status on the application list")
     public void the_user_sees_an_existing_record_is_updated_to_status_on_the_application_list(String status) throws IOException {
-        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.getApplicationListPage().getStatusEmail(status))).hasText(status);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(getRetrievedData())).hasText(status);
     }
 
     @Then("the {string} account record is retrieved in CM database")
@@ -316,8 +318,7 @@ public class ApplicationSteps extends BaseTest {
             aopoManager.getApplicationInfoPage().fillEmail(value);
         } else if (textFieldName.equalsIgnoreCase("mobileNumber")) {
             aopoManager.getApplicationInfoPage().fillPhoneNumber(value);
-        }
-        else {
+        } else {
             aopoManager.getApplicationInfoPage().fillTextFieldVal(value, textFieldName);
         }
 
@@ -440,8 +441,7 @@ public class ApplicationSteps extends BaseTest {
         page.waitForLoadState(LoadState.NETWORKIDLE);
         if (accountType.equalsIgnoreCase("Individual")) {
             aopoManager.getApplicationListPage().clickClientRecordDetailBtn(aopoManager.getApplicationInfoPage().submittedApplicantEmail());
-        }
-        else {
+        } else {
             aopoManager.getApplicationListPage().clickClientRecordDetailBtn(aopoManager.getCompanyAccountPagePW().submittedApplicantEmail());
         }
     }
@@ -485,7 +485,7 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_sees_text_field_displayed_expected_value_as_entity_trade_group_info_obtain_from_eCRM_on_the_application_information_page(String textFieldName, String tradeGroupInfo) throws IOException {
         page.waitForTimeout(2000);
         Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textFieldName).inputValue(),
-                coreService.getTradeGroupInfoBasedOnEntity(tradeGroupInfo, retrieveLocalStorageVal(),productEntity));
+                coreService.getTradeGroupInfoBasedOnEntity(tradeGroupInfo, retrieveLocalStorageVal(), productEntity));
     }
 
 
@@ -496,7 +496,7 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user clicks {string} button on the create company account page")
     public void the_user_clicks_button_on_create_company_account(String buttonName) {
-        aopoManager.getCompanyAccountPagePW().clickSubmit(buttonName);
+        aopoManager.getCompanyAccountPagePW().clickButtonByText(buttonName);
     }
 
     @And("the user clicks {string} button on the create company account pop up")
@@ -512,20 +512,24 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees title {string} is displayed at the create company account page")
     public void the_user_sees_title_is_displayed_at_the_create_company_account_page(String titleName) {
+        page.waitForLoadState(LoadState.NETWORKIDLE);
         assertThat(aopoManager.getCompanyAccountPagePW().getTitle()).containsText(titleName);
     }
 
     @Then("the user sees status {string} is displayed at the create company account page")
     public void the_user_sees_status_is_displayed_at_the_create_company_account_page(String status) {
+
         assertThat(aopoManager.getCompanyAccountPagePW().getAccountStatus()).hasText(status);
     }
 
     @When("the user clicks the detail button for the application record with status {string}, created by {string}, and client type {string} on the application list page")
     public void the_user_clicks_detail_button_of_status_record_with_client_type_on_the_application_list_page(String status, String createdBy, String clientType) throws IOException {
         coreService = new CoreService(page, productEnv);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
         String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
         Assert.assertNotNull(email);
         aopoManager.getApplicationListPage().clickClientRecordDetailBtn(email);
+        setRetrievedData(email);
         page.waitForTimeout(2000);
     }
 
@@ -535,17 +539,17 @@ public class ApplicationSteps extends BaseTest {
     }
 
     @Then("the user sees button {string} is hidden on the application list page")
-    public void the_user_sees_button_is_hidden_on_the_application_list_page(String buttonText){
+    public void the_user_sees_button_is_hidden_on_the_application_list_page(String buttonText) {
         assertThat(aopoManager.getApplicationListPage().getButton(buttonText)).isHidden();
     }
 
     @Then("the user sees {string} message pop up on the ao login page")
-    public void the_user_sees_message_pop_up_on_the_ao_login_page(String message){
+    public void the_user_sees_message_pop_up_on_the_ao_login_page(String message) {
         assertThat(aopoManager.getAdminLoginPage().loginErrorValidation(message)).hasText(message);
     }
 
     @Then("the user sees profile name {string} is displayed on the ao admin portal menu")
-    public void the_user_sees_profile_name_is_displayed_on_the_ao_admin_portal_menu(String profileName){
+    public void the_user_sees_profile_name_is_displayed_on_the_ao_admin_portal_menu(String profileName) {
         assertThat(aopoManager.getMenuPagePW().getProfile()).hasText(profileName);
     }
 
@@ -564,6 +568,62 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_sees_relevant_entity_records_displayed_as_filtered_result_on_the_application_list() {
         page.waitForLoadState(LoadState.NETWORKIDLE);
         Assert.assertTrue(aopoManager.getApplicationListPage().filteredEntityVal(productEntity));
+    }
+
+    @And("the user perform {string} approval on the application page")
+    public void the_user_perform_approval_on_the_application_page(String approval) {
+        aopoManager.getApplicationInfoPage().clickButtonByText("Next To Personal Information");
+        aopoManager.getPersonalInfoPage().clickButtonByText("Next To Contact Information");
+        aopoManager.getContactInfoPage().clickButtonByText("Next To Employee and Financial Information");
+        aopoManager.getEmployeeFinInfoPage().clickButtonByText("Next To Trading Experience");
+        if (approval.equalsIgnoreCase("first")) {
+            aopoManager.getTradingExpPage().clickButtonByText("Verify");
+        } else {
+            aopoManager.getTradingExpPage().clickButtonByText("Approve");
+        }
+        aopoManager.getTradingExpPage().selectReason("Pass eKYC");
+        aopoManager.getTradingExpPage().clickButtonByText("Confirm");
+
+    }
+
+    @And("the user selects verify reason {string} on the verify pop up on the create company account page")
+    public void the_user_selects_verify_reason_on_the_verify_pop_up_on_the_create_company_account_page(String reason) {
+        aopoManager.getCompanyAccountPagePW().selectReason(reason);
+    }
+
+    @Then("the user sees text field label {string} is displayed on application information page")
+    public void the_user_sees_text_field_label_is_displayed_on_application_information_page(String labelName) {
+        assertThat(aopoManager.getApplicationInfoPage().getTextFieldLabel(labelName)).isVisible();
+    }
+
+    @And("the user fills reusable data in the text field {string} on create company account page")
+    public void the_user_fills_reusable_data_in_the_text_field_on_create_company_account_page(String textFieldName) {
+        aopoManager.getCompanyAccountPagePW().fillTextFieldVal(getOriginData(), textFieldName);
+    }
+
+    @And("the user empties the text field {string} on application information page")
+    public void the_user_empties_the_text_field_on_application_information_page(String textFieldName) {
+        aopoManager.getApplicationInfoPage().emptyField(textFieldName);
+    }
+
+    @And("the user empties the text field {string} on create company account page")
+    public void the_user_empties_the_text_field_on_create_company_account_page(String textFieldName) {
+        aopoManager.getCompanyAccountPagePW().emptyField(textFieldName);
+    }
+
+    @Then("the user sees {string} error message displayed on create company account page")
+    public void the_user_sees_error_message_displayed_on_create_company_account_page(String msgText) {
+        assertThat(aopoManager.getCompanyAccountPagePW().getErrorMsg()).containsText(msgText);
+    }
+
+    @And("the user fills value {string} in the text field {string} on create company account page")
+    public void the_user_fills_value_in_the_text_field_on_create_company_account_page(String value, String textField) {
+        aopoManager.getCompanyAccountPagePW().fillTextFieldVal(value, textField);
+    }
+
+    @Then("the user sees an error dialogue with wordings {string} on the create company account page")
+    public void the_user_sees_an_error_dialogue_with_wordings_on_the_create_company_account_page(String dialogueText) {
+        assertThat(aopoManager.getCompanyAccountPagePW().getToastMsg()).containsText(dialogueText);
     }
 
 }

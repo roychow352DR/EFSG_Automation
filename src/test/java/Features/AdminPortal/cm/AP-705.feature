@@ -13,12 +13,12 @@ Feature: Customer Management
     And the user clicks "Update & Confirm" button on the CM trading experience page
     And the user clicks "Confirm" button on the CM trading experience page
     And the user clicks detail button of amended record on the customer management page
-    And the user performs first approval on cm page
+    And the user performs first approval on cm page for the account type "LEVEL_3_INDIVIDUAL"
     And the user logout Admin Portal
     And the user re-logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     And the user clicks "Customer Management" on the ao admin portal menu
     And the user clicks detail button of amended record on the customer management page
-    And the user performs second approval on cm page
+    And the user performs second approval on cm page for the account type "LEVEL_3_INDIVIDUAL"
     When the user clicks "AO Application List" on the ao admin portal menu
     And the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up
