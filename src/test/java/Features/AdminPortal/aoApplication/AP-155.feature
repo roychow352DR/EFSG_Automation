@@ -11,4 +11,4 @@ Feature: AO Application List
     When the user clicks "Next To Personal Information" button on the application information page
     And the user clicks "Ao Application List" on the ao admin portal menu
     And the user clicks detail button of newly created record with account type "Individual" on the application page
-    Then the user sees text field "upperIbName" displayed expected value as trade group info "upperIBName" obtain from eCRM on the application information page
+    Then the user sees text field "upperIbName" displayed expected value as entity trade group info "upperIBName" obtain from eCRM on the application information page
