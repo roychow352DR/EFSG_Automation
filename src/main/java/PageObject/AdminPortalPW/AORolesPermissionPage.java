@@ -5,6 +5,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import org.testng.Assert;
 
 import java.io.IOException;
@@ -23,6 +24,9 @@ public class AORolesPermissionPage {
     public final Locator buttons;
     public final Locator dialogue;
     public final Locator alert;
+    public final Locator roleNameField;
+    public final Locator checkbox;
+    public final Locator errorText;
 
     public AORolesPermissionPage(Page page) {
         this.page = page;
@@ -34,6 +38,9 @@ public class AORolesPermissionPage {
         this.buttons = page.getByRole(AriaRole.BUTTON);
         this.dialogue = page.getByRole(AriaRole.DIALOG);
         this.alert = page.locator(".Toastify__toast-body");
+        this.roleNameField = page.locator("//input[@name='roleName']");
+        this.checkbox = page.locator(".css-1jaw3da");
+        this.errorText = page.locator(".css-1wercf4");
     }
 
     public String getEntityRoleNum(String roleName) throws IOException {
@@ -42,17 +49,20 @@ public class AORolesPermissionPage {
                 .locator(".css-4wwbtj").textContent();
     }
 
-    public boolean getButtonsByText(String buttonText) {
+    public boolean getButtonIsEnable(String buttonText) {
         return abs.checkElementIsEnable(buttons.filter(new Locator.FilterOptions().setHasText(buttonText)));
     }
 
     public boolean getButtonByEntity(String buttonText) throws IOException {
         return abs.checkElementIsEnable(rows.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("entity")))
-                .getByRole(AriaRole.BUTTON,new Locator.GetByRoleOptions().setName(buttonText)));
+                .getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName(buttonText)));
     }
 
     public void clickBtnByText(String buttonText) {
-        buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).first().click();
+        //buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).first().click();
+        Locator locator = buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).last();
+        locator.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
+        locator.click();
     }
 
     public Locator getDialogueHeader() {
@@ -74,7 +84,7 @@ public class AORolesPermissionPage {
         return alert;
     }
 
-    public void uncheckCheckboxByModule(String access, String module){
+    public void uncheckCheckboxByModule(String access, String module) {
         page.waitForLoadState(LoadState.NETWORKIDLE);
         Locator checkbox = rows.filter(new Locator.FilterOptions().setHasText(module))
                 .locator(".css-er7ssv")
@@ -83,7 +93,7 @@ public class AORolesPermissionPage {
         checkbox.click();
     }
 
-    public void clickCheckboxByModule(String access, String module){
+    public void clickCheckboxByModule(String access, String module) {
         page.waitForLoadState(LoadState.NETWORKIDLE);
         Locator checkbox = rows.filter(new Locator.FilterOptions().setHasText(module))
                 .locator(".css-er7ssv")
@@ -92,8 +102,8 @@ public class AORolesPermissionPage {
         checkbox.click();
     }
 
-    public int getRoleColIndex(String access){
-        return switch(access) {
+    public int getRoleColIndex(String access) {
+        return switch (access) {
             case "Write" -> 1;
             case "Create" -> 2;
             case "Export" -> 3;
@@ -103,6 +113,44 @@ public class AORolesPermissionPage {
             case "Reject" -> 7;
             default -> 0;
         };
+    }
+
+    public String fillAddRoleForm() throws IOException {
+        String roleName = abs.userinfoList().get("roleName");
+        roleNameField.fill(roleName);
+        checkEntityBox();
+        return roleName;
+    }
+
+    public int getIndex() throws IOException {
+        return switch (abs.userinfoList().get("entity")) {
+            case "XPro" -> 0;
+            case "EIEHK" -> 1;
+            case "EBL_MT5" -> 2;
+            default -> 0;
+        };
+    }
+
+    public Locator getRoleName() {
+        abs.waitForLocatorVisible(rolesCol.first());
+        return rolesCol.first();
+    }
+
+    public Locator getRoleOnList() throws IOException {
+        abs.waitForLocatorVisible(rolesCol.first());
+        return rolesCol.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("roleName")));
+    }
+
+    public void checkEntityBox() throws IOException {
+        checkbox.nth(getIndex()).click();
+    }
+
+    public Locator getErrorText() {
+        return errorText;
+    }
+
+    public Locator getButton(String buttonText) {
+        return buttons.filter(new Locator.FilterOptions().setHasText(buttonText));
     }
 
 }
