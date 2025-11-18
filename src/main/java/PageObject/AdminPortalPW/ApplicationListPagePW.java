@@ -68,6 +68,7 @@ public class ApplicationListPagePW {
     }
 
     public Locator getApplicationStatus(String email) {
+        abs.getItemsByText(email, emailRow, nextPageBtn, entity, entityRow);
         Locator applicationStatus = row.filter(new Locator.FilterOptions().setHasText(email)).locator(".css-4soh8v").nth(1);
         abs.waitForLocatorVisible(applicationStatus);
         return applicationStatus;

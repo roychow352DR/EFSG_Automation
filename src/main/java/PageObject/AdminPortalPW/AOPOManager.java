@@ -21,9 +21,10 @@ public class AOPOManager {
     public final CmEmployeeFinInfoPage cmEmployeeFinInfoPage;
     public final CmTradingExpPage cmTradingExpPage;
     public final BlackListPage blackListPage;
-    public final CompanyAccountPagePW companyAccountPagePW;
+    public final CompanyAccountPage companyAccountPagePW;
     public final UserManagementPage userManagementPage;
     public final AORolesPermissionPage aoRolesPermissionPage;
+    public final CmUserInformationPage cmUserInformationPage;
 
     public AOPOManager(Page page) throws IOException {
         this.page = page;
@@ -42,9 +43,10 @@ public class AOPOManager {
         this.cmEmployeeFinInfoPage = new CmEmployeeFinInfoPage(page);
         this.cmTradingExpPage = new CmTradingExpPage(page);
         this.blackListPage = new BlackListPage(page);
-        this.companyAccountPagePW = new CompanyAccountPagePW(page);
+        this.companyAccountPagePW = new CompanyAccountPage(page);
         this.userManagementPage = new UserManagementPage(page);
         this.aoRolesPermissionPage = new AORolesPermissionPage(page);
+        this.cmUserInformationPage = new CmUserInformationPage(page);
 
     }
 
@@ -108,7 +110,7 @@ public class AOPOManager {
         return blackListPage;
     }
 
-    public CompanyAccountPagePW getCompanyAccountPagePW() {
+    public CompanyAccountPage getCompanyAccountPagePW() {
         return companyAccountPagePW;
     }
 
@@ -119,4 +121,6 @@ public class AOPOManager {
     public AORolesPermissionPage getAoRolesPermissionPage() {
         return aoRolesPermissionPage;
     }
+
+    public CmUserInformationPage getCmUserInformationPage() {return cmUserInformationPage;}
 }

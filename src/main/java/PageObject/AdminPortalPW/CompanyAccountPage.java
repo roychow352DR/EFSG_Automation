@@ -8,7 +8,7 @@ import com.microsoft.playwright.options.AriaRole;
 import java.io.IOException;
 import java.util.Random;
 
-public class CompanyAccountPagePW {
+public class CompanyAccountPage {
     private final Page page;
     private final AbstractComponentsPW abs;
 
@@ -21,6 +21,7 @@ public class CompanyAccountPagePW {
     public final Locator promoCodeField;
     public final Locator referralCodeField;
     public final Locator usernameField;
+    public final Locator settlementCurrencyDropdown;
 
     // Company Info
     public final Locator legalNameEnInput;
@@ -41,6 +42,7 @@ public class CompanyAccountPagePW {
     public final Locator yearItems;
     public final Locator dayItems;
     public final Locator idExpiryDateInput;
+    public final Locator dropdownOption;
 
     // Business Address
     public final Locator businessAddressLine1Input;
@@ -67,10 +69,14 @@ public class CompanyAccountPagePW {
     public final Locator detailEditCompanyAccountText;
     public final Locator tabTitle;
     public final Locator accountStatus;
+    public final Locator verifyDropdown;
+    public final Locator labels;
+    public final Locator errorMsg;
+    public final Locator toastMsg;
 
     String applicantEmail;
 
-    public CompanyAccountPagePW(Page page) {
+    public CompanyAccountPage(Page page) {
         this.page = page;
         this.abs = new AbstractComponentsPW(page);
 
@@ -83,6 +89,7 @@ public class CompanyAccountPagePW {
         promoCodeField = page.locator("input[name='promoCode']");
         referralCodeField = page.locator("input[name='upperIbAcc']");
         usernameField = page.locator("input[name='username']");
+        settlementCurrencyDropdown = page.locator("#mui-component-select-settlementCurrency");
 
         // Company Info
         legalNameEnInput = page.locator("input[name='legalEntityNameEn']");
@@ -103,6 +110,7 @@ public class CompanyAccountPagePW {
         yearItems = page.getByRole(AriaRole.BUTTON);
         dayItems = page.locator(".css-1vcqvsc");
         idExpiryDateInput = page.locator("input[name='identificationExpiryDate']");
+        dropdownOption = page.getByRole(AriaRole.OPTION);
 
         // Business Address
         businessAddressLine1Input = page.locator("input[name='businessAddressLine1']");
@@ -129,6 +137,10 @@ public class CompanyAccountPagePW {
         detailEditCompanyAccountText = page.locator("text=Detail/Edit Company Account");
         tabTitle = page.locator(".css-1kslv7y");
         accountStatus = page.locator(".css-9iedg7");
+        verifyDropdown = page.locator("#mui-component-select-verify");
+        labels = page.locator(".css-gg4vpm");
+        errorMsg = page.locator(".css-1wercf4");
+        toastMsg = page.locator(".Toastify__toast-body div").nth(1);
 
     }
 
@@ -137,6 +149,7 @@ public class CompanyAccountPagePW {
         selectEntity();
         if (abs.userinfoList().get("entity").contains("EBL")) {
             fillRandomUsername();
+            selectSettlement();
         }
         fillEmail(isExistedEmail);
         fillPhoneNumber(isExistedPhoneNumber);
@@ -164,7 +177,7 @@ public class CompanyAccountPagePW {
 
     public void fillPhoneNumber(boolean isExistedPhoneNumber) throws IOException {
         countryCodeField.click();
-        listItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("countryCode"))).click();
+        listItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("countryCode"), new Page.GetByTextOptions().setExact(true)))).click();
         if (!isExistedPhoneNumber) {
             phoneNumberField.fill(abs.userinfoList().get("phoneNumber"));
         } else {
@@ -228,7 +241,7 @@ public class CompanyAccountPagePW {
         } else {
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthYearBelow18"))).click();
         }
-        dayItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthDay"))).click();
+        dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("dateOfBirthDay"), new Page.GetByTextOptions().setExact(true)))).click();
 
     }
 
@@ -258,6 +271,7 @@ public class CompanyAccountPagePW {
     }
 
     public void clickSubmit(String buttonName) {
+        abs.waitForLocatorVisible(submitButton);
         submitButton.click();
     }
 
@@ -287,6 +301,33 @@ public class CompanyAccountPagePW {
 
     public Locator getAccountStatus() {
         return accountStatus;
+    }
+
+    public void selectSettlement() throws IOException {
+        settlementCurrencyDropdown.click();
+        dropdownOption.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("settlementCurrency"))).click();
+    }
+
+    public void selectReason(String reason) {
+        verifyDropdown.click();
+        dropdownOption.filter(new Locator.FilterOptions().setHasText(reason)).click();
+    }
+
+    public void fillTextFieldVal(String value, String fieldName) {
+        page.locator("input[name='" + fieldName + "']").fill(value);
+    }
+
+    public void emptyField(String fieldName) {
+        page.locator("input[name='" + fieldName + "']").fill("");
+    }
+
+    public Locator getErrorMsg() {
+        return errorMsg;
+    }
+
+    public Locator getToastMsg() {
+        abs.waitForLocatorVisible(toastMsg);
+        return toastMsg;
     }
 
 }

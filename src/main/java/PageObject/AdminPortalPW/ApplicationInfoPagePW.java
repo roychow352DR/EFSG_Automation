@@ -26,6 +26,7 @@ public class ApplicationInfoPagePW {
     public final Locator referralCodeField;
     public final Locator labels;
     public final Locator usernameField;
+    public final Locator textFieldLabel;
     String applicantEmail;
     public SetCondition setCondition;
 
@@ -46,6 +47,7 @@ public class ApplicationInfoPagePW {
         this.referralCodeField = page.locator("input[name='upperIbAcc']");
         this.labels = page.locator(".css-9iedg7");
         this.usernameField = page.locator("input[name='username']");
+        this.textFieldLabel = page.locator("label");
     }
 
     public void fillApplicationInfo(boolean isExistedEmail, boolean isExistedPhoneNumber, boolean isCrossEntity) throws IOException {
@@ -111,7 +113,7 @@ public class ApplicationInfoPagePW {
 
     public void fillPhoneNumber(boolean isExistedPhoneNumber) throws IOException {
         countryCodeField.click();
-        listItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("countryCode"))).click();
+        listItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("countryCode"), new Page.GetByTextOptions().setExact(true)))).click();
         if (!isExistedPhoneNumber) {
             phoneNumberField.fill(abs.userinfoList().get("phoneNumber"));
         } else {
@@ -194,7 +196,7 @@ public class ApplicationInfoPagePW {
     }
 
     public Locator getLabel(String labelText) {
-        return labels.filter(new Locator.FilterOptions().setHasText(labelText));
+        return labels.filter(new Locator.FilterOptions().setHasText(labelText)).first();
     }
 
     public Locator getButtonByText(String buttonText) {
@@ -226,8 +228,16 @@ public class ApplicationInfoPagePW {
         page.locator("input[name='" + fieldName + "']").fill(value);
     }
 
-    public String getIbCode(String entity){
+    public String getIbCode(String entity) {
         return abs.setIBCode(entity);
+    }
+
+    public Locator getTextFieldLabel(String labelName) {
+        return textFieldLabel.filter(new Locator.FilterOptions().setHas(page.getByText(labelName, new Page.GetByTextOptions().setExact(true))));
+    }
+
+    public void emptyField(String fieldName) {
+        page.locator("input[name='" + fieldName + "']").fill("");
     }
 
 }
