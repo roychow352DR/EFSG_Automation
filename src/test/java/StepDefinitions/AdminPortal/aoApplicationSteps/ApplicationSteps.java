@@ -266,6 +266,7 @@ public class ApplicationSteps extends BaseTest {
     @Then("the user sees an existing record is updated to {string} status on the application list")
     public void the_user_sees_an_existing_record_is_updated_to_status_on_the_application_list(String status) throws IOException {
         page.waitForLoadState(LoadState.NETWORKIDLE);
+        System.out.println(aopoManager.getApplicationListPage().getApplicationStatus(getRetrievedData()));
         assertThat(aopoManager.getApplicationListPage().getApplicationStatus(getRetrievedData())).hasText(status);
     }
 
@@ -525,8 +526,8 @@ public class ApplicationSteps extends BaseTest {
     @When("the user clicks the detail button for the application record with status {string}, created by {string}, and client type {string} on the application list page")
     public void the_user_clicks_detail_button_of_status_record_with_client_type_on_the_application_list_page(String status, String createdBy, String clientType) throws IOException {
         coreService = new CoreService(page, productEnv);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
         String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
         Assert.assertNotNull(email);
         aopoManager.getApplicationListPage().clickClientRecordDetailBtn(email);
         setRetrievedData(email);
