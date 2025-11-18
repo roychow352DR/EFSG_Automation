@@ -12,7 +12,7 @@ Feature: AO Application List
     And the user fills employee & financial information page
     And the user selects dropdown value "HKD" for the dropdown field "settlementCurrency" on the trading experience page
     When the user clicks "Submit" button on the trading experience page
-    And the user clicks detail button of newly created record on the application page
+    And the user clicks detail button of newly created record with account type "Individual" on the application page
     And the user clicks "Next to Personal Information" button on the application information page
     And the user clicks "Next to Contact Information" button on the personal information page
     And the user clicks "Next to Employee and Financial Information" button on the contact information page

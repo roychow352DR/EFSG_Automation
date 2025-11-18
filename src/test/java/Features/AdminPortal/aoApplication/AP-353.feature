@@ -1,8 +1,8 @@
 Feature: AO Application List
 
 
-  @Regression @L3Creation @AdminPortal @Smoke @AO @EBL_MT5 @EIEHK
-  Scenario: Account status in Pending Approval after first approval
+  @Regression @L3IndividualCreation @AdminPortal @Smoke @AO @EBL_MT5 @EIEHK
+  Scenario: Individual Account status in Pending Approval after first approval
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     When the user clicks detail button of "Pending Verification" record on the application page
     And the user clicks "Next to Personal Information" button on the application information page

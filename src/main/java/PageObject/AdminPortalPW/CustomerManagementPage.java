@@ -122,4 +122,11 @@ public class CustomerManagementPage {
         searchField.fill(searchVal);
     }
 
+    public void clickClientRecordDetailBtn(String email) {
+        this.email = email;
+        abs.getItemsByText(email, cmEmail, nextPageBtn, entity, entityRow);
+        rows.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
+                new Locator.GetByRoleOptions().setName("Detail")).first().click();
+    }
+
 }
