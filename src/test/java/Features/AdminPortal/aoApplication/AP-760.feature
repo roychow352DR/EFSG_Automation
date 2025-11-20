@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @Test
+  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK
   Scenario: Individual Account status in Approved after second approved reason
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     When the user clicks the detail button for the application record with status "Deposit Pending Approval", created by "qaauto", and client type "LEVEL_3_INDIVIDUAL" on the application list page
