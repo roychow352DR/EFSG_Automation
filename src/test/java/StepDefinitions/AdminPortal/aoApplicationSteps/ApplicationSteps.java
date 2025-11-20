@@ -29,9 +29,8 @@ public class ApplicationSteps extends BaseTest {
     public ContactInfoPage contactInfoPage;
     public EmployeeFinancialPage employeeFinancialPage;
     public TradingExperiencePage tradingExperiencePage;
-    public static AOPOManager aopoManager;
-    public static CoreService coreService;
-    public SQLDatabase sqlDb = new SQLDatabase();
+    public CoreService coreService;
+    public SQLDatabase sqlDb ;
 
 
     @Given("the user logged in to Admin Portal as username {string} and password {string}")
@@ -39,6 +38,7 @@ public class ApplicationSteps extends BaseTest {
         page = initializePage();
         aopoManager = new AOPOManager(page);
         coreService = new CoreService(page, productEnv);
+        sqlDb = new SQLDatabase();
         aopoManager.getAdminLoginPage().loginETE(username, password);
         page.waitForLoadState(LoadState.NETWORKIDLE);
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
@@ -157,7 +157,6 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees {string} error message displayed on application information page")
     public void the_user_sees_error_message_displayed_on_application_information_page(String error) {
-        // assertThat(aopoManager.getApplicationInfoPage().getToastMsg()).hasText(error);
         assertThat(aopoManager.getApplicationInfoPage().errorValidation()).hasText(error);
     }
 
@@ -266,13 +265,12 @@ public class ApplicationSteps extends BaseTest {
     @Then("the user sees an existing record is updated to {string} status on the application list")
     public void the_user_sees_an_existing_record_is_updated_to_status_on_the_application_list(String status) throws IOException {
         page.waitForLoadState(LoadState.NETWORKIDLE);
-        System.out.println(aopoManager.getApplicationListPage().getApplicationStatus(getRetrievedData()));
         assertThat(aopoManager.getApplicationListPage().getApplicationStatus(getRetrievedData())).hasText(status);
     }
 
     @Then("the {string} account record is retrieved in CM database")
     public void the_account_record_is_retrieved_in_CM_database(String status) throws SQLException, IOException {
-        Assert.assertNotNull(sqlDb.getPersonProfileId(aopoManager.getApplicationListPage().getStatusEmail(status)));
+        Assert.assertNotNull(sqlDb.getPersonProfileId(aopoManager.getApplicationListPage().email));
     }
 
     @And("the user sees a record in {string} status on the application list")
@@ -519,7 +517,6 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees status {string} is displayed at the create company account page")
     public void the_user_sees_status_is_displayed_at_the_create_company_account_page(String status) {
-
         assertThat(aopoManager.getCompanyAccountPagePW().getAccountStatus()).hasText(status);
     }
 

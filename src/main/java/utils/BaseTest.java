@@ -2,6 +2,7 @@ package utils;
 
 import PageObject.AdminPortal.ApplicationListPage;
 import PageObject.AdminPortal.AdminLoginPage;
+import PageObject.AdminPortalPW.AOPOManager;
 import PageObject.NativeApp.AppLoginPage;
 import PageObject.NativeApp.WelcomePage;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -58,7 +59,7 @@ public class BaseTest {
     public AdminLoginPage login;
     public WebElement ctaButton;
     public AppLoginPage appLoginPage;
-
+    public static AOPOManager aopoManager;
 
     // Configuration and capabilities
     public DesiredCapabilities caps;
@@ -110,6 +111,7 @@ public class BaseTest {
         // Get product test env from system property or config file
         productEnv = System.getProperty("env") != null ?
                 System.getProperty("env") : getProperty(path, "env");
+
 
         try {
             if (!productType.equalsIgnoreCase("app")) {
@@ -473,6 +475,7 @@ public class BaseTest {
         productEnv = System.getProperty("env") != null ?
                 System.getProperty("env") : getProperty(path, "env");
 
+
         // Get product entity from system property or config file
         productEntity = System.getProperty("entity") != null ?
                 System.getProperty("entity") : getProperty(path, "entity");
@@ -610,5 +613,14 @@ public class BaseTest {
 
     public static String getOriginData() {
         return originData;
+    }
+
+    public void resetToHome() {
+        try {
+            aopoManager.getMenuPagePW().clickMenu("AO Application List");
+            page.waitForTimeout(1000);
+        } catch (Exception e) {
+            System.err.println("Failed to reset to home: " + e.getMessage());
+        }
     }
 }
