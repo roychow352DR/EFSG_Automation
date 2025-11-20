@@ -3,6 +3,7 @@ package StepDefinitions;
 import Data.QASEConfig;
 import Data.GlobalConfig;
 import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.options.LoadState;
 import io.cucumber.java.*;
 import utils.BaseTest;
 import utils.VideoRecorder;
@@ -175,7 +176,7 @@ public class Hooks extends BaseTest {
     }
 
 
-     @AfterStep
+    @AfterStep
     public void recordStepResult(Scenario scenario) {
         if (position >= 1) {
             try {
@@ -236,8 +237,11 @@ public class Hooks extends BaseTest {
     /**
      * Handles test cleanup and reporting
      */
+
+
     @After
     public void tearDown(Scenario scenario) throws IOException, InterruptedException {
+        resetToHome();
         cleanupPWSession();
         reportTestResult(scenario, videoPath);
         cleanupMediaFiles();
