@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @Smoke @AO @EBL_MT5 @EIEHK @L3CompanyCreation
+  @Regression @AdminPortal @Smoke @AO @EBL_MT5 @EIEHK @L3CompanyCreation @L2CompanyCreation
   Scenario: Create Company Account in status with Pending Verification
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
