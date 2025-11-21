@@ -10,6 +10,6 @@ Feature: AO Application List
     And the user clicks "Submit" button on the create company account page
     And the user clicks "Confirm" button on the create company account pop up
     When the user clicks detail button of newly created record with account type "Company" on the application page
-    Then the user sees title "Company" is displayed at the create company account page
-    And the user sees status "Pending Verification" is displayed at the create company account page
+    Then the user sees title "Company" is displayed at the company account detail page
+    And the user sees status "Pending Verification" is displayed at the company account detail page
 

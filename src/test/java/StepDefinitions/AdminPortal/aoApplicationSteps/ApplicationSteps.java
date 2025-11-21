@@ -101,7 +101,8 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees a record in {string} status is created on the application list")
     public void the_user_sees_a_record_with_status_is_created_on_the_application_list(String status) throws InterruptedException {
-        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.getApplicationInfoPage().submittedApplicantEmail())).hasText(status);
+        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.getApplicationInfoPage().submittedApplicantEmail(),
+                aopoManager.getApplicationListPage().getFirstRow())).hasText(status);
     }
 
     @When("the user clicks detail button of {string} record on the application page")
@@ -112,7 +113,8 @@ public class ApplicationSteps extends BaseTest {
     @And("the user clicks {string} button on the application information page")
     public void the_user_clicks_button_on_application_information(String buttonName) throws InterruptedException {
         aopoManager.applicationInfoPagePW.clickButtonByText(buttonName);
-        page.waitForTimeout(2000);
+        //page.waitForTimeout(5000);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
     @And("the user clicks {string} button on the personal information page")
@@ -264,8 +266,9 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees an existing record is updated to {string} status on the application list")
     public void the_user_sees_an_existing_record_is_updated_to_status_on_the_application_list(String status) throws IOException {
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(getRetrievedData())).hasText(status);
+        page.waitForTimeout(2000);
+        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(getRetrievedData(),
+                aopoManager.getApplicationListPage().getFirstRow())).hasText(status);
     }
 
     @Then("the {string} account record is retrieved in CM database")
@@ -509,20 +512,19 @@ public class ApplicationSteps extends BaseTest {
 
     }
 
-    @Then("the user sees title {string} is displayed at the create company account page")
-    public void the_user_sees_title_is_displayed_at_the_create_company_account_page(String titleName) {
+    @Then("the user sees title {string} is displayed at the company account detail page")
+    public void the_user_sees_title_is_displayed_at_the__company_account_detail_page(String titleName) {
         page.waitForLoadState(LoadState.NETWORKIDLE);
         assertThat(aopoManager.getCompanyAccountPagePW().getTitle()).containsText(titleName);
     }
 
-    @Then("the user sees status {string} is displayed at the create company account page")
-    public void the_user_sees_status_is_displayed_at_the_create_company_account_page(String status) {
+    @Then("the user sees status {string} is displayed at the company account detail page")
+    public void the_user_sees_status_is_displayed_at_the__company_account_detail_page(String status) {
         assertThat(aopoManager.getCompanyAccountPagePW().getAccountStatus()).hasText(status);
     }
 
     @When("the user clicks the detail button for the application record with status {string}, created by {string}, and client type {string} on the application list page")
     public void the_user_clicks_detail_button_of_status_record_with_client_type_on_the_application_list_page(String status, String createdBy, String clientType) throws IOException {
-        coreService = new CoreService(page, productEnv);
         String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
         page.waitForLoadState(LoadState.NETWORKIDLE);
         Assert.assertNotNull(email);
@@ -605,11 +607,11 @@ public class ApplicationSteps extends BaseTest {
     }
 
     @And("the user empties the text field {string} on create company account page")
-    public void the_user_empties_the_text_field_on_create_company_account_page(String textFieldName) {
+    public void the_user_empties_the_text_field_on_company_account_detail_page(String textFieldName) {
         aopoManager.getCompanyAccountPagePW().emptyField(textFieldName);
     }
 
-    @Then("the user sees {string} error message displayed on create company account page")
+    @Then("the user sees {string} error message displayed on company account detail page")
     public void the_user_sees_error_message_displayed_on_create_company_account_page(String msgText) {
         assertThat(aopoManager.getCompanyAccountPagePW().getErrorMsg()).containsText(msgText);
     }
@@ -622,6 +624,17 @@ public class ApplicationSteps extends BaseTest {
     @Then("the user sees an error dialogue with wordings {string} on the create company account page")
     public void the_user_sees_an_error_dialogue_with_wordings_on_the_create_company_account_page(String dialogueText) {
         assertThat(aopoManager.getCompanyAccountPagePW().getToastMsg()).containsText(dialogueText);
+    }
+
+    @And("the user clicks detail button of status changed record on the application page")
+    public void the_user_clicks_detail_button_of_status_changed_record_on_the_application_page(){
+        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(getRetrievedData());
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+    }
+
+    @Then("the user sees {string} label is displayed on company account detail page")
+    public void the_user_sees_label_is_displayed_on_company_account_detail_page(String statusLabel) {
+        assertThat(aopoManager.getCompanyAccountPagePW().getAccountStatus()).hasText(statusLabel);
     }
 
 }
