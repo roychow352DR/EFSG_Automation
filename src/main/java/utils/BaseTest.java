@@ -617,8 +617,9 @@ public class BaseTest {
 
     public void resetToHome() {
         try {
-            aopoManager.getMenuPagePW().clickMenu("AO Application List");
-            page.waitForTimeout(1000);
+            if (productType.equalsIgnoreCase("adminPortal"))
+                aopoManager.getMenuPagePW().clickMenu("AO Application List");
+                page.waitForTimeout(1000);
         } catch (Exception e) {
             System.err.println("Failed to reset to home: " + e.getMessage());
         }
