@@ -7,4 +7,5 @@ Feature: AO Application List
     And the user clicks "Approve activate live trading account" button on the application information page
     And the user selects "Verify the Applicants in real person" as reason on the verify reason pop up on application information page
     And the user clicks "Approve" button on the application information page
-    Then the user sees an existing record is updated to "Approved" status on the application list
+    When the user clicks detail button of status changed record on the application page
+    Then the user sees "Approved" label is displayed on company account detail page

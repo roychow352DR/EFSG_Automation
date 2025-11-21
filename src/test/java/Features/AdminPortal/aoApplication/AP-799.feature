@@ -1,7 +1,7 @@
 Feature: AO Username
 
   @Regression @AdminPortal @AO @Username @EBL_MT5
-  Scenario: Cannot create account if username is duplicated in case insensitive
+  Scenario: Cannot create individual account if username is duplicated in case insensitive
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up

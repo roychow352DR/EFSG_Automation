@@ -67,7 +67,8 @@ public class ApplicationListPagePW {
         submitButton.filter(new Locator.FilterOptions().setHas(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(buttonName)))).click();
     }
 
-    public Locator getApplicationStatus(String email) {
+    public Locator getApplicationStatus(String email,Locator firstRow) {;
+        abs.waitForLocatorVisible(firstRow);
         abs.getItemsByText(email, emailRow, nextPageBtn, entity, entityRow);
         Locator applicationStatus = row.filter(new Locator.FilterOptions().setHasText(email)).locator(".css-4soh8v").nth(1);
         abs.waitForLocatorVisible(applicationStatus);
@@ -105,7 +106,7 @@ public class ApplicationListPagePW {
 
     public boolean filteredVal(String col, String filterVal) {
         if (col.equalsIgnoreCase("Email")) {
-           return abs.getFilteredVal(filterVal,row,page.locator(".css-ff6t81").nth(1));
+            return abs.getFilteredVal(filterVal, row, page.locator(".css-ff6t81").nth(1));
         }
         return false;
     }
@@ -119,7 +120,7 @@ public class ApplicationListPagePW {
     }
 
     public void clickEntityCheckbox(String entity) {
-        page.locator("//input[@name='"+entity+"']").click();
+        page.locator("//input[@name='" + entity + "']").click();
     }
 
     public boolean filteredEntityVal(String entity) {
@@ -131,5 +132,9 @@ public class ApplicationListPagePW {
             nextBtnIsEnable = nextPageBtn.isEnabled();
         }
         return pageRecordsMatched;
+    }
+
+    public Locator getFirstRow() {
+        return row.first();
     }
 }
