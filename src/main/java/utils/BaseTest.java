@@ -575,7 +575,8 @@ public class BaseTest {
 
     public File convertVideoFileFormat(Path videoPath, String scenarioName) throws IOException {
         // New file name with .mp4 extension in the same directory
-        Path mp4Path = videoPath.resolveSibling(scenarioName + ".mp4");
+        String safeScenarioName = scenarioName.replace(" ", "_");
+        Path mp4Path = videoPath.resolveSibling(safeScenarioName + ".mp4");
         Files.move(videoPath, mp4Path);
         // System.out.println("Video saved to: " + mp4Path);
         return mp4Path.toFile();
