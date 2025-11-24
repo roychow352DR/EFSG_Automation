@@ -1,7 +1,7 @@
 Feature: AO Username
 
   @Regression @AdminPortal @AO @Username @EBL_MT5
-  Scenario: Company - "Username" field leave empty will pop-up validation error
+  Scenario: Company - Username field leave empty will pop-up validation error
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
     And the user selects "Company" radio button on the create account pop up
