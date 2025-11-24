@@ -39,7 +39,7 @@ public class Hooks extends BaseTest {
 
     public static String productEntity;
 
-    @BeforeAll
+   @BeforeAll
     public static void createQaseTestRun() throws IOException {
         initializeConfigurations();
         setupQaseTestRun();
@@ -75,7 +75,7 @@ public class Hooks extends BaseTest {
      * Initializes test case and gets case ID
      */
 
-   @Before
+  @Before
     public void initializeTestCase(Scenario scenario) throws IOException {
         caseId = qaseConfig.getCaseId(scenario);
         steps.clear();
@@ -176,7 +176,7 @@ public class Hooks extends BaseTest {
     }
 
 
-    @AfterStep
+   @AfterStep
     public void recordStepResult(Scenario scenario) {
         if (position >= 1) {
             try {

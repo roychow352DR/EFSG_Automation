@@ -1,7 +1,7 @@
 Feature: AO Username
 
   @Regression @AdminPortal @AO @Username @EBL_MT5
-  Scenario: Create Individual Account with status in Pending Verification with valid username inputs - Length: with at least 3 Digits
+  Scenario: Create Individual Account with status in Pending Verification with valid username inputs - Length with at least 3 Digits
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up
