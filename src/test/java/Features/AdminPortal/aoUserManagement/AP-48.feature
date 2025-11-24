@@ -5,4 +5,4 @@ Feature: AO User Management
       Given the user logged in to Admin Portal as username "qanoexport" and password "Test1234@"
       When the user clicks "Admin Area" on the ao admin portal menu
       And the user clicks "User Management" on the ao admin portal menu
-      Then the user sees button "Detail" is hidden on the user management page
+      Then the user sees button "Export" is hidden on the user management page
