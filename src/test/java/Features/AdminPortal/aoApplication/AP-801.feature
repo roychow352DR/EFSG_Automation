@@ -1,7 +1,7 @@
 Feature: AO Application List
 
   @Regression @AdminPortal @Smoke @AO @EBL_MT5 @EIEHK
-  Scenario: User aged > 74 requires filling 3rd party witness form after submit an application
+  Scenario: User aged older than 74 requires filling 3rd party witness form after submit an application
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up

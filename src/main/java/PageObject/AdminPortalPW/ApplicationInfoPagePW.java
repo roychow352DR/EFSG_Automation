@@ -123,7 +123,7 @@ public class ApplicationInfoPagePW {
 
     public void fillPhoneNumber(String phoneNumber) throws IOException {
         countryCodeField.click();
-        listItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("countryCode"))).click();
+        listItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("countryCode"), new Page.GetByTextOptions().setExact(true)))).click();
         phoneNumberField.fill(phoneNumber);
 
     }
