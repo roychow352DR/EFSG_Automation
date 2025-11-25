@@ -215,8 +215,9 @@ public class Hooks extends BaseTest {
      */
     private void capturePWScreenshot(String stepAction) {
         try {
-            String screenShotName = stepAction + ".png";
-            takePWScreenshot(stepAction, page);
+            String validStepActionName = stepAction.replaceAll("[\\\\/:*?\"<>| ]", "_");
+            String screenShotName = validStepActionName + ".png";
+            takePWScreenshot(validStepActionName, page);
             hash = qaseConfig.createHash(screenShotName, globalConfig.getDirectory().get("SCREENSHOT_DIRECTORY"));
         } catch (Exception e) {
             System.err.println("Failed to capture screenshot: " + e.getMessage());

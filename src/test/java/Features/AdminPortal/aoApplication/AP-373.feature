@@ -3,7 +3,7 @@ Feature: AO Application List
   @Regression @AdminPortal @AO @EBL_MT5
   Scenario: The Default deposit withdrawal currency field is editable on Trading Experience page in Awaiting Response status
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
-    And the user clicks detail button of "Awaiting Response" record on the application page
+    And the user clicks the detail button for the application record with status "Awaiting Response", created by "qaauto", and client type "LEVEL_3_INDIVIDUAL" on the application list page
     And the user clicks "Next to Personal Information" button on the application information page
     And the user clicks "Next To Contact Information" button on the personal information page
     And the user clicks "Next to Employee and Financial Information" button on the contact information page
