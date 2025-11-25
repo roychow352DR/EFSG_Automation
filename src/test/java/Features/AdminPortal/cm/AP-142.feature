@@ -2,7 +2,7 @@
 
     @Regression @AdminPortal @CM @EBL_MT5 @EIEHK @XPro
     Scenario: CM status in Pending Approval after first approval
-      Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
+      Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
       And the user clicks "Customer Management" on the ao admin portal menu
       When the user clicks detail button of "Pending Verification" record with "LEVEL_3_INDIVIDUAL" client type on the customer management page
       And the user clicks "Next To Personal Information" button on the CM application information page
