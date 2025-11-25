@@ -4,6 +4,7 @@ Feature: Customer Management
   @Regression @AdminPortal @CM @EBL_MT5 @EIEHK
   Scenario: User sees error dialogue upon submit changes on the cm trading experience page if Passport No. in use exceeded limit
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
+    And the record in status "Pending Deposit" is created in the application list
     And the user created up to 4 account with existing ID "qaAutoPassport"
     When the user clicks "Customer Management" on the ao admin portal menu
     And the user clicks detail button of "Activated" record with "LEVEL_3_INDIVIDUAL" client type on the customer management page
@@ -15,5 +16,5 @@ Feature: Customer Management
     And the user clicks "Next To Trading Experience" button on the CM employee & financial page
     And the user clicks "Update & Confirm" button on the CM trading experience page
     And the user clicks "Confirm" button on the CM trading experience page
-    Then the user sees an error dialogue with wordings "Identification is duplicate" is prompted on the CM trading experience page
+    Then the user sees an error dialogue with wordings "Identification number has reached the usage limit" is prompted on the CM trading experience page
 

@@ -1,6 +1,7 @@
 package StepDefinitions.AdminPortal.aoApplicationSteps;
 
 import API.CoreService;
+import Data.AccountCreation;
 import Data.SQLDatabase;
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
@@ -9,7 +10,6 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.java.eo.Se;
 import org.testng.Assert;
 import utils.BaseTest;
 import utils.SetCondition;
@@ -31,14 +31,20 @@ public class ApplicationSteps extends BaseTest {
     public TradingExperiencePage tradingExperiencePage;
     public CoreService coreService;
     public SQLDatabase sqlDb ;
+    public AccountCreation accountCreation;
+
+    public void objectInit() throws IOException {
+        aopoManager = new AOPOManager(page);
+        coreService = new CoreService(page, productEnv);
+        sqlDb = new SQLDatabase();
+        accountCreation = new AccountCreation(aopoManager);
+    }
 
 
     @Given("the user logged in to Admin Portal as username {string} and password {string}")
     public void the_user_logged_in_to_Admin_Portal(String username, String password) throws IOException, SQLException {
         page = initializePage();
-        aopoManager = new AOPOManager(page);
-        coreService = new CoreService(page, productEnv);
-        sqlDb = new SQLDatabase();
+        objectInit();
         aopoManager.getAdminLoginPage().loginETE(username, password);
         page.waitForLoadState(LoadState.NETWORKIDLE);
         assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
@@ -266,8 +272,8 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the user sees an existing record is updated to {string} status on the application list")
     public void the_user_sees_an_existing_record_is_updated_to_status_on_the_application_list(String status) throws IOException {
-        page.waitForTimeout(2000);
-        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(getRetrievedData(),
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.getApplicationInfoPage().submittedApplicantEmail(),
                 aopoManager.getApplicationListPage().getFirstRow())).hasText(status);
     }
 
@@ -358,33 +364,19 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the record in status {string} is created in the application list")
     public void the_record_in_status_is_created_in_the_application_list(String status) throws IOException, InterruptedException {
-        aopoManager.getApplicationListPage().createIndividual();
-        aopoManager.getApplicationInfoPage().fillApplicationInfo(SetCondition.isExistedEmail(),
-                SetCondition.isExistedPhoneNumber(),
-                SetCondition.isCrossEntity());
         if (status.equalsIgnoreCase("Draft")) {
-            aopoManager.getMenuPagePW().clickMenu("AO Application List");
-            return;
+            accountCreation.createL1AccountIndividual();
         }
-        aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
-                SetCondition.isExpired(),
-                SetCondition.isExpiredBeforeCurrent(),
-                SetCondition.isEdd(),
-                isThirdParty());
-        aopoManager.getContactInfoPage().fillContactInfo();
-        aopoManager.getEmployeeFinInfoPage().fillEmployeeFinInfo();
-        aopoManager.getTradingExpPage().fillTradingExp();
-        aopoManager.getTradingExpPage().clickButtonByText("Submit");
-        if (status.equalsIgnoreCase("Rejected")) {
-            aopoManager.getApplicationListPage().clickDetailBtn("Pending Verification");
-            aopoManager.getApplicationInfoPage().clickButtonByText("Next To Personal Information");
-            aopoManager.getPersonalInfoPage().clickButtonByText("Next To Contact Information");
-            aopoManager.getPersonalInfoPage().clickButtonByText("Next To Employee and Financial Information");
-            aopoManager.getEmployeeFinInfoPage().clickButtonByText("Next To Trading Experience");
-            aopoManager.getTradingExpPage().clickButtonByText("Reject");
-            aopoManager.getTradingExpPage().selectRejectReason("ID/Passport No. match with the EDD/AML list");
-            aopoManager.getTradingExpPage().clickButtonByText("Confirm");
+        else if (status.equalsIgnoreCase("Rejected")) {
+            accountCreation.createL1AccountRejected();
         }
+        else if (status.equalsIgnoreCase("Pending Verification")) {
+            accountCreation.createL2AccountIndividual();
+        }
+        else if (status.equalsIgnoreCase("Pending Deposit")) {
+            accountCreation.createL3AccountIndividual();
+        }
+
     }
 
     @And("the user fills textField {string} retrieved from api endpoint on the application information page")
