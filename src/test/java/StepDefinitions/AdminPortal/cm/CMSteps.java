@@ -4,14 +4,12 @@ import com.microsoft.playwright.options.LoadState;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.java.en_scouse.An;
 import org.testng.Assert;
 import utils.BaseTest;
-import utils.SetCondition;
 
 import java.io.IOException;
 
-import static StepDefinitions.AdminPortal.aoApplicationSteps.ApplicationSteps.aopoManager;
+import static StepDefinitions.AdminPortal.aoApplicationSteps.ApplicationSteps.accountAction;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 
@@ -25,6 +23,7 @@ public class CMSteps extends BaseTest {
     @When("the user clicks detail button of {string} record with {string} client type on the customer management page")
     public void the_user_clicks_detail_button_of_record_on_the_customer_management_page(String status, String clientType) throws IOException {
         aopoManager.getCustomerManagementPage().clickDetailBtn(status, clientType);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
     @And("the user clicks {string} button on the CM application information page")
@@ -86,13 +85,17 @@ public class CMSteps extends BaseTest {
 
     @Then("the user sees {string} dialogue on the CM personal information page upon click on the {string} button")
     public void the_user_sees_dialogue_on_the_CM_personal_information_page_upon_click_on_the_button(String dialogueName, String buttonName) {
-        assertThat(aopoManager.getCmPersonalInfoPage().getHistoryDialogue()).isVisible();
+        boolean isVisible = aopoManager.getCmPersonalInfoPage().getHistoryDialogue().isVisible();
+        if (isVisible) {
+            aopoManager.getCmPersonalInfoPage().clickCrossButton();
+        }
+        Assert.assertTrue(isVisible);
     }
 
     @And("the user sees change value of {string} on the CM personal information page")
     public void the_user_sees_change_value_of_on_the_CM_personal_information_page(String label) {
         assertThat(aopoManager.getCmPersonalInfoPage().getHistoryBtn()).isVisible();
-        aopoManager.getCmPersonalInfoPage().getFieldTextByLabel(label);
+        setRetrievedData(aopoManager.getCmPersonalInfoPage().getFieldTextByLabel(label));
     }
 
     @When("the user clicks detail button of specific entity record on the customer management page")
@@ -133,40 +136,12 @@ public class CMSteps extends BaseTest {
 
     @And("the user performs first approval on cm page for the account type {string}")
     public void the_user_performs_first_approval_on_cm_page_for_the_account_type(String accountType) throws InterruptedException {
-        if (accountType.contains("INDIVIDUAL"))
-        {
-            aopoManager.getCmApplicationInfoPage().clickButtonByText("Next To Personal Information");
-            aopoManager.getCmPersonalInfoPage().clickButtonByText("Next To Contact Information");
-            aopoManager.getCmContactInfoPage().clickButtonByText("Next To Employee and Financial Information");
-            aopoManager.getCmEmployeeInfoPage().clickButtonByText("Next To Trading Experience");
-            aopoManager.getCmTradingExpPage().clickButtonByText("Verify");
-            aopoManager.getCmTradingExpPage().clickButtonByText("Confirm");
-        }
-        else if (accountType.contains("COMPANY"))
-        {
-            aopoManager.getCmApplicationInfoPage().clickButtonByText("Next To User Information");
-            aopoManager.getCmUserInformationPage().clickBtnByText("Next To Contact Information");
-            aopoManager.getCmTradingExpPage().clickButtonByText("Verify");
-            aopoManager.getCmTradingExpPage().clickButtonByText("Confirm");
-        }
+        accountAction.cmFirstApproval(accountType);
     }
 
     @And("the user performs second approval on cm page for the account type {string}")
     public void the_user_performs_second_approval_on_cm_page(String accountType) throws InterruptedException {
-        if (accountType.contains("INDIVIDUAL")) {
-            aopoManager.getCmApplicationInfoPage().clickButtonByText("Next To Personal Information");
-            aopoManager.getCmPersonalInfoPage().clickButtonByText("Next To Contact Information");
-            aopoManager.getCmContactInfoPage().clickButtonByText("Next To Employee and Financial Information");
-            aopoManager.getCmEmployeeInfoPage().clickButtonByText("Next To Trading Experience");
-            aopoManager.getCmTradingExpPage().clickButtonByText("Approve");
-            aopoManager.getCmTradingExpPage().clickButtonByText("Confirm");
-        }
-        else if (accountType.contains("COMPANY")) {
-            aopoManager.getCmApplicationInfoPage().clickButtonByText("Next To User Information");
-            aopoManager.getCmUserInformationPage().clickBtnByText("Next To Contact Information");
-            aopoManager.getCmTradingExpPage().clickButtonByText("Approve");
-            aopoManager.getCmTradingExpPage().clickButtonByText("Confirm");
-        }
+        accountAction.cmSecondApproval(accountType);
     }
 
     @Then("the user sees text field {string} value is updated on the CM personal information page")
@@ -289,8 +264,8 @@ public class CMSteps extends BaseTest {
     }
 
     @And("the user fills value {string} in the text field {string} on the CM user information page")
-    public void the_user_fills_value_in_the_text_field_on_the_CM_user_information_page(String value,String textFieldName) {
-        aopoManager.getCmUserInformationPage().fillValToField(value,textFieldName);
+    public void the_user_fills_value_in_the_text_field_on_the_CM_user_information_page(String value, String textFieldName) {
+        aopoManager.getCmUserInformationPage().fillValToField(value, textFieldName);
     }
 
     @Then("the user sees dialogue text {string} is prompted on the CM user information page")

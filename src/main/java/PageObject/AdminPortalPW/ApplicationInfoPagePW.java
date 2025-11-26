@@ -27,7 +27,7 @@ public class ApplicationInfoPagePW {
     public final Locator labels;
     public final Locator usernameField;
     public final Locator textFieldLabel;
-    String applicantEmail;
+    public static String applicantEmail;
     public SetCondition setCondition;
 
     public ApplicationInfoPagePW(Page page) {

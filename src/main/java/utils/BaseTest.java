@@ -61,6 +61,7 @@ public class BaseTest {
     public AppLoginPage appLoginPage;
     public static AOPOManager aopoManager;
 
+
     // Configuration and capabilities
     public DesiredCapabilities caps;
     public Scenario scenario;
