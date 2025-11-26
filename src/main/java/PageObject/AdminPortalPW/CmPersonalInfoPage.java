@@ -38,6 +38,7 @@ public class CmPersonalInfoPage {
     public final Locator dropdownField;
     public final Locator checkbox;
     public final Locator radioButtons;
+    public final Locator crossButton;
 
     public CmPersonalInfoPage(Page page) {
         this.page = page;
@@ -70,6 +71,7 @@ public class CmPersonalInfoPage {
         this.dropdownField = page.locator(".css-1tz4v7m div");
         this.checkbox = page.locator("input[type='checkbox']");
         this.radioButtons = page.locator("input[type='radio']");
+        this.crossButton = page.locator(".css-1yxmbwk");
     }
 
     public void fillPersonalInfo(boolean isBelow18, boolean isExpired, boolean isExpiredBeforeCurrent, boolean isEdd) throws IOException {
@@ -219,8 +221,8 @@ public class CmPersonalInfoPage {
         return historyBtn;
     }
 
-    public void getFieldTextByLabel(String labelName) {
-        changeValue = abs.getInputValueByAttribute(textField, "name", labelName);
+    public String getFieldTextByLabel(String labelName) {
+        return abs.getInputValueByAttribute(textField, "name", labelName);
     }
 
     public Locator getToastMsg() {
@@ -263,5 +265,10 @@ public class CmPersonalInfoPage {
                 abs.checkElementIsEnable(checkbox) &&
                 abs.checkElementIsEnable(radioButtons) &&
                 abs.checkElementIsEnable(calendarButton);
+    }
+
+    public void clickCrossButton() {
+        abs.waitForLocatorVisible(crossButton);
+        crossButton.click();
     }
 }
