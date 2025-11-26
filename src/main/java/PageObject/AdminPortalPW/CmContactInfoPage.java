@@ -43,7 +43,11 @@ public class CmContactInfoPage {
     }
 
     public void clickButtonByText(String buttonText) {
-        buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).click();
+        Locator ctaButton = buttons.filter(new Locator.FilterOptions().setHasText(buttonText));
+        abs.waitForLocatorVisible(ctaButton);
+        if (ctaButton.isEnabled()) {
+            ctaButton.click();
+        }
     }
 
     public boolean checkTextFieldIsEditable() {
