@@ -1,7 +1,7 @@
 package StepDefinitions.AdminPortal.aoApplicationSteps;
 
 import API.CoreService;
-import Data.AccountCreation;
+import Data.AoAccountCreation;
 import Data.SQLDatabase;
 import PageObject.AdminPortal.*;
 import PageObject.AdminPortalPW.AOPOManager;
@@ -31,13 +31,13 @@ public class ApplicationSteps extends BaseTest {
     public TradingExperiencePage tradingExperiencePage;
     public CoreService coreService;
     public SQLDatabase sqlDb ;
-    public AccountCreation accountCreation;
+    public static AoAccountCreation accountAction;
 
     public void objectInit() throws IOException {
         aopoManager = new AOPOManager(page);
         coreService = new CoreService(page, productEnv);
         sqlDb = new SQLDatabase();
-        accountCreation = new AccountCreation(aopoManager);
+        accountAction = new AoAccountCreation(aopoManager);
     }
 
 
@@ -365,16 +365,16 @@ public class ApplicationSteps extends BaseTest {
     @And("the record in status {string} is created in the application list")
     public void the_record_in_status_is_created_in_the_application_list(String status) throws IOException, InterruptedException {
         if (status.equalsIgnoreCase("Draft")) {
-            accountCreation.createL1AccountIndividual();
+            accountAction.createL1AccountIndividual();
         }
         else if (status.equalsIgnoreCase("Rejected")) {
-            accountCreation.createL1AccountRejected();
+            accountAction.createL1AccountRejected();
         }
         else if (status.equalsIgnoreCase("Pending Verification")) {
-            accountCreation.createL2AccountIndividual();
+            accountAction.createL2AccountIndividual();
         }
         else if (status.equalsIgnoreCase("Pending Deposit")) {
-            accountCreation.createL3AccountIndividual();
+            accountAction.createL3AccountIndividual();
         }
 
     }
