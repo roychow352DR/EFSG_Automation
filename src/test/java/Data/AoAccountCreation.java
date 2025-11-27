@@ -15,7 +15,7 @@ public class AoAccountCreation {
         this.aopoManager = aopoManager;
     }
 
-    public void createL1AccountIndividual() throws IOException {
+    public void createL2DraftIndividual() throws IOException {
         aopoManager.getApplicationListPage().createIndividual();
         aopoManager.getApplicationInfoPage().fillApplicationInfo(SetCondition.isExistedEmail(),
                 SetCondition.isExistedPhoneNumber(),
@@ -23,13 +23,16 @@ public class AoAccountCreation {
         aopoManager.getMenuPagePW().clickMenu("AO Application List");
     }
 
-    public void createL1AccountRejected() throws IOException {
-        aopoManager.getApplicationListPage().createIndividual();
-        aopoManager.getApplicationInfoPage().fillApplicationInfo(SetCondition.isExistedEmail(),
-                SetCondition.isExistedPhoneNumber(),
-                SetCondition.isCrossEntity());
+    public void createL2RejectedIndividual() throws IOException {
+        createL2AccountIndividual();
+        aopoManager.getApplicationListPage().clickDetailBtn("Pending Verification");
+        aopoManager.getApplicationInfoPage().clickButtonByText("Next To Personal Information");
+        aopoManager.getPersonalInfoPage().clickButtonByText("Next To Contact Information");
+        aopoManager.getPersonalInfoPage().clickButtonByText("Next To Employee and Financial Information");
+        aopoManager.getEmployeeFinInfoPage().clickButtonByText("Next To Trading Experience");
         aopoManager.getTradingExpPage().clickButtonByText("Reject");
         aopoManager.getTradingExpPage().selectRejectReason("ID/Passport No. match with the EDD/AML list");
+        aopoManager.getTradingExpPage().clickButtonByText("Confirm");
     }
 
     public void createL2AccountIndividual() throws IOException {
