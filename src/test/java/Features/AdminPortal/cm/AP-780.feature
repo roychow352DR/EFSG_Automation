@@ -13,7 +13,7 @@ Feature: Customer Management
     And the user clicks "Update & Confirm" button on the CM trading experience page
     And the user clicks "Confirm" button on the CM trading experience page
     And the user clicks detail button of specific entity record on the customer management page
-    And the user performs second approval on cm page for the account type "INDIVIDUAL"
+    And the user performs first approval on cm page for the account type "INDIVIDUAL"
     And the user logout Admin Portal
     And the user re-logged in to Admin Portal as username "samuellai" and password "Aa12345678!"
     And the user clicks "Customer Management" on the ao admin portal menu
