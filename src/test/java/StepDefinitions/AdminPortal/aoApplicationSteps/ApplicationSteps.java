@@ -273,6 +273,7 @@ public class ApplicationSteps extends BaseTest {
     @Then("the user sees an existing record is updated to {string} status on the application list")
     public void the_user_sees_an_existing_record_is_updated_to_status_on_the_application_list(String status) throws IOException {
         page.waitForLoadState(LoadState.NETWORKIDLE);
+        page.waitForTimeout(2000);
         assertThat(aopoManager.getApplicationListPage().getApplicationStatus(aopoManager.getApplicationInfoPage().submittedApplicantEmail(),
                 aopoManager.getApplicationListPage().getFirstRow())).hasText(status);
     }
@@ -365,10 +366,10 @@ public class ApplicationSteps extends BaseTest {
     @And("the record in status {string} is created in the application list")
     public void the_record_in_status_is_created_in_the_application_list(String status) throws IOException, InterruptedException {
         if (status.equalsIgnoreCase("Draft")) {
-            accountAction.createL1AccountIndividual();
+            accountAction.createL2DraftIndividual();
         }
         else if (status.equalsIgnoreCase("Rejected")) {
-            accountAction.createL1AccountRejected();
+            accountAction.createL2RejectedIndividual();
         }
         else if (status.equalsIgnoreCase("Pending Verification")) {
             accountAction.createL2AccountIndividual();

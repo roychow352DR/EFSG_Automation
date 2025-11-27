@@ -5,7 +5,7 @@ Feature: AO Roles and Permission
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Admin Area" on the ao admin portal menu
     And the user clicks "Role & Permission" on the ao admin portal menu
-    And the user clicks detail button of roles "fullaccess" on the role and permission page
+    And the user clicks detail button of roles "qaautofullaccess" on the role and permission page
     And the user clicks checkbox "Read" of the module "Role Setting Detail" on the role and permission page
     And the user clicks button "Update" on the ao role and permission page
     When the user logout Admin Portal
