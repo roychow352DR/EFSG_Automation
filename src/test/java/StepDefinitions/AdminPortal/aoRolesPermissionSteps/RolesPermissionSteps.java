@@ -68,7 +68,7 @@ public class RolesPermissionSteps extends BaseTest {
     @Then("the user sees a dialogue with wordings {string} is prompted on the role and permission page")
     public void the_user_sees_an_error_dialogue_with_wordings_is_prompted_on_the_role_and_permission_page(String dialogueText) {
         assertThat(aopoManager.getAoRolesPermissionPage().getAlert()).containsText(dialogueText);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        aopoManager.getAoRolesPermissionPage().clickCrossBtn();
     }
 
     @And("the user uncheck checkbox {string} of the module {string} on the role and permission page")
