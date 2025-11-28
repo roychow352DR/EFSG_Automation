@@ -56,6 +56,7 @@ public class AORolesPermissionPage {
     }
 
     public boolean getButtonByEntity(String buttonText) throws IOException {
+        abs.waitForLocatorVisible(rows.first());
         return abs.checkElementIsEnable(rows.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("entity")))
                 .getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName(buttonText)));
     }
@@ -135,7 +136,7 @@ public class AORolesPermissionPage {
     }
 
     public Locator getRoleName() {
-        abs.waitForLocatorVisible(rolesCol.first());
+        abs.waitForLocatorVisible(rows.first());
         return rolesCol.first();
     }
 
