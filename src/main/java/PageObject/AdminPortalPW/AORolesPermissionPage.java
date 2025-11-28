@@ -27,6 +27,7 @@ public class AORolesPermissionPage {
     public final Locator roleNameField;
     public final Locator checkbox;
     public final Locator errorText;
+    public final Locator crossBtn;
 
     public AORolesPermissionPage(Page page) {
         this.page = page;
@@ -41,6 +42,7 @@ public class AORolesPermissionPage {
         this.roleNameField = page.locator("//input[@name='roleName']");
         this.checkbox = page.locator(".css-1jaw3da");
         this.errorText = page.locator(".css-1wercf4");
+        this.crossBtn = page.locator(".css-1yxmbwk");
     }
 
     public String getEntityRoleNum(String roleName) throws IOException {
@@ -71,7 +73,8 @@ public class AORolesPermissionPage {
 
     public void clickButtonByRole(String roleName) throws IOException {
         abs.getItemsByText(roleName, rolesCol, nextPageBtn, abs.userinfoList().get("entity"), entityCol);
-        rows.filter(new Locator.FilterOptions().setHasText(roleName)).filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("entity")))
+        rows.filter(new Locator.FilterOptions().setHas(page.getByText(roleName, new Page.GetByTextOptions().setExact(true))))
+                .filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("entity")))
                 .locator(buttons).filter(new Locator.FilterOptions().setHasText("Detail")).click();
     }
 
@@ -151,6 +154,10 @@ public class AORolesPermissionPage {
 
     public Locator getButton(String buttonText) {
         return buttons.filter(new Locator.FilterOptions().setHasText(buttonText));
+    }
+
+    public void clickCrossBtn() {
+        crossBtn.click();
     }
 
 }
