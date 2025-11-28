@@ -23,11 +23,11 @@ public class CMSteps extends BaseTest {
     @When("the user clicks detail button of {string} record with {string} client type on the customer management page")
     public void the_user_clicks_detail_button_of_record_on_the_customer_management_page(String status, String clientType) throws IOException {
         aopoManager.getCustomerManagementPage().clickDetailBtn(status, clientType);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
     @And("the user clicks {string} button on the CM application information page")
     public void the_user_clicks_button_on_the_CM_application_information_page(String buttonName) throws InterruptedException {
+        page.waitForLoadState(LoadState.NETWORKIDLE);
         aopoManager.getCmApplicationInfoPage().clickButtonByText(buttonName);
     }
 
