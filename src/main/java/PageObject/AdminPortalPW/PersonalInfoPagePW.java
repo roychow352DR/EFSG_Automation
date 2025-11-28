@@ -151,9 +151,12 @@ public class PersonalInfoPagePW {
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("validExpiryYear"))).click();
             dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
                     , new Page.GetByTextOptions().setExact(true)))).click();
-        } else if (!isExpiredBeforeCurrent) {
+        }
+        else if (!isExpiredBeforeCurrent) {
             datePickerArrow.click();
-            dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
+//            dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
+//                    , new Page.GetByTextOptions().setExact(true)))).first().click();
+            dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay")) - 1)
                     , new Page.GetByTextOptions().setExact(true)))).first().click();
         } else {
             dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay")) - 1)

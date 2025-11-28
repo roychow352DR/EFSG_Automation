@@ -621,12 +621,13 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user clicks detail button of status changed record on the application page")
     public void the_user_clicks_detail_button_of_status_changed_record_on_the_application_page(){
-        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(getRetrievedData());
+        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(applicantEmail);
         page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
     @Then("the user sees {string} label is displayed on company account detail page")
     public void the_user_sees_label_is_displayed_on_company_account_detail_page(String statusLabel) {
+        page.waitForLoadState(LoadState.NETWORKIDLE);
         assertThat(aopoManager.getCompanyAccountPagePW().getAccountStatus()).hasText(statusLabel);
     }
 
