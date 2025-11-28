@@ -96,7 +96,7 @@ public class UserManagementPage {
             default -> 0;
         };
         entityRoleDropdown.nth(index).click();
-        dropdownOption.filter(new Locator.FilterOptions().setHasText(roleVal)).click();
+        dropdownOption.filter(new Locator.FilterOptions().setHas(page.getByText(roleVal,new Page.GetByTextOptions().setExact(true)))).click();
     }
 
     public String getTextFieldVal(String textFieldName) throws IOException {
