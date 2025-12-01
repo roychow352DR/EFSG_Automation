@@ -229,7 +229,7 @@ public class ApplicationSteps extends BaseTest {
     @When("the user clicks {string} on the ao admin portal menu")
     public void the_user_clicks_on_the__ao_admin_portal_menu(String menu) {
         aopoManager.getMenuPagePW().clickMenu(menu);
-        page.waitForTimeout(1000);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
     @And("the user fills mandatory information on personal information page")
