@@ -8,7 +8,7 @@ Feature: AO Roles and Permission
     And the user retrieves number of assigned admin user of the role "qanoexport" on the ao roles and permission page
     When the user clicks "User Management" on the ao admin portal menu
     And the user clicks detail button of username "qaautotest" on the user management page
-    And the user changes entity role to value "fullaccess" on the user management page
+    And the user changes entity role to value "qaautofullaccess" on the user management page
     And the user clicks button "Update" on the user management page
     And the user clicks "Admin Area" on the ao admin portal menu
     And the user clicks "Role & Permission" on the ao admin portal menu
