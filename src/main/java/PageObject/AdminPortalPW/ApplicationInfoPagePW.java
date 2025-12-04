@@ -27,7 +27,7 @@ public class ApplicationInfoPagePW {
     public final Locator labels;
     public final Locator usernameField;
     public final Locator textFieldLabel;
-    public static String applicantEmail;
+    public static String applicantIndividualEmail;
     public SetCondition setCondition;
 
     public ApplicationInfoPagePW(Page page) {
@@ -99,15 +99,15 @@ public class ApplicationInfoPagePW {
 
     public void fillEmail(boolean isExistedEmail) throws IOException {
         if (!isExistedEmail) {
-            applicantEmail = abs.userinfoList().get("email");
+            applicantIndividualEmail = abs.userinfoList().get("email");
         } else {
-            applicantEmail = abs.userinfoList().get("existedEmail");
+            applicantIndividualEmail = abs.userinfoList().get("existedEmail");
         }
-        emailField.fill(applicantEmail);
+        emailField.fill(applicantIndividualEmail);
     }
 
     public void fillEmail(String email) throws IOException {
-        applicantEmail = email;
+        applicantIndividualEmail = email;
         emailField.fill(email);
     }
 
@@ -129,7 +129,7 @@ public class ApplicationInfoPagePW {
     }
 
     public String submittedApplicantEmail() {
-        return applicantEmail;
+        return applicantIndividualEmail;
     }
 
     public Locator errorValidation() {
@@ -140,8 +140,8 @@ public class ApplicationInfoPagePW {
     public void refill(String errorText, boolean isExistedEmail, boolean isExistedPhoneNumber) throws IOException {
         if (errorText.contains("email") && !isExistedEmail) {
             emailField.fill("");
-            applicantEmail = abs.userinfoList().get("email");
-            emailField.fill(applicantEmail);
+            applicantIndividualEmail = abs.userinfoList().get("email");
+            emailField.fill(applicantIndividualEmail);
 
         } else if (errorText.contains("phone") && !isExistedPhoneNumber) {
             phoneNumberField.fill("");

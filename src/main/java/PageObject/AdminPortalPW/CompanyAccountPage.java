@@ -74,7 +74,7 @@ public class CompanyAccountPage {
     public final Locator errorMsg;
     public final Locator toastMsg;
 
-    String applicantEmail;
+    public static String applicantCompanyEmail;
 
     public CompanyAccountPage(Page page) {
         this.page = page;
@@ -168,11 +168,11 @@ public class CompanyAccountPage {
 
     public void fillEmail(boolean isExistedEmail) throws IOException {
         if (!isExistedEmail) {
-            applicantEmail = abs.userinfoList().get("companyEmail");
+            applicantCompanyEmail = abs.userinfoList().get("companyEmail");
         } else {
-            applicantEmail = abs.userinfoList().get("existedEmail");
+            applicantCompanyEmail = abs.userinfoList().get("existedEmail");
         }
-        emailInput.fill(applicantEmail);
+        emailInput.fill(applicantCompanyEmail);
     }
 
     public void fillPhoneNumber(boolean isExistedPhoneNumber) throws IOException {
@@ -288,7 +288,7 @@ public class CompanyAccountPage {
     }
 
     public String submittedApplicantEmail() {
-        return applicantEmail;
+        return applicantCompanyEmail;
     }
 
     public void fillLegalName() {
@@ -315,7 +315,13 @@ public class CompanyAccountPage {
 
     public void fillTextFieldVal(String value, String fieldName) {
         page.locator("input[name='" + fieldName + "']").fill(value);
+
     }
+
+    public String getTextFieldValue(String fieldName) {
+        return page.locator("input[name='" + fieldName + "']").inputValue();
+    }
+
 
     public void emptyField(String fieldName) {
         page.locator("input[name='" + fieldName + "']").fill("");
