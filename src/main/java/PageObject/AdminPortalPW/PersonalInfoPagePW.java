@@ -1,7 +1,6 @@
 package PageObject.AdminPortalPW;
 
 import AbstractComponent.AbstractComponentsPW;
-import PageObject.AdminPortal.PersonalInfoPage;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
@@ -25,7 +24,8 @@ public class PersonalInfoPagePW {
     public final Locator idNoField;
     public final Locator buttons;
     public final Locator errorText;
-    public final Locator datePickerArrow;
+    public final Locator dateArrowNext;
+    public final Locator dateArrowPrevious;
     public final Locator checkbox;
 
     public PersonalInfoPagePW(Page page) {
@@ -45,8 +45,9 @@ public class PersonalInfoPagePW {
         this.idNoField = page.locator("input[name='identificationNo']");
         this.buttons = page.getByRole(AriaRole.BUTTON);
         this.errorText = page.locator(".css-1wercf4");
-        this.datePickerArrow = page.locator("button[title='Next month']");
+        this.dateArrowNext = page.locator("button[title='Next month']");
         this.checkbox = page.locator(".css-1jaw3da");
+        this.dateArrowPrevious = page.locator("button[title='Previous month']");
 
     }
 
@@ -54,7 +55,7 @@ public class PersonalInfoPagePW {
         fillName();
         selectGender();
         selectCountry(isEdd);
-        fillDob(isBelow18,isThirdParty);
+        fillDob(isBelow18, isThirdParty);
         selectNationality();
         selectIdType();
         fillRandomId();
@@ -66,7 +67,7 @@ public class PersonalInfoPagePW {
         fillName();
         selectGender();
         selectCountry(isEdd);
-        fillDob(isBelow18,isThirdParty);
+        fillDob(isBelow18, isThirdParty);
         selectNationality();
         selectIdType();
         fillRandomId();
@@ -91,17 +92,14 @@ public class PersonalInfoPagePW {
         }
     }
 
-    public void fillDob(boolean isBelow18,boolean isThirdParty) throws IOException {
+    public void fillDob(boolean isBelow18, boolean isThirdParty) throws IOException {
         calendarButton.first().click();
         calendarExtendBtn.click();
         if (!isBelow18 && !isThirdParty) {
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthYear"))).click();
-        }
-        else if (!isBelow18) {
+        } else if (!isBelow18) {
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthYearThirdParty"))).click();
-        }
-
-        else {
+        } else {
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("dateOfBirthYearBelow18"))).click();
         }
         dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("dateOfBirthDay"),
@@ -151,16 +149,20 @@ public class PersonalInfoPagePW {
             yearItems.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("validExpiryYear"))).click();
             dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
                     , new Page.GetByTextOptions().setExact(true)))).click();
-        }
-        else if (!isExpiredBeforeCurrent) {
-            datePickerArrow.click();
+        } else if (!isExpiredBeforeCurrent) {
+            dateArrowNext.click();
 //            dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("expiryDay")
 //                    , new Page.GetByTextOptions().setExact(true)))).first().click();
-            dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay")) - 1)
+            dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay")))
                     , new Page.GetByTextOptions().setExact(true)))).first().click();
         } else {
-            dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay")) - 1)
-                    , new Page.GetByTextOptions().setExact(true)))).click();
+            if (abs.userinfoList().get("expiryDay").equals("1")) {
+                dateArrowPrevious.click();
+                dayItems.last().click();
+            } else {
+                dayItems.filter(new Locator.FilterOptions().setHas(page.getByText(String.valueOf(Integer.parseInt(abs.userinfoList().get("expiryDay")) - 1)
+                        , new Page.GetByTextOptions().setExact(true)))).first().click();
+            }
         }
     }
 

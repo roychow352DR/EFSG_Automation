@@ -17,7 +17,8 @@ import utils.SetCondition;
 import java.io.IOException;
 import java.sql.SQLException;
 
-import static PageObject.AdminPortalPW.ApplicationInfoPagePW.applicantEmail;
+import static PageObject.AdminPortalPW.ApplicationInfoPagePW.applicantIndividualEmail;
+import static PageObject.AdminPortalPW.CompanyAccountPage.applicantCompanyEmail;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static utils.SetCondition.isThirdParty;
 
@@ -522,7 +523,7 @@ public class ApplicationSteps extends BaseTest {
         String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
         Assert.assertNotNull(email);
         aopoManager.getApplicationListPage().clickClientRecordDetailBtn(email);
-        applicantEmail = email;
+        applicantIndividualEmail = email;
         page.waitForTimeout(2000);
     }
 
@@ -612,6 +613,9 @@ public class ApplicationSteps extends BaseTest {
     @And("the user fills value {string} in the text field {string} on create company account page")
     public void the_user_fills_value_in_the_text_field_on_create_company_account_page(String value, String textField) {
         aopoManager.getCompanyAccountPagePW().fillTextFieldVal(value, textField);
+        if (textField.equalsIgnoreCase("email")) {
+            applicantCompanyEmail = value;
+        }
     }
 
     @Then("the user sees an error dialogue with wordings {string} on the create company account page")
@@ -621,7 +625,7 @@ public class ApplicationSteps extends BaseTest {
 
     @And("the user clicks detail button of status changed record on the application page")
     public void the_user_clicks_detail_button_of_status_changed_record_on_the_application_page(){
-        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(applicantEmail);
+        aopoManager.getApplicationListPage().clickClientRecordDetailBtn(applicantIndividualEmail);
         page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
