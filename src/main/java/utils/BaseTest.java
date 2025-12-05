@@ -85,7 +85,6 @@ public class BaseTest {
     public static String retrievedData;
     public static String originData;
 
-
     public BaseTest() {
         new SetCondition(false, false, false, false, false, false, false, false);
 
