@@ -1,6 +1,7 @@
 package StepDefinitions.AdminPortal.aoApplicationSteps;
 
 import API.CoreService;
+import API.CoreServiceOptimized;
 import Data.AoAccountCreation;
 import Data.SQLDatabase;
 import PageObject.AdminPortal.*;
@@ -32,6 +33,7 @@ public class ApplicationSteps extends BaseTest {
     public EmployeeFinancialPage employeeFinancialPage;
     public TradingExperiencePage tradingExperiencePage;
     public CoreService coreService;
+    public CoreServiceOptimized coreServiceOptimized;
     public SQLDatabase sqlDb ;
     public static AoAccountCreation accountAction;
 
@@ -40,6 +42,7 @@ public class ApplicationSteps extends BaseTest {
         coreService = new CoreService(page, productEnv);
         sqlDb = new SQLDatabase();
         accountAction = new AoAccountCreation(aopoManager);
+        coreServiceOptimized = new CoreServiceOptimized(page, productEnv);
     }
 
 
@@ -474,14 +477,14 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_sees_text_field_displayed_expected_value_as_trade_group_info_obtain_from_eCRM_on_the_application_information_page(String textFieldName, String tradeGroupInfo) throws IOException {
         page.waitForTimeout(2000);
         Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textFieldName).inputValue(),
-                coreService.getTradeGroupInfo(tradeGroupInfo, retrieveLocalStorageVal()));
+                coreServiceOptimized.getTradeGroupInfo(tradeGroupInfo, retrieveLocalStorageVal()));
     }
 
     @Then("the user sees text field {string} displayed expected value as entity trade group info {string} obtain from eCRM on the application information page")
     public void the_user_sees_text_field_displayed_expected_value_as_entity_trade_group_info_obtain_from_eCRM_on_the_application_information_page(String textFieldName, String tradeGroupInfo) throws IOException {
         page.waitForTimeout(2000);
         Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textFieldName).inputValue(),
-                coreService.getTradeGroupInfoBasedOnEntity(tradeGroupInfo, retrieveLocalStorageVal(), productEntity));
+                coreServiceOptimized.getTradeGroupInfoBasedOnEntity(tradeGroupInfo, retrieveLocalStorageVal(), productEntity));
     }
 
 
@@ -520,7 +523,8 @@ public class ApplicationSteps extends BaseTest {
     @When("the user clicks the detail button for the application record with status {string}, created by {string}, and client type {string} on the application list page")
     public void the_user_clicks_detail_button_of_status_record_with_client_type_on_the_application_list_page(String status, String createdBy, String clientType) throws IOException {
         page.waitForLoadState(LoadState.NETWORKIDLE);
-        String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
+       // String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
+        String email = coreServiceOptimized.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
         Assert.assertNotNull(email);
         aopoManager.getApplicationListPage().clickClientRecordDetailBtn(email);
         applicantIndividualEmail = email;
