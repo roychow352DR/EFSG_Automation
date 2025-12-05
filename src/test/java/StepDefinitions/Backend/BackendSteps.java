@@ -1,6 +1,7 @@
 package StepDefinitions.Backend;
 
 import API.CoreService;
+import API.CoreServiceOptimized;
 import Data.SQLDatabase;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -16,6 +17,7 @@ import static StepDefinitions.AdminPortal.aoApplicationSteps.ApplicationSteps.ao
 public class BackendSteps extends BaseTest {
     SQLDatabase sqlDb = new SQLDatabase();
     CoreService coreService = new CoreService(page, productEnv);
+    CoreServiceOptimized coreServiceOptimized = new CoreServiceOptimized(page, productEnv);
     public static String data;
 
     public BackendSteps() throws IOException {
@@ -30,7 +32,7 @@ public class BackendSteps extends BaseTest {
 
     @Given("{string} retrieved from api endpoint")
     public void retrieved_from_api_endpoint(String value) {
-        coreService.getAoAccountDetail("7e4f1f5a-24fc-48a9-8729-38372009e46c", retrieveLocalStorageVal(), value);
+        coreServiceOptimized.getAoAccountDetail("7e4f1f5a-24fc-48a9-8729-38372009e46c", retrieveLocalStorageVal(), value);
     }
 
     @Then("{string} is updated to modified value in CM {string} database table where {string} retrieved by {string}")
@@ -41,12 +43,12 @@ public class BackendSteps extends BaseTest {
 
     @And("the user extracts value {string} from the cm page api")
     public void the_user_extracts_value_from_the_cm_page_api(String value) {
-        coreService.getCmList(retrieveLocalStorageVal(), value);
+        coreServiceOptimized.getCmList(retrieveLocalStorageVal(), value);
     }
 
     @And("the parameter {string} is set to the value {string}")
     public void the_parameter_is_set_to_the_value(String param, String value) {
-        coreService.setParamVal(param, value);
+        coreServiceOptimized.setParamVal(param, value);
     }
 
 //    @And("the data created by {string} in status {string} is found in the AO application list")
@@ -58,7 +60,7 @@ public class BackendSteps extends BaseTest {
 
     @And("value {string} is retrieved according to the param value {string} of param {string} from the ao page api")
     public void value_is_retrieved_according_to_the_param_value_of_param_from_the_ao_page_api(String retrieveVal, String paramVal, String param) {
-        data = coreService.getAoListItem(retrieveLocalStorageVal(), retrieveVal, param, paramVal);
+        data = coreServiceOptimized.getAoListItem(retrieveLocalStorageVal(), retrieveVal, param, paramVal);
         setRetrievedData(data);
     }
 

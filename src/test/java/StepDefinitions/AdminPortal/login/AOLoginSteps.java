@@ -1,6 +1,7 @@
 package StepDefinitions.AdminPortal.login;
 
 import API.CoreService;
+import API.CoreServiceOptimized;
 import PageObject.AdminPortalPW.AOPOManager;
 import PageObject.AdminPortal.AdminLoginPage;
 import PageObject.AdminPortal.ApplicationListPage;
@@ -18,13 +19,12 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 public class AOLoginSteps extends BaseTest {
     public AdminLoginPage login;
     public AOPOManager aopoManager;
-    Page page;
+    public Page page;
     public CoreService coreService;
+
 
     @Given("the user lands on Admin Portal login page")
     public void the_user_lands_on_Admin_Portal_login_page() throws IOException, URISyntaxException, InterruptedException {
-        //    login =  launchApplication();
-        //   Thread.sleep(2000);
         page = initializePage();
         aopoManager = new AOPOManager(page);
         coreService = new CoreService(page, productEnv);

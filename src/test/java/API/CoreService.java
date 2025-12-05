@@ -231,7 +231,6 @@ public class CoreService {
     public String getAoClient(String token, String extractVal, String conditionVal, String conditionParam, String createType, String clientType ) throws IOException {
         int pageNum = 0;
         String jsonBody;
-        String appParam = "createdBy";
         String createdBy = createType.equalsIgnoreCase("app") ? "Customer" : "Admin";
         String endPoint = domain + "account-opening/page";
         String authToken = "Bearer " + token;
