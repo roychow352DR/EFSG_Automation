@@ -123,8 +123,7 @@ public class ApplicationSteps extends BaseTest {
     @And("the user clicks {string} button on the application information page")
     public void the_user_clicks_button_on_application_information(String buttonName) throws InterruptedException {
         aopoManager.applicationInfoPagePW.clickButtonByText(buttonName);
-        //page.waitForTimeout(5000);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        page.waitForTimeout(5000);
     }
 
     @And("the user clicks {string} button on the personal information page")
@@ -232,6 +231,7 @@ public class ApplicationSteps extends BaseTest {
     @When("the user clicks {string} on the ao admin portal menu")
     public void the_user_clicks_on_the__ao_admin_portal_menu(String menu) {
         aopoManager.getMenuPagePW().clickMenu(menu);
+        page.waitForTimeout(2000);
     }
 
     @And("the user fills mandatory information on personal information page")
@@ -455,9 +455,9 @@ public class ApplicationSteps extends BaseTest {
 
     @When("the user fills value {string} on the application search field")
     public void the_user_fills_value_in_the_text_field_on_the_application_search_field(String searchVal) {
-        page.waitForTimeout(2000);
         aopoManager.getApplicationListPage().fillSearchVal(searchVal);
         page.keyboard().press("Enter");
+        page.waitForTimeout(2000);
     }
 
     @Then("the user sees value {string} is displayed at the text field {string} on the application information page")

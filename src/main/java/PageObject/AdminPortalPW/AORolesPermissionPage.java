@@ -62,9 +62,9 @@ public class AORolesPermissionPage {
     }
 
     public void clickBtnByText(String buttonText) {
-        Locator locator = buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).first();
+        Locator locator = buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).last();
         abs.waitForLocatorVisible(locator);
-        //buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).first().click();
+  //      buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).last().click();
         locator.click();
     }
 
