@@ -40,7 +40,7 @@ public class Hooks extends BaseTest {
     public static String productEntity;
 
    @BeforeAll
-    public static void createQaseTestRun() throws IOException {
+    public static void createQaseTestRun() throws IOException, InterruptedException {
         initializeConfigurations();
         setupQaseTestRun();
     }
@@ -48,7 +48,7 @@ public class Hooks extends BaseTest {
     /**
      * Initializes all necessary configurations
      */
-    private static void initializeConfigurations() throws IOException {
+    private static void initializeConfigurations() throws IOException, InterruptedException {
         globalConfig = new GlobalConfig();
         product = GlobalConfig.getProperty(GlobalConfig.getGlobalPropertyPath("globalPropertyPath"), "product");
         productEntity = GlobalConfig.getProperty(GlobalConfig.getGlobalPropertyPath("globalPropertyPath"), "entity");
@@ -66,7 +66,7 @@ public class Hooks extends BaseTest {
             runTitle = qaseConfig.getQaseConfig().get("runTitle");
             String runType = product.equalsIgnoreCase("app") ? "platform" : "browser";
             runId = qaseConfig.getTestRunId(runType, testPlanId, runTitle, product);
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             System.err.println("Failed to create test run: " + e.getMessage());
         }
     }
@@ -76,7 +76,7 @@ public class Hooks extends BaseTest {
      */
 
     @Before
-    public void initializeTestCase(Scenario scenario) throws IOException {
+    public void initializeTestCase(Scenario scenario) throws IOException, InterruptedException {
         caseId = qaseConfig.getCaseId(scenario);
         steps.clear();
         position = 1;

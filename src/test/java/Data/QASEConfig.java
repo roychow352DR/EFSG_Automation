@@ -2,6 +2,7 @@ package Data;
 
 import io.cucumber.java.Scenario;
 import utils.QaseApiClient;
+import utils.QaseApiClientOptimized;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -11,6 +12,7 @@ import java.util.Map;
 public class QASEConfig extends GlobalConfig {
 
     public static QaseApiClient qaseApiClient;
+    public static QaseApiClientOptimized qaseApiClientOptimized;
     private final String product;
     private final String productEntity;
     public String path;
@@ -22,15 +24,17 @@ public class QASEConfig extends GlobalConfig {
     }
 
 
-    public Map<String, String> getQaseConfig() throws IOException {
+    public Map<String, String> getQaseConfig() throws IOException, InterruptedException {
         Map<String,String> qaseConfig = new HashMap<>();
         path = getQasePropertyPath(product);
-        qaseApiClient = new QaseApiClient(getProperty(path,"qase.api.token"),getProperty(path,"qase.project.code"));
+       // qaseApiClient = new QaseApiClient(getProperty(path,"qase.api.token"),getProperty(path,"qase.project.code"));
+        qaseApiClientOptimized = new QaseApiClientOptimized(getProperty(path, "qase.api.token"), getProperty(path, "qase.project.code"));
         qaseConfig.put("qasePropertyPath",path);
         qaseConfig.put("apiToken",getProperty(path,"qase.api.token"));
         qaseConfig.put("projectCode",getProperty(path,"qase.project.code"));
         qaseConfig.put("testPlanId",getTestPlanId(getProperty(path, "testType"),path,productEntity));
-        qaseConfig.put("runTitle",qaseApiClient.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "testType"), path,productEntity)), getProperty(path,"qase.project.code")));
+       // qaseConfig.put("runTitle",qaseApiClient.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "testType"), path,productEntity)), getProperty(path,"qase.project.code")));
+        qaseConfig.put("runTitle",qaseApiClientOptimized.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "testType"), path,productEntity))));
         return qaseConfig;
 
     }
@@ -71,34 +75,37 @@ public class QASEConfig extends GlobalConfig {
         return testType;
     }
 
-    public int getTestRunId(String property,String testPlanId,String runTitle,String product) throws IOException {
+    public int getTestRunId(String property,String testPlanId,String runTitle,String product) throws IOException, InterruptedException {
         if (product.equalsIgnoreCase("app"))
         {
-            return qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId),
+            return qaseApiClientOptimized.createTestRunByTestPlan(Integer.parseInt(testPlanId),
                     runTitle, getProperty(getPropertyPath("app"), property),
                     getProperty(getGlobalPropertyPath("globalPropertyPath"), "env"),getProperty(getGlobalPropertyPath("globalPropertyPath"), "entity"),product);
         }
         else {
-            return qaseApiClient.createTestRunByTestPlan(Integer.parseInt(testPlanId),
+            return qaseApiClientOptimized.createTestRunByTestPlan(Integer.parseInt(testPlanId),
                     runTitle, getProperty(getGlobalPropertyPath("globalPropertyPath"), property),
                     getProperty(getGlobalPropertyPath("globalPropertyPath"), "env"),getProperty(getGlobalPropertyPath("globalPropertyPath"), "entity"),product);
         }
     }
 
-    public String getCaseId(Scenario scenario) throws IOException {
-        return qaseApiClient.getCaseId(scenario, getQaseConfig().get("projectCode"));
+    public String getCaseId(Scenario scenario) throws IOException, InterruptedException {
+        return qaseApiClientOptimized.getCaseId(scenario, getQaseConfig().get("projectCode"));
     }
 
     public String createHash(String scenarioName,String directory) throws IOException, InterruptedException {
-        return qaseApiClient.uploadAttachment(getQaseConfig().get("projectCode"), scenarioName, directory);
+       // return qaseApiClient.uploadAttachment(getQaseConfig().get("projectCode"), scenarioName, directory);
+        return qaseApiClientOptimized.uploadAttachment(scenarioName, directory);
     }
 
     public void createTestCaseResult(int runId, String projectCode, String hash, boolean isPassed, String caseId, List<Map<String, Object>> steps) throws IOException, InterruptedException {
-        qaseApiClient.createTestCaseResult(runId, projectCode, hash, isPassed, caseId, steps);
+        //qaseApiClient.createTestCaseResult(runId, projectCode, hash, isPassed, caseId, steps);
+        qaseApiClientOptimized.createTestCaseResult(runId, hash, isPassed, caseId, steps);
     }
 
-    public String getCaseStepAction(String projectCode, int caseId, int position) throws IOException {
-        return qaseApiClient.getCaseStepAction(projectCode, caseId, position);
+    public String getCaseStepAction(String projectCode, int caseId, int position) throws IOException, InterruptedException {
+        //return qaseApiClient.getCaseStepAction(projectCode, caseId, position);
+        return qaseApiClientOptimized.getCaseStepAction(caseId, position);
     }
 
 
