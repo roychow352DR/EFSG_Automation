@@ -62,13 +62,14 @@ public class AORolesPermissionPage {
     }
 
     public void clickBtnByText(String buttonText) {
+        Locator locator = buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).first();
+        abs.waitForLocatorVisible(locator);
         //buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).first().click();
-        Locator locator = buttons.filter(new Locator.FilterOptions().setHasText(buttonText)).last();
-        locator.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
         locator.click();
     }
 
     public Locator getDialogueHeader() {
+        abs.waitForLocatorVisible(dialogue);
         return dialogue.filter(new Locator.FilterOptions().setHas(page.getByRole(AriaRole.HEADING))).locator(".css-1lnb07z");
     }
 
