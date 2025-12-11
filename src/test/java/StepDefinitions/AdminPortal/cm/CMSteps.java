@@ -6,6 +6,7 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.testng.Assert;
 import utils.BaseTest;
+import utils.SetCondition;
 
 import java.io.IOException;
 
@@ -23,6 +24,7 @@ public class CMSteps extends BaseTest {
     @When("the user clicks detail button of {string} record with {string} client type on the customer management page")
     public void the_user_clicks_detail_button_of_record_on_the_customer_management_page(String status, String clientType) throws IOException {
         aopoManager.getCustomerManagementPage().clickDetailBtn(status, clientType);
+        page.waitForTimeout(3000);
     }
 
     @And("the user clicks {string} button on the CM application information page")
@@ -152,6 +154,7 @@ public class CMSteps extends BaseTest {
     @And("the user fills value {string} in the text field {string} on the CM personal information page")
     public void the_user_fills_value_in_the_text_field_on_the_CM_personal_information_page(String value, String textFieldName) throws IOException {
         aopoManager.getCmPersonalInfoPage().fillInputFieldByName(value, textFieldName);
+        aopoManager.getCmPersonalInfoPage().selectExpiryDate(SetCondition.isExpired(),SetCondition.isExpiredBeforeCurrent());
     }
 
     @Then("the user lands on next tab {string} of customer management edit page")

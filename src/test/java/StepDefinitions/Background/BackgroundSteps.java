@@ -1,8 +1,7 @@
 package StepDefinitions.Background;
 
-import utils.BaseTest;
-import utils.SetCondition;
 import Data.SQLDatabase;
+import utils.BaseTest;
 import io.cucumber.java.en.Given;
 import org.testng.Assert;
 
@@ -23,7 +22,9 @@ public class BackgroundSteps extends BaseTest {
 
     @Given("the user created up to 4 account with existing ID {string}")
     public void the_user_created_up_to_4_account_with_existing_ID(String id) throws SQLException {
-        Assert.assertEquals(sqlDb.getPersonIdCount(id), "4");
+        //Assert.assertEquals(sqlDb.getPersonIdCount(id), "4");
+        System.out.println(sqlDb.getPersonIdCount(id).orElse("0"));
+        Assert.assertEquals(sqlDb.getPersonIdCount(id).orElse("0"), "4");
     }
 //
 //    @Given("the {string} condition is satisfied")

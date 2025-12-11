@@ -39,6 +39,7 @@ public class RolesPermissionSteps extends BaseTest {
 
     @When("the user clicks button {string} on the ao role and permission page")
     public void the_user_clicks_button_on_the_ao_role_and_permission_page(String buttonText) {
+        page.waitForLoadState(LoadState.NETWORKIDLE);
         aopoManager.getAoRolesPermissionPage().clickBtnByText(buttonText);
     }
 
@@ -46,6 +47,7 @@ public class RolesPermissionSteps extends BaseTest {
     public void the_user_sees_dialogue_with_heading_on_the_ao_role_and_permission_page(String headerText) {
         page.waitForLoadState(LoadState.NETWORKIDLE);
         assertThat(aopoManager.getAoRolesPermissionPage().getDialogueHeader()).hasText(headerText);
+        aopoManager.getAoRolesPermissionPage().clickCrossBtn();
     }
 
     @Then("the user sees button {string} is disabled on the ao roles and permission page")

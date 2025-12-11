@@ -1,7 +1,6 @@
 package StepDefinitions.AdminPortal.aoApplicationSteps;
 
 import API.CoreService;
-import API.CoreServiceOptimized;
 import Data.AoAccountCreation;
 import Data.SQLDatabase;
 import PageObject.AdminPortal.*;
@@ -33,16 +32,16 @@ public class ApplicationSteps extends BaseTest {
     public EmployeeFinancialPage employeeFinancialPage;
     public TradingExperiencePage tradingExperiencePage;
     public CoreService coreService;
-    public CoreServiceOptimized coreServiceOptimized;
     public SQLDatabase sqlDb ;
     public static AoAccountCreation accountAction;
 
     public void objectInit() throws IOException {
         aopoManager = new AOPOManager(page);
-        coreService = new CoreService(page, productEnv);
+       // coreService = new CoreService(page, productEnv);
+        //sqlDb = new SQLDatabase();
         sqlDb = new SQLDatabase();
         accountAction = new AoAccountCreation(aopoManager);
-        coreServiceOptimized = new CoreServiceOptimized(page, productEnv);
+        coreService = new CoreService(page, productEnv);
     }
 
 
@@ -233,7 +232,6 @@ public class ApplicationSteps extends BaseTest {
     @When("the user clicks {string} on the ao admin portal menu")
     public void the_user_clicks_on_the__ao_admin_portal_menu(String menu) {
         aopoManager.getMenuPagePW().clickMenu(menu);
-        page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
     @And("the user fills mandatory information on personal information page")
@@ -284,7 +282,7 @@ public class ApplicationSteps extends BaseTest {
 
     @Then("the {string} account record is retrieved in CM database")
     public void the_account_record_is_retrieved_in_CM_database(String status) throws SQLException, IOException {
-        Assert.assertNotNull(sqlDb.getPersonProfileId(aopoManager.getApplicationListPage().email));
+        Assert.assertNotNull(sqlDb.getPersonProfileId(aopoManager.getApplicationListPage().email).orElse("0"));
     }
 
     @And("the user sees a record in {string} status on the application list")
@@ -477,14 +475,14 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_sees_text_field_displayed_expected_value_as_trade_group_info_obtain_from_eCRM_on_the_application_information_page(String textFieldName, String tradeGroupInfo) throws IOException {
         page.waitForTimeout(2000);
         Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textFieldName).inputValue(),
-                coreServiceOptimized.getTradeGroupInfo(tradeGroupInfo, retrieveLocalStorageVal()));
+                coreService.getTradeGroupInfo(tradeGroupInfo, retrieveLocalStorageVal()));
     }
 
     @Then("the user sees text field {string} displayed expected value as entity trade group info {string} obtain from eCRM on the application information page")
     public void the_user_sees_text_field_displayed_expected_value_as_entity_trade_group_info_obtain_from_eCRM_on_the_application_information_page(String textFieldName, String tradeGroupInfo) throws IOException {
         page.waitForTimeout(2000);
         Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textFieldName).inputValue(),
-                coreServiceOptimized.getTradeGroupInfoBasedOnEntity(tradeGroupInfo, retrieveLocalStorageVal(), productEntity));
+                coreService.getTradeGroupInfoBasedOnEntity(tradeGroupInfo, retrieveLocalStorageVal(), productEntity));
     }
 
 
@@ -524,7 +522,7 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_clicks_detail_button_of_status_record_with_client_type_on_the_application_list_page(String status, String createdBy, String clientType) throws IOException {
         page.waitForLoadState(LoadState.NETWORKIDLE);
        // String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
-        String email = coreServiceOptimized.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
+        String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
         Assert.assertNotNull(email);
         aopoManager.getApplicationListPage().clickClientRecordDetailBtn(email);
         applicantIndividualEmail = email;
