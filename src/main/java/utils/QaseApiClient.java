@@ -27,6 +27,10 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * Lightweight client for interacting with Qase APIs used in tests.
+ * Maintains the original implementation for compatibility; see QaseApiClientOptimized for a safer alternative.
+ */
 public class QaseApiClient {
 
     private static final String BASE_URL = "https://api.qase.io/v1/";
@@ -43,6 +47,12 @@ public class QaseApiClient {
     //public static String tag;
 
 
+    /**
+     * Initializes the client with API token and project code.
+     *
+     * @param apiToken     Qase API token
+     * @param projectCode  project code used to build the default endpoint
+     */
     public QaseApiClient(String apiToken, String projectCode) {
         QaseApiClient.apiToken = apiToken;
         QaseApiClient.endpoint = BASE_URL + "run/" + projectCode;
@@ -50,6 +60,13 @@ public class QaseApiClient {
         QaseApiClient.body = String.format("{\"title\":\"%s\"}", "Automated Test Run");
     }
 
+    /**
+     * Extracts the case ID from a Cucumber scenario URI.
+     *
+     * @param scenario    the Cucumber scenario
+     * @param projectCode the project code prefix in the file name
+     * @return extracted case ID portion
+     */
     public String getCaseId(Scenario scenario, String projectCode) {
         String uri = scenario.getUri().toString(); // Get the URI of the scenario
         String[] caseId = uri.substring(uri.lastIndexOf("/") + 1).split(".feature");
@@ -57,6 +74,18 @@ public class QaseApiClient {
         return actualCaseId[1];// Extract the file name
     }
 
+    /**
+     * Creates a test run by plan ID.
+     *
+     * @param planId    plan identifier
+     * @param runTitle  run title
+     * @param platform  platform label
+     * @param env       environment label
+     * @param entity    entity label
+     * @param product   product name to influence title
+     * @return created run ID
+     * @throws IOException when network or serialization fails
+     */
     public int createTestRunByTestPlan(int planId, String runTitle, String platform, String env,String entity,String product) throws IOException {
         // Prepare the request payload
         SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd");
@@ -84,6 +113,14 @@ public class QaseApiClient {
         return jsonResponse.getAsJsonObject("result").get("id").getAsInt();
     }
 
+    /**
+     * Retrieves the title of a test plan.
+     *
+     * @param planId      plan identifier
+     * @param projectCode project code
+     * @return plan title
+     * @throws IOException when network or parsing fails
+     */
     public String getTestPlanTitle(int planId, String projectCode) throws IOException {
         String endpoint = BASE_URL + "plan/" + projectCode + "/" + planId;
         JsonObject requestBody = new JsonObject();
@@ -98,10 +135,15 @@ public class QaseApiClient {
                 .returnContent()
                 .asString(StandardCharsets.UTF_8);
 
-        JsonObject jsonResponse = JsonParser.parseString(response).getAsJsonObject();
-        return jsonResponse.getAsJsonObject("result").get("title").getAsString();
+        return parseJsonObject(response,"title");
     }
 
+    /**
+     * Resolves a test plan ID based on system properties and property files.
+     *
+     * @return test plan ID string or null if not found
+     * @throws IOException when property file cannot be read
+     */
     public String getTestPlanId() throws IOException {
         Properties prop = new Properties();
         FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + "//src//main//java//DataResources//qase-adminportal.properties");
@@ -116,6 +158,17 @@ public class QaseApiClient {
         return testPlanId;
     }
 
+    /**
+     * Creates a test case result inside a run.
+     *
+     * @param testRunId  run ID
+     * @param projectCode project code
+     * @param hash        attachment hash (optional)
+     * @param status      pass/fail status
+     * @param caseId      case identifier
+     * @param steps       list of step maps
+     * @throws IOException when serialization fails
+     */
     public void createTestCaseResult(int testRunId, String projectCode, String hash, boolean status, String caseId, List<Map<String, Object>> steps) throws IOException {
         // Build the endpoint URL for Create test run result
         endpoint = BASE_URL + "result/" + projectCode + "/" + testRunId;
@@ -158,6 +211,16 @@ public class QaseApiClient {
     }
 
 
+    /**
+     * Uploads an attachment (video or screenshot) to Qase and returns the hash.
+     *
+     * @param projectCode  project code
+     * @param scenarioName file name to upload
+     * @param path         directory path prefix
+     * @return attachment hash
+     * @throws IOException          on IO failures
+     * @throws InterruptedException on HTTP interruption
+     */
     public String uploadAttachment(String projectCode, String scenarioName, String path) throws IOException, InterruptedException {
         // Qase API endpoint
         String endpoint = BASE_URL + "attachment/" + projectCode;
@@ -248,6 +311,12 @@ public class QaseApiClient {
 
     }
 
+    /**
+     * Concatenates multiple byte arrays.
+     *
+     * @param arrays arrays to join
+     * @return combined byte array
+     */
     private static byte[] joinByteArrays(byte[]... arrays) {
         int totalLength = 0;
         for (byte[] array : arrays) {
@@ -264,6 +333,15 @@ public class QaseApiClient {
         return result;
     }
 
+    /**
+     * Retrieves a step action from a test case at a given position.
+     *
+     * @param projectCode  project code
+     * @param caseId       case identifier
+     * @param stepPosition position of the step
+     * @return action text for the step
+     * @throws IOException on network errors
+     */
     public String getCaseStepAction(String projectCode, int caseId, int stepPosition) throws IOException {
         endpoint = BASE_URL + "case/" + projectCode + "/" + caseId;
 
@@ -310,6 +388,19 @@ public class QaseApiClient {
         }
         assert stepsMap != null;
         return stepsMap.get(stepPosition);
+    }
+
+    /**
+     * Parses a JSON response and retrieves a top-level result field value.
+     *
+     * @param response      raw JSON string
+     * @param retrieveParam field name under "result"
+     * @return value as string
+     */
+    public String parseJsonObject(String response,String retrieveParam) {
+        JsonObject jsonResponse = JsonParser.parseString(response).getAsJsonObject();
+        return jsonResponse.getAsJsonObject("result").get(retrieveParam).getAsString();
+
     }
 
 }

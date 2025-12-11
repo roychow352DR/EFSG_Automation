@@ -3,17 +3,21 @@ package API;
 import AbstractComponent.AbstractComponentsPW;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.microsoft.playwright.APIRequestContext;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Playwright;
-import com.microsoft.playwright.options.RequestOptions;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class CoreService {
 
+    private static final Gson GSON = new Gson();
+    private static final String DEFAULT_ACCOUNT_ID = "46be06ef-ab11-4d3b-978b-49f1ce80265e";
+    private static final int MAX_PAGE_LOOKUP = 100;
     private final AbstractComponentsPW abs;
     private final String entity;
     public final String env;
@@ -28,240 +32,215 @@ public class CoreService {
         this.domain = abs.getApiEndpointDomain(env);
     }
 
+    /**
+     * Safely extracts the response object from JSON response body
+     */
+    private JsonObject getResponseObject(String responseBody) {
+        JsonObject root = GSON.fromJson(responseBody, JsonObject.class);
+        if (root == null || !root.has("response") || root.get("response").isJsonNull()) {
+            return new JsonObject();
+        }
+        return root.getAsJsonObject("response");
+    }
+
+    /**
+     * Safely extracts the content array from response body
+     */
+    private JsonArray getContentArray(String responseBody) {
+        return getContentArray(getResponseObject(responseBody));
+    }
+
+    /**
+     * Safely extracts the content array from response object
+     */
+    private JsonArray getContentArray(JsonObject responseObj) {
+        if (responseObj == null || !responseObj.has("content") || responseObj.get("content").isJsonNull()) {
+            return new JsonArray();
+        }
+        return responseObj.getAsJsonArray("content");
+    }
+
+    /**
+     * Safely extracts a string value from a JsonObject
+     */
+    private String getString(JsonObject source, String key) {
+        if (source == null || key == null || !source.has(key) || source.get(key).isJsonNull()) {
+            return "";
+        }
+        return source.get(key).getAsString();
+    }
+
+    /**
+     * Converts null to empty string
+     */
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    /**
+     * Validates API response and throws exception if request failed
+     */
+    private APIResponse ensureSuccess(APIResponse response, String endpoint) {
+        if (response == null) {
+            throw new IllegalStateException("No response returned from endpoint: " + endpoint);
+        }
+        if (!response.ok()) {
+            throw new IllegalStateException(
+                    String.format("Request to %s failed with status %d and body %s",
+                            endpoint, response.status(), response.text()));
+        }
+        return response;
+    }
+
     public void getAccountStatus(String token) {
-        String id = "46be06ef-ab11-4d3b-978b-49f1ce80265e";
-        String authToken = "Bearer " + token;
-        Playwright playwright = Playwright.create();
-        APIRequestContext request = playwright.request().newContext();
-        APIResponse response = request.get(domain + "account-opening/" + id + "/status",
-                RequestOptions.create().setHeader("Authorization", authToken));
-        System.out.println(parseJson(response.text(), "status"));
+        String endpoint = domain + "account-opening/" + DEFAULT_ACCOUNT_ID + "/status";
+        try (ApiClient apiClient = new ApiClient()) {
+            APIResponse response = ensureSuccess(apiClient.get(endpoint, token), endpoint);
+            System.out.println(parseJson(response.text(), "status"));
+        }
     }
 
     public String parseJson(String responseBody, String value) {
-        Gson gson = new Gson();
-        JsonObject json = gson.fromJson(responseBody, JsonObject.class);
-        JsonObject responseObj = json.getAsJsonObject("response");
-        return responseObj.get(value).getAsString();
+        JsonObject responseObj = getResponseObject(responseBody);
+        return getString(responseObj, value);
     }
 
     public String getValFromJsonArray(String responseBody, String value) {
-        Gson gson = new Gson();
-        JsonObject json = gson.fromJson(responseBody, JsonObject.class);
-        JsonObject responseObj = json.getAsJsonObject("response");
-        JsonArray contentArray = responseObj.getAsJsonArray("content");
+        JsonArray contentArray = getContentArray(responseBody);
+        if (contentArray.isEmpty()) {
+            return "";
+        }
         JsonObject firstItem = contentArray.get(0).getAsJsonObject();
-        return firstItem.get(value).getAsString();
+        return getString(firstItem, value);
     }
 
     public String getValFromJsonArray(String responseBody, String extractVal, String conditionVal, String conditionParam) {
-        Gson gson = new Gson();
-        JsonObject json = gson.fromJson(responseBody, JsonObject.class);
-        JsonObject responseObj = json.getAsJsonObject("response");
-        JsonArray contentArray = responseObj.getAsJsonArray("content");
-        String retrieveValue = "";
-        try {
-            for (int i = 0; i < contentArray.size(); i++) {
-                JsonObject firstItem = contentArray.get(i).getAsJsonObject();
-                if (firstItem.get(conditionVal).getAsString().equalsIgnoreCase(conditionParam)) {
-                    retrieveValue = firstItem.get(extractVal).getAsString();
-                    return retrieveValue;
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Matched Record not found :" + e.getMessage());
+        JsonArray contentArray = getContentArray(responseBody);
+        if (contentArray.isEmpty()) {
+            return "";
         }
-        return retrieveValue;
+        for (JsonElement element : contentArray) {
+            JsonObject item = element.getAsJsonObject();
+            if (getString(item, conditionVal).equalsIgnoreCase(conditionParam)) {
+                return getString(item, extractVal);
+            }
+        }
+        return "";
     }
 
     public String getClientFromJsonArray(String responseBody, String extractVal, String conditionVal, String conditionParam, String conditionVal2, String conditionParam2, String entity, String entityVal,String createType) {
-        Gson gson = new Gson();
-        JsonObject json = gson.fromJson(responseBody, JsonObject.class);
-        JsonObject responseObj = json.getAsJsonObject("response");
-        JsonArray contentArray = responseObj.getAsJsonArray("content");
-        String retrieveValue = "";
-        String createdParam = "createdBy";
-        try {
-            for (int i = 0; i < contentArray.size(); i++) {
-                JsonObject firstItem = contentArray.get(i).getAsJsonObject();
-                if (firstItem.get(conditionVal).getAsString().equalsIgnoreCase(conditionParam) &&
-                        firstItem.get(conditionVal2).getAsString().equalsIgnoreCase(conditionParam2) &&
-                        firstItem.get(entity).getAsString().equalsIgnoreCase(entityVal) && firstItem.get(createdParam).getAsString().equalsIgnoreCase(createType) ) {
-                    retrieveValue = firstItem.get(extractVal).getAsString();
-                    return retrieveValue;
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Matched Record not found :" + e.getMessage());
+        JsonArray contentArray = getContentArray(responseBody);
+        if (contentArray.isEmpty()) {
+            return "";
         }
-        return retrieveValue;
+        String createdParam = "createdBy";
+        for (JsonElement element : contentArray) {
+            JsonObject firstItem = element.getAsJsonObject();
+            boolean matchesPrimary = getString(firstItem, conditionVal).equalsIgnoreCase(conditionParam);
+            boolean matchesSecondary = getString(firstItem, conditionVal2).equalsIgnoreCase(conditionParam2);
+            boolean matchesEntity = getString(firstItem, entity).equalsIgnoreCase(entityVal);
+            boolean matchesCreator = getString(firstItem, createdParam).equalsIgnoreCase(createType);
+            if (matchesPrimary && matchesSecondary && matchesEntity && matchesCreator) {
+                return getString(firstItem, extractVal);
+            }
+        }
+        return "";
     }
 
     public void getAccountId(String token) {
-        String authToken = "Bearer " + token;
-        Playwright playwright = Playwright.create();
-        APIRequestContext request = playwright.request().newContext();
-        APIResponse response = request.post(domain + "account-opening/init-customer/LEVEL_3_INDIVIDUAL",
-                RequestOptions.create().setHeader("Authorization", authToken));
-        System.out.println("uuid: " + parseJson(response.text(), "id"));
-
+        String endpoint = domain + "account-opening/init-customer/LEVEL_3_INDIVIDUAL";
+        try (ApiClient apiClient = new ApiClient()) {
+            APIResponse response = ensureSuccess(apiClient.post(endpoint, token, null), endpoint);
+            System.out.println("uuid: " + parseJson(response.text(), "id"));
+        }
     }
 
     public void getAoAccountDetail(String uuid, String token, String value) {
-        String authToken = "Bearer " + token;
-        String endPoint = domain + "account-opening/" + uuid;
-        Playwright playwright = Playwright.create();
-        APIRequestContext request = playwright.request().newContext();
-        APIResponse response = request.get(endPoint,
-                RequestOptions.create().setHeader("Authorization", authToken));
-        System.out.println(value + ":" + parseJson(response.text(), value));
-
+        String endpoint = domain + "account-opening/" + uuid;
+        try (ApiClient apiClient = new ApiClient()) {
+            APIResponse response = ensureSuccess(apiClient.get(endpoint, token), endpoint);
+            System.out.println(value + ":" + parseJson(response.text(), value));
+        }
     }
 
     public void getCmList(String token, String extractVal) {
-        int pageNum = 0;
-        String jsonBody;
-        String endPoint = domain + "customer-management/page";
-        String authToken = "Bearer " + token;
-        String value;
-        Playwright playwright = Playwright.create();
-        APIRequestContext request = playwright.request().newContext();
-        APIResponse response;
-        do {
-            jsonBody = "{\"filter\":{\"clientType\": \"" + clientType + "\",\"entity\":[\"" + entity + "\"],\"status\": \"" + status + "\"},\"page\":" + pageNum + ",\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}";
-            System.out.println(jsonBody);
-            response = request.post(
-                    endPoint,
-                    RequestOptions.create()
-                            .setHeader("Authorization", authToken)
-                            .setHeader("Content-Type", "application/json")
-                            .setData(jsonBody)
-            );
-            value = getValFromJsonArray(response.text(), extractVal);
-            if (value == null) {
-                pageNum++;
+        String endpoint = domain + "customer-management/page";
+        try (ApiClient apiClient = new ApiClient()) {
+            for (int pageNum = 0; pageNum < MAX_PAGE_LOOKUP; pageNum++) {
+                String payload = String.format(
+                        "{\"filter\":{\"clientType\":\"%s\",\"entity\":[\"%s\"],\"status\":\"%s\"},\"page\":%d,\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}",
+                        nullToEmpty(clientType),
+                        entity,
+                        nullToEmpty(status),
+                        pageNum);
+                APIResponse response = ensureSuccess(apiClient.post(endpoint, token, payload), endpoint);
+                String value = getValFromJsonArray(response.text(), extractVal);
+                if (value != null && !value.isEmpty()) {
+                    System.out.println("Matched customer-management value: " + value);
+                    return;
+                }
             }
-        } while (value == null);
+        }
+        throw new IllegalStateException("Unable to find value for " + extractVal + " within " + MAX_PAGE_LOOKUP + " pages.");
     }
 
     public String getAoList(String token, String extractVal) {
-        int pageNum = 0;
-        String jsonBody;
-        String endPoint = domain + "account-opening/page";
-        String authToken = "Bearer " + token;
-        String value;
-        Playwright playwright = Playwright.create();
-        APIRequestContext request = playwright.request().newContext();
-        APIResponse response;
-        do {
-            jsonBody = "{\"filter\":{},\"page\":" + pageNum + ",\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}";
-            // System.out.println(jsonBody);
-            response = request.post(
-                    endPoint,
-                    RequestOptions.create()
-                            .setHeader("Authorization", authToken)
-                            .setHeader("Content-Type", "application/json")
-                            .setData(jsonBody)
-            );
-            System.out.println(response.text());
-            value = getValFromJsonArray(response.text(), extractVal);
-            if (value == null) {
-                pageNum++;
+        String endpoint = domain + "account-opening/page";
+        try (ApiClient apiClient = new ApiClient()) {
+            for (int pageNum = 0; pageNum < MAX_PAGE_LOOKUP; pageNum++) {
+                String payload = String.format("{\"filter\":{},\"page\":%d,\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}", pageNum);
+                APIResponse response = ensureSuccess(apiClient.post(endpoint, token, payload), endpoint);
+                String value = getValFromJsonArray(response.text(), extractVal);
+                if (value != null && !value.isEmpty()) {
+                    return value;
+                }
             }
-        } while (value == null);
-        return value;
+        }
+        throw new IllegalStateException("Unable to find value for " + extractVal + " within " + MAX_PAGE_LOOKUP + " pages.");
     }
 
     public String getAoListItem(String token, String extractVal, String conditionVal, String conditionParam) {
-        int pageNum = 0;
-        String jsonBody;
-        String endPoint = domain + "account-opening/page";
-        String authToken = "Bearer " + token;
-        String value;
-        Playwright playwright = Playwright.create();
-        APIRequestContext request = playwright.request().newContext();
-        APIResponse response;
-        do {
-            jsonBody = "{\"filter\":{},\"page\":" + pageNum + ",\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}";
-            // System.out.println(jsonBody);
-            response = request.post(
-                    endPoint,
-                    RequestOptions.create()
-                            .setHeader("Authorization", authToken)
-                            .setHeader("Content-Type", "application/json")
-                            .setData(jsonBody)
-            );
-            value = getValFromJsonArray(response.text(), extractVal, conditionVal, conditionParam);
-            if (value.isEmpty()) {
-                pageNum++;
+        String endpoint = domain + "account-opening/page";
+        try (ApiClient apiClient = new ApiClient()) {
+            for (int pageNum = 0; pageNum < MAX_PAGE_LOOKUP; pageNum++) {
+                String payload = String.format("{\"filter\":{},\"page\":%d,\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}", pageNum);
+                APIResponse response = ensureSuccess(apiClient.post(endpoint, token, payload), endpoint);
+                String value = getValFromJsonArray(response.text(), extractVal, conditionVal, conditionParam);
+                if (value != null && !value.isEmpty()) {
+                    return value;
+                }
             }
-        } while (value.isEmpty());
-        return value;
+        }
+        throw new IllegalStateException("Unable to find value for " + extractVal + " within " + MAX_PAGE_LOOKUP + " pages.");
     }
 
-//    public String getAoAppClient(String token, String extractVal, String conditionVal, String conditionParam, String createType) throws IOException {
-//        int pageNum = 0;
-//        String appParam = "createdBy";
-//        String createdBy = createType.equalsIgnoreCase("app") ? "Customer" : "Admin";
-//        String jsonBody;
-//        String endPoint = domain + "account-opening/page";
-//        String authToken = "Bearer " + token;
-//        String value;
-//        Playwright playwright = Playwright.create();
-//        APIRequestContext request = playwright.request().newContext();
-//        APIResponse response;
-//        do {
-//            jsonBody = "{\"filter\":{},\"page\":" + pageNum + ",\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}";
-//            // System.out.println(jsonBody);
-//            response = request.post(
-//                    endPoint,
-//                    RequestOptions.create()
-//                            .setHeader("Authorization", authToken)
-//                            .setHeader("Content-Type", "application/json")
-//                            .setData(jsonBody)
-//            );
-//            value = getClientFromJsonArray(response.text(), extractVal, conditionVal, conditionParam, appParam, createdBy, "entity", abs.userinfoList().get("entity"));
-//            if (value.isEmpty()) {
-//                pageNum++;
-//            }
-//        } while (value.isEmpty());
-//        return value;
-//    }
-
     public String getAoClient(String token, String extractVal, String conditionVal, String conditionParam, String createType, String clientType ) throws IOException {
-        int pageNum = 0;
-        String jsonBody;
-        String createdBy = createType.equalsIgnoreCase("app") ? "Customer" : "Admin";
-        String endPoint = domain + "account-opening/page";
-        String authToken = "Bearer " + token;
-        String value;
-        Playwright playwright = Playwright.create();
-        APIRequestContext request = playwright.request().newContext();
-        APIResponse response;
-        do {
-            jsonBody = "{\"filter\":{},\"page\":" + pageNum + ",\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}";
-            // System.out.println(jsonBody);
-            response = request.post(
-                    endPoint,
-                    RequestOptions.create()
-                            .setHeader("Authorization", authToken)
-                            .setHeader("Content-Type", "application/json")
-                            .setData(jsonBody)
-            );
-            value = getClientFromJsonArray(response.text(), extractVal, conditionVal, conditionParam, "clientType", clientType, "entity", abs.userinfoList().get("entity"),createType);
-            if (value.isEmpty()) {
-                pageNum++;
+        String createdBy = createType.equalsIgnoreCase("app") ? "Customer" : "qaauto";
+        String endpoint = domain + "account-opening/page";
+        String entityCode = abs.userinfoList().get("entity");
+        try (ApiClient apiClient = new ApiClient()) {
+            for (int pageNum = 0; pageNum < MAX_PAGE_LOOKUP; pageNum++) {
+                String payload = String.format("{\"filter\":{},\"page\":%d,\"size\":10,\"sort\":[{\"by\":\"createdDate\",\"asc\":false}]}", pageNum);
+                APIResponse response = ensureSuccess(apiClient.post(endpoint, token, payload), endpoint);
+                String value = getClientFromJsonArray(response.text(), extractVal, conditionVal, conditionParam, "clientType", clientType, "entity", entityCode, createdBy);
+                if (value != null && !value.isEmpty()) {
+                    return value;
+                }
             }
-        } while (value.isEmpty());
-        return value;
+        }
+        throw new IllegalStateException("Unable to find client for " + extractVal + " within " + MAX_PAGE_LOOKUP + " pages.");
     }
 
     public void setParamVal(String param, String value) {
         switch (param) {
             case "clientType":
                 clientType = value;
+                break;
             case "status":
                 status = value;
+                break;
+            default:
+                break;
         }
     }
 
@@ -274,47 +253,31 @@ public class CoreService {
                 default -> "";
             };
         }
-        return null;
+        return "";
     }
 
     public String getTradeGroupInfo(String extractVal, String token) {
-        String endPoint = getCrmDomain(entity, env) + "admin-portal/api/user/referral-code/trading-group";
-        String authToken = "Bearer " + token;
-        String jsonBody;
-        Playwright playwright = Playwright.create();
-        APIRequestContext request = playwright.request().newContext();
-        APIResponse response;
-        jsonBody = "{\"code\":\"\"}";
-        // System.out.println(jsonBody);
-        response = request.post(
-                endPoint,
-                RequestOptions.create()
-                        .setHeader("Authorization", authToken)
-                        .setHeader("Content-Type", "application/json")
-                        .setHeader("Key", "YXBpZ2F0ZXdheTpwYXNzd29yZA==")
-                        .setData(jsonBody)
-        );
-        return parseJson(response.text(), extractVal);
+        String endpoint = getCrmDomain(entity, env) + "admin-portal/api/user/referral-code/trading-group";
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Key", "YXBpZ2F0ZXdheTpwYXNzd29yZA==");
+        try (ApiClient apiClient = new ApiClient()) {
+            APIResponse response = ensureSuccess(apiClient.post(endpoint, token, "{\"code\":\"\"}", headers), endpoint);
+            return parseJson(response.text(), extractVal);
+        }
     }
 
     public String getTradeGroupInfoBasedOnEntity(String extractVal, String token, String entity) {
-        String endPoint = getCrmDomain(entity, env) + "admin-portal/api/user/referral-code/trading-group";
-        String authToken = "Bearer " + token;
-        String jsonBody;
-        Playwright playwright = Playwright.create();
-        APIRequestContext request = playwright.request().newContext();
-        APIResponse response;
-        jsonBody = "{\"code\":\""+abs.setIBCode(entity)+"\"}";
-        response = request.post(
-                endPoint,
-                RequestOptions.create()
-                        .setHeader("Authorization", authToken)
-                        .setHeader("Content-Type", "application/json")
-                        .setHeader("Key", "YXBpZ2F0ZXdheTpwYXNzd29yZA==")
-                        .setData(jsonBody)
-        );
-        return parseJson(response.text(), extractVal);
+        String endpoint = getCrmDomain(entity, env) + "admin-portal/api/user/referral-code/trading-group";
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Key", "YXBpZ2F0ZXdheTpwYXNzd29yZA==");
+        String payload = "{\"code\":\"" + abs.setIBCode(entity) + "\"}";
+        try (ApiClient apiClient = new ApiClient()) {
+            APIResponse response = ensureSuccess(apiClient.post(endpoint, token, payload, headers), endpoint);
+            return parseJson(response.text(), extractVal);
+        }
     }
 
 
 }
+
+

@@ -46,6 +46,7 @@ public class ApplicationListPagePW {
     }
 
     public Locator getMenuText() {
+        abs.waitForLocatorVisible(menuTitle);
         return this.menuTitle;
     }
 
