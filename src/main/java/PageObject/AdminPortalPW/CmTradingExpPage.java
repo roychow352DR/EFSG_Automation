@@ -79,7 +79,9 @@ public class CmTradingExpPage {
             abs.selectUnselectedDropdownOption();
             return getFieldValByLabel(dropdownName);
         }
-        return dropdownName;
+        else {
+            return "Empty Input Value return";
+        }
     }
 
     public Locator getDropdown(String fieldName) {

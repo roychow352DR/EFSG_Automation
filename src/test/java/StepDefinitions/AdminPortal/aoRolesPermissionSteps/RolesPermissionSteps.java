@@ -39,7 +39,7 @@ public class RolesPermissionSteps extends BaseTest {
 
     @When("the user clicks button {string} on the ao role and permission page")
     public void the_user_clicks_button_on_the_ao_role_and_permission_page(String buttonText) {
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        page.waitForTimeout(5000);
         aopoManager.getAoRolesPermissionPage().clickBtnByText(buttonText);
     }
 
