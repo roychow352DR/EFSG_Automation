@@ -172,8 +172,6 @@ public class SQLDatabase {
      * Note: To add new allowed query patterns, add new QueryShape entries to this list.
      * The current allowed patterns are:
      * - person_email table: select profile_id where email_addr = ?
-     * - product_user table: select account_id where profile_id = ?
-     * - product_user table: select person_id where profile_id = ?
      */
     private List<QueryShape> buildAllowedQueries() {
         List<QueryShape> queries = new ArrayList<>();
@@ -181,6 +179,9 @@ public class SQLDatabase {
         queries.add(new QueryShape("product_user", "account_id", "profile_id"));
         queries.add(new QueryShape("product_user", "person_id", "profile_id"));
         queries.add(new QueryShape("trade","status","account_id"));
+        queries.add(new QueryShape("authentication","username","person_id"));
+        queries.add(new QueryShape("trade","settlement_currency","account_id"));
+        queries.add(new QueryShape("person_phone","phone_num","profile_id"));
         return queries;
     }
 
