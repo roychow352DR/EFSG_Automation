@@ -4,6 +4,7 @@ import Data.QASEConfig;
 import Data.GlobalConfig;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.options.LoadState;
+import io.appium.java_client.InteractsWithApps;
 import io.cucumber.java.*;
 import utils.BaseTest;
 import utils.VideoRecorder;
@@ -107,9 +108,8 @@ public class Hooks extends BaseTest {
      * Handles video recording based on product type
      */
     private void handleVideoRecording(Scenario scenario) throws IOException {
-        if (product.equalsIgnoreCase("app")) {
             videoFile = videoFileCreation(scenario.getName(), driver);
-        }
+            videoPath = videoFile.toPath();
     }
 
     /**
@@ -118,6 +118,8 @@ public class Hooks extends BaseTest {
     private void cleanupDriver() {
         try {
             if (driver != null) {
+                InteractsWithApps appDriver = (InteractsWithApps) driver;
+                appDriver.terminateApp(appConfig.getAndroidPackage());
                 driver.quit();
             }
         } catch (Exception e) {
@@ -131,15 +133,9 @@ public class Hooks extends BaseTest {
     private void reportTestResult(Scenario scenario, Path videoPath) throws IOException, InterruptedException {
         boolean isPassed = !scenario.isFailed();
         String videoFileName;
-        // if (actualVideoFileName(scenario.getName()).exists() && ! product.equalsIgnoreCase("app"))
-        if (videoPath.toFile().exists() && !product.equalsIgnoreCase("app")) {
-            // videoFileName = actualVideoFileName(scenario.getName()).getName();
-            videoFileName = convertVideoFileFormat(videoPath, scenario.getName()).getName();
-        } else if (product.equalsIgnoreCase("app")) {
-            videoFileName = videoFile.getName();
-        } else {
-            videoFileName = "";
-        }
+
+        videoFileName = convertVideoFileFormat(videoPath, scenario.getName()).getName();
+
         String videoDirectory = !videoFileName.isEmpty() && !product.equalsIgnoreCase("app")
                 ? globalConfig.getDirectory().get("PW_VIDEO_DIRECTORY")
                 : globalConfig.getDirectory().get("APP_VIDEO_DIRECTORY");
@@ -242,8 +238,15 @@ public class Hooks extends BaseTest {
 
     @After
     public void tearDown(Scenario scenario) throws IOException, InterruptedException {
-        resetToHome();
-        cleanupPWSession();
+        if (productType.equalsIgnoreCase("app")) {
+            handleVideoRecording(scenario);
+            cleanupDriver();
+            waitForVideoProcessing();
+        }
+        else {
+            resetToHome();
+            cleanupPWSession();
+        }
         reportTestResult(scenario, videoPath);
         cleanupMediaFiles();
     }
