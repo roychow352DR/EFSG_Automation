@@ -8,9 +8,8 @@ import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
 public class BiometricsPage {
-    AppiumDriver driver;
-    MobileAbstractComponents abs;
-    AppHomePage appHomePage;
+    private final AppiumDriver driver;
+    private final MobileAbstractComponents abs;
 
     public BiometricsPage(AppiumDriver driver){
 
