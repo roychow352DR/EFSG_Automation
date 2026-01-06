@@ -6,7 +6,7 @@ import com.microsoft.playwright.options.LoadState;
 
 public class AdminLoginPagePW {
 
-    private  final Page page;
+    private final Page page;
     public final Locator userNameField;
     public final Locator passwordField;
     public final Locator loginButton;

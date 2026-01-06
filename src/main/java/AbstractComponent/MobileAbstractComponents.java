@@ -5,11 +5,15 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.ios.IOSDriver;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.interactions.PointerInput;
+import org.openqa.selenium.interactions.Sequence;
 import org.openqa.selenium.remote.RemoteWebElement;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,30 +27,30 @@ public class MobileAbstractComponents {
 
     public void swipeAction(WebElement ele, String direction, int swipeCount) throws InterruptedException {
         int canSwipe = 1;
-        
+
         do {
             if (driver instanceof IOSDriver) {
                 // iOS swipe implementation
                 Map<String, Object> params = new HashMap<>();
                 params.put("direction", direction.toLowerCase());
                 params.put("element", ((RemoteWebElement) ele).getId());
-                
+
                 // iOS specific parameters
                 Map<String, Object> options = new HashMap<>();
                 options.put("duration", 0.5); // Duration in seconds
                 options.put("velocity", 1000); // Velocity in points per second
                 params.put("options", options);
-                
+
                 ((JavascriptExecutor) driver).executeScript("mobile: swipe", params);
             } else {
                 // Android swipe implementation
                 ((JavascriptExecutor) driver).executeScript("mobile: swipeGesture", ImmutableMap.of(
-                    "elementId", ((RemoteWebElement) ele).getId(),
-                    "direction", direction,
-                    "percent", 0.75
+                        "elementId", ((RemoteWebElement) ele).getId(),
+                        "direction", direction,
+                        "percent", 0.75
                 ));
             }
-            
+
             canSwipe++;
             Thread.sleep(500); // Small delay between swipes
         } while (canSwipe < swipeCount);
@@ -57,15 +61,15 @@ public class MobileAbstractComponents {
      */
     public void swipeActionIOS(WebElement ele, String direction, int swipeCount) throws InterruptedException {
         int canSwipe = 0;
-        
+
         do {
             // Get element location and size
             Point location = ele.getLocation();
             Dimension size = ele.getSize();
-            
+
             // Calculate start and end points based on direction
             int startX, startY, endX, endY;
-            
+
             switch (direction.toLowerCase()) {
                 case "up":
                     startX = location.getX() + size.getWidth() / 2;
@@ -94,15 +98,15 @@ public class MobileAbstractComponents {
                 default:
                     throw new IllegalArgumentException("Invalid direction: " + direction);
             }
-            
+
             // Create and perform the swipe action
             Actions actions = new Actions(driver);
             actions.moveToElement(ele, startX - location.getX(), startY - location.getY())
-                   .clickAndHold()
-                   .moveByOffset(endX - startX, endY - startY)
-                   .release()
-                   .perform();
-            
+                    .clickAndHold()
+                    .moveByOffset(endX - startX, endY - startY)
+                    .release()
+                    .perform();
+
             canSwipe++;
             Thread.sleep(500); // Small delay between swipes
         } while (canSwipe < swipeCount);
@@ -146,6 +150,43 @@ public class MobileAbstractComponents {
         }
         return false;
     }
+
+    public void swipeUp(AppiumDriver driver) {
+        Dimension size = driver.manage().window().getSize();
+        int width = size.getWidth();
+        int height = size.getHeight();
+
+        int startX = width / 2;
+        int startY = (int) (height * 0.8);
+        int endY = (int) (height * 0.2);
+
+        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+        Sequence swipe = new Sequence(finger, 1);
+
+        swipe.addAction(finger.createPointerMove(Duration.ZERO,
+                PointerInput.Origin.viewport(), startX, startY));
+        swipe.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+        swipe.addAction(finger.createPointerMove(Duration.ofMillis(700),
+                PointerInput.Origin.viewport(), startX, endY));
+        swipe.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+
+        driver.perform(Collections.singletonList(swipe));
     }
+
+    public void swipeUntilElementVisible(AppiumDriver driver, WebElement element, int maxSwipes) {
+        for (int i = 0; i < maxSwipes; i++) {
+            try {
+                if (element.isDisplayed()) {
+                    return;
+                }
+            } catch (Exception e) {
+                // element not yet present / stale etc.
+            }
+            swipeUp(driver);
+        }
+        throw new RuntimeException("Element not visible after " + maxSwipes + " swipes");
+    }
+
+}
 
 

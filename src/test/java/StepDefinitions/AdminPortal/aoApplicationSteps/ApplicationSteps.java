@@ -28,8 +28,6 @@ public class ApplicationSteps extends BaseTest {
     public ApplicationListPage applicationPage;
     public ApplicantInformationPage applicationInfoPage;
     public PersonalInfoPage personalInfoPage;
-    public ContactInfoPage contactInfoPage;
-    public EmployeeFinancialPage employeeFinancialPage;
     public TradingExperiencePage tradingExperiencePage;
     public CoreService coreService;
     public SQLDatabase sqlDb ;
@@ -37,8 +35,6 @@ public class ApplicationSteps extends BaseTest {
 
     public void objectInit() throws IOException {
         aopoManager = new AOPOManager(page);
-       // coreService = new CoreService(page, productEnv);
-        //sqlDb = new SQLDatabase();
         sqlDb = new SQLDatabase();
         accountAction = new AoAccountCreation(aopoManager);
         coreService = new CoreService(page, productEnv);
