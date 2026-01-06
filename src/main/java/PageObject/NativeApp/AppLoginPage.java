@@ -11,14 +11,13 @@ import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
 public class AppLoginPage {
-    AppiumDriver driver;
-    BiometricsPage biometricsPage;
-    MobileAbstractComponents abs;
+    private final AppiumDriver driver;
+    public BiometricsPage biometricsPage;
+    private final MobileAbstractComponents abs;
 
-    public AppLoginPage(AppiumDriver driver)
-    {
+    public AppLoginPage(AppiumDriver driver) {
         this.driver = driver;
-        PageFactory.initElements(driver,this);
+        PageFactory.initElements(driver, this);
         abs = new MobileAbstractComponents(driver);
     }
 
@@ -49,37 +48,33 @@ public class AppLoginPage {
     public BiometricsPage clickLogin() {
         if (driver instanceof AndroidDriver) {
             loginButtonAndroid.click();
-        }
-        else {
+        } else {
             loginButtonIos.click();
         }
         biometricsPage = new BiometricsPage(driver);
         return biometricsPage;
     }
 
-    public void fillCredential(String email,String password) throws InterruptedException {
+    public void fillCredential(String email, String password) throws InterruptedException {
         if (driver instanceof AndroidDriver) {
             emailFieldAndroid.sendKeys(email);
             passwordFieldAndroid.sendKeys(password);
-        }
-        else {
+        } else {
             // avoid typo
             for (char c : email.toCharArray()) {
                 emailFieldIos.sendKeys(String.valueOf(c));
-               //Thread.sleep(1);
+                //Thread.sleep(1);
             }
             passwordFieldIos.sendKeys(password);
             passwordFieldIos.sendKeys(Keys.RETURN);
         }
     }
 
-    public boolean loginPageValidation()
-    {
+    public boolean loginPageValidation() {
         if (driver instanceof AndroidDriver) {
             abs.waitUtilElementFind(loginTitleAndroid);
             return loginTitleAndroid.isDisplayed();
-        }
-        else {
+        } else {
             abs.waitUtilElementFind(loginTitleIos);
             return loginTitleIos.isDisplayed();
         }

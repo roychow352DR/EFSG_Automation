@@ -4,7 +4,6 @@ import PageObject.AdminPortal.ApplicationListPage;
 import PageObject.AdminPortal.AdminLoginPage;
 import PageObject.AdminPortalPW.AOPOManager;
 import PageObject.NativeApp.AppLoginPage;
-import PageObject.NativeApp.WelcomePage;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.*;
@@ -25,6 +24,7 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import utils.app.AppConfig;
 import utils.app.MobileDriver;
 import utils.app.MobilePlatform;
 
@@ -54,6 +54,7 @@ public class BaseTest {
     public static Page page;
     public static BrowserContext context;
     public static Browser browser;
+    public static AppiumDriver appDriver;
 
     // Page Object instances
     public AdminLoginPage login;
@@ -74,6 +75,7 @@ public class BaseTest {
     public static UiAutomator2Options options;
     public MobilePlatform mobilePlatform;
     public MobileDriver mobileDriver;/**/
+    public static AppConfig appConfig;
 
     public boolean isBelow18;
     public boolean isExistedEmail;
@@ -99,7 +101,6 @@ public class BaseTest {
         mobilePlatform = new MobilePlatform();
         String path = "//src//main//java//DataResources//GlobalData.properties";
 
-
         // Get product type from system property or config file
         productType = System.getProperty("product") != null ?
                 System.getProperty("product") : getProperty(path, "product");
@@ -112,6 +113,9 @@ public class BaseTest {
         productEnv = System.getProperty("env") != null ?
                 System.getProperty("env") : getProperty(path, "env");
 
+        // Get App path,package
+        appConfig = new AppConfig(productEntity,productEnv);
+
 
         try {
             if (!productType.equalsIgnoreCase("app")) {
@@ -119,11 +123,11 @@ public class BaseTest {
                 browserType = System.getProperty("browser") != null ?
                         System.getProperty("browser") : getProperty(path, "browser");
                 driver = setBrowserDriver(browserType);
-                driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
+                driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(50));
                 driver.get(setDomain(productEnv, productType, productEntity));
             } else if (mobilePlatform.getPlatform().equalsIgnoreCase("ANDROID")) {
                 // Initialize Android driver
-                driver = mobileDriver.initializeAndroidDriver();
+                driver = mobileDriver.initializeAndroidDriver(appConfig.getAndroidAppPath(),appConfig.getAndroidPackage());
                 ((CanRecordScreen) driver).startRecordingScreen();
             } else if (mobilePlatform.getPlatform().equalsIgnoreCase("IOS")) {
                 // Initialize iOS driver
@@ -359,7 +363,11 @@ public class BaseTest {
      * Creates and saves a video recording of the test
      */
     public static File videoFileCreation(String appVideoName, WebDriver driver) throws IOException {
-        File appVideoRecordingFileDir = createFolder("app_Video");
+        //File appVideoRecordingFileDir = createFolder("app_videos");
+        File appVideoRecordingFileDir = new File("./app_videos");
+        if (!appVideoRecordingFileDir.exists()) {
+            appVideoRecordingFileDir.mkdirs(); // Create directory if it doesn't exist
+        }
         File videoFile = new File(appVideoRecordingFileDir, appVideoName + ".mp4");
 
         String base64Video = ((CanRecordScreen) driver).stopRecordingScreen();
@@ -437,9 +445,14 @@ public class BaseTest {
      *
      * @return
      */
-    public WelcomePage launchApp() throws IOException, InterruptedException {
+//    public WelcomePage launchApp() throws IOException, InterruptedException {
+//        AppiumDriver driver = (AppiumDriver) initializeDriver();
+//        return new WelcomePage(driver);
+//    }
+
+    public AppiumDriver initAppDriver() throws IOException, InterruptedException {
         AppiumDriver driver = (AppiumDriver) initializeDriver();
-        return new WelcomePage(driver);
+        return driver;
     }
 
     /**
