@@ -4,6 +4,7 @@ import com.microsoft.playwright.options.LoadState;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import okio.JvmSystemFileSystem;
 import org.testng.Assert;
 import utils.BaseTest;
 import utils.SetCondition;
@@ -179,6 +180,7 @@ public class CMSteps extends BaseTest {
 
     @Then("the user sees text field {string} value is updated on the CM trading experience page")
     public void the_user_sees_text_field_value_is_updated_on_the_CM_trading_experience_page(String textFieldName) {
+        page.waitForTimeout(5000);
         Assert.assertEquals(aopoManager.getCmTradingExpPage().getFieldValByLabel(textFieldName), getRetrievedData());
     }
 
