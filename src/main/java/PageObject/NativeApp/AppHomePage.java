@@ -36,6 +36,9 @@ public class AppHomePage {
     @FindBy(xpath = "//android.widget.FrameLayout[@resource-id=\"android:id/content\"]/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.View/android.view.View[4]/android.view.ViewGroup")
     WebElement meButtonAos;
 
+    @FindBy(xpath = "//android.widget.TextView[@text=\"Markets\"]")
+    WebElement marketsButtonAos;
+
     public boolean buttonValidation() {
         if (driver instanceof AndroidDriver) {
             abs.waitUtilElementFind(applicationButtonAos);
@@ -67,6 +70,7 @@ public class AppHomePage {
 
     public boolean bottomButtonIsTapped() {
         if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementFind(homeButtonAos);
             return homeButtonAos.isEnabled();
         } else {
             applicationButtonIos.click();
@@ -88,7 +92,7 @@ public class AppHomePage {
             switch (buttonName) {
                 case "Me" -> meButtonAos.click();
                 case "Home" -> applicationButtonAos.click();
-                case "Markets" -> applicationButtonAos.click();
+                case "Markets" -> marketsButtonAos.click();
                 case "Portfolio" -> applicationButtonAos.click();
                 default -> System.out.println("Button not found");
             }
