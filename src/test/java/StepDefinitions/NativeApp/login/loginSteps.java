@@ -35,6 +35,12 @@ public class loginSteps extends BaseTest {
         Assert.assertTrue(appPOManager.getAppLoginPage().loginPageValidation());
     }
 
+    @Given("the user lands on the app sign up page")
+    public void the_user_lands_on_the_app_sign_up_page() throws InterruptedException {
+        appPOManager.getAppHomePage().navigateToSignupPage();
+        Assert.assertTrue(appPOManager.getAppSignupPage().getSignupPageTitle());
+    }
+
     @When("the user fills email and password on App login page")
     public void the_user_fills_email_and_password_on_App_login_page() throws InterruptedException {
         AppCredential credential = new AppCredential(productEntity);
