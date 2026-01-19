@@ -28,6 +28,10 @@ public class AppMePage {
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[1]")
     WebElement confirmButton;
 
+    @FindBy(xpath = "//android.widget.FrameLayout[@resource-id=\"android:id/content\"]//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[3]/android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup[1]")
+    WebElement applicationButtonAos;
+
+
     public boolean getTradeAccountLabel() {
         if (driver instanceof AndroidDriver) {
             abs.waitUtilElementFind(tradeAccountLabelAos);
@@ -47,10 +51,17 @@ public class AppMePage {
                     abs.waitUtilElementFind(confirmButton);
                     confirmButton.click();
                 }
+                case "Open a Live Trading Accounts" -> {
+                    abs.waitUtilElementFind(applicationButtonAos);
+                    applicationButtonAos.click();
+                }
                 default -> System.out.println("Button not found");
             }
         }
+    }
 
+    public WebElement getUsername(String username){
+        return driver.findElement(By.xpath("//android.widget.TextView[@text=\""+username+"\"]"));
     }
 
 }

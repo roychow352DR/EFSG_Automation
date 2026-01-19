@@ -9,6 +9,11 @@ public class AppPOManager {
     private final AppHomePage appHomePage;
     private final AppSignupPage appSignupPage;
     private final AppMePage appMePage;
+    private final AppMarketsPage appMarketsPage;
+    private final AppFooter appFooter;
+    private final AppClientAgreementPage appClientAgreementPage;
+    private final AppPortfolioPage appPortfolioPage;
+    private final AppTradeView appTradeView;
 
     public AppPOManager(AppiumDriver driver) {
         this.appLoginPage = new AppLoginPage(driver);
@@ -16,6 +21,11 @@ public class AppPOManager {
         this.appHomePage = new AppHomePage(driver);
         this.appSignupPage = new AppSignupPage(driver);
         this.appMePage = new AppMePage(driver);
+        this.appMarketsPage = new AppMarketsPage(driver);
+        this.appFooter = new AppFooter(driver);
+        this.appClientAgreementPage = new AppClientAgreementPage(driver);
+        this.appPortfolioPage = new AppPortfolioPage(driver);
+        this.appTradeView = new AppTradeView(driver);
     }
 
     public AppLoginPage getAppLoginPage() {
@@ -36,6 +46,26 @@ public class AppPOManager {
 
     public AppMePage getAppMePage() {
         return appMePage;
+    }
+
+    public AppMarketsPage getAppMarketsPage() {
+        return appMarketsPage;
+    }
+
+    public AppFooter getAppFooter() {
+        return appFooter;
+    }
+
+    public AppClientAgreementPage getAppClientAgreementPage() {
+        return appClientAgreementPage;
+    }
+
+    public AppPortfolioPage getAppPortfolioPage() {
+        return appPortfolioPage;
+    }
+
+    public AppTradeView getAppTradeView() {
+        return appTradeView;
     }
 
 }
