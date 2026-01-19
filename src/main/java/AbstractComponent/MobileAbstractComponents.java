@@ -2,8 +2,16 @@ package AbstractComponent;
 
 import com.google.common.collect.ImmutableMap;
 import io.appium.java_client.AppiumDriver;
+import io.appium.java_client.PerformsTouchActions;
+import io.appium.java_client.TouchAction;
+import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.android.nativekey.AndroidKey;
+import io.appium.java_client.android.nativekey.KeyEvent;
 import io.appium.java_client.ios.IOSDriver;
+import io.appium.java_client.touch.offset.PointOption;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.openqa.selenium.*;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.PointerInput;
 import org.openqa.selenium.interactions.Sequence;
@@ -11,11 +19,10 @@ import org.openqa.selenium.remote.RemoteWebElement;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.BaseTest;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class MobileAbstractComponents {
     static AppiumDriver driver;
@@ -23,6 +30,10 @@ public class MobileAbstractComponents {
 
     public MobileAbstractComponents(AppiumDriver driver) {
         this.driver = driver;
+    }
+
+    public enum Direction {
+        UP, DOWN, LEFT, RIGHT
     }
 
     public void swipeAction(WebElement ele, String direction, int swipeCount) throws InterruptedException {
@@ -166,7 +177,7 @@ public class MobileAbstractComponents {
         swipe.addAction(finger.createPointerMove(Duration.ZERO,
                 PointerInput.Origin.viewport(), startX, startY));
         swipe.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-        swipe.addAction(finger.createPointerMove(Duration.ofMillis(700),
+        swipe.addAction(finger.createPointerMove(Duration.ofMillis(400),
                 PointerInput.Origin.viewport(), startX, endY));
         swipe.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
 
@@ -185,6 +196,173 @@ public class MobileAbstractComponents {
             swipeUp(driver);
         }
         throw new RuntimeException("Element not visible after " + maxSwipes + " swipes");
+    }
+
+    public HashMap<String, String> userInfo() {
+        int randomPhoneNo = (int) (Math.random() * 10000001);
+        int randomEmailSeed = (int) (Math.random() * 10001);
+        HashMap<String, String> userInfo = new HashMap<>();
+        userInfo.put("username", randomString(10));
+        userInfo.put("password", "Test1234@");
+        userInfo.put("phone", Integer.toString(randomPhoneNo));
+        userInfo.put("email", "qaautoapp" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
+        return userInfo;
+    }
+
+    public String randomString(int length) {
+        char letter = RandomStringUtils.randomAlphabetic(1).charAt(0);
+        char digit = RandomStringUtils.randomNumeric(1).charAt(0);
+        String combinedString = "" + letter + digit + RandomStringUtils.randomAlphanumeric(length - 2);
+
+        List<Character> characters = new ArrayList<>();
+        for (char c : combinedString.toCharArray()) {
+            characters.add(c);
+        }
+
+        Collections.shuffle(characters);
+
+        StringBuilder shuffledString = new StringBuilder();
+        for (char c : characters) {
+            shuffledString.append(c);
+        }
+
+        return shuffledString.toString();
+    }
+
+    private static AndroidKey mapCharToAndroidKey(char c) {
+        return switch (c) {
+            case 'a', 'A' -> AndroidKey.A;
+            case 'u', 'U' -> AndroidKey.U;
+            case 't', 'T' -> AndroidKey.T;
+            case 'o', 'O' -> AndroidKey.O;
+            case 'l', 'L' -> AndroidKey.L;
+            case '0' -> AndroidKey.DIGIT_0;
+            case '1' -> AndroidKey.DIGIT_1;
+            case '2' -> AndroidKey.DIGIT_2;
+            case '3' -> AndroidKey.DIGIT_3;
+            case '4' -> AndroidKey.DIGIT_4;
+            case '5' -> AndroidKey.DIGIT_5;
+            case '6' -> AndroidKey.DIGIT_6;
+            case '7' -> AndroidKey.DIGIT_7;
+            case '8' -> AndroidKey.DIGIT_8;
+            case '9' -> AndroidKey.DIGIT_9;
+            default -> throw new IllegalArgumentException("Unsupported character for typing: " + c);
+        };
+    }
+
+    public void typeWithAndroidKeys(AndroidDriver driver, WebElement element, String text) {
+        // Focus the field first
+        element.click();
+
+        for (char c : text.toCharArray()) {
+            AndroidKey key = mapCharToAndroidKey(c);
+            driver.pressKey(new KeyEvent(key));
+        }
+        driver.pressKey(new KeyEvent(AndroidKey.ENTER));
+    }
+
+    public void tapEmptySpace(AppiumDriver driver) {
+        Dimension size = driver.manage().window().getSize();
+        int x = size.getWidth() / 2;
+        int y = (int) (size.getHeight() * 0.8);
+
+        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+        Sequence tap = new Sequence(finger, 1);
+
+        tap.addAction(finger.createPointerMove(
+                Duration.ZERO,
+                PointerInput.Origin.viewport(),
+                x,
+                y
+        ));
+        tap.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+        tap.addAction(finger.createPointerMove(
+                Duration.ofMillis(100),
+                PointerInput.Origin.viewport(),
+                x,
+                y
+        ));
+        tap.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+
+        driver.perform(Collections.singletonList(tap));
+    }
+
+    public void swipe(AppiumDriver driver, Direction direction, int durationMs) {
+        Dimension size = driver.manage().window().getSize();
+
+        int startX, startY, endX, endY;
+
+        switch (direction) {
+            case UP:
+                // swipe from bottom to top
+                startX = size.getWidth() / 2;
+                startY = (int) (size.getHeight() * 0.8);
+                endX   = startX;
+                endY   = (int) (size.getHeight() * 0.2);
+                break;
+
+            case DOWN:
+                // swipe from top to bottom
+                startX = size.getWidth() / 2;
+                startY = (int) (size.getHeight() * 0.2);
+                endX   = startX;
+                endY   = (int) (size.getHeight() * 0.8);
+                break;
+
+            case LEFT:
+                // swipe from right to left
+                startY = size.getHeight() / 2;
+                startX = (int) (size.getWidth() * 0.8);
+                endX   = (int) (size.getWidth() * 0.2);
+                endY   = startY;
+                break;
+
+            case RIGHT:
+                // swipe from left to right
+                startY = size.getHeight() / 2;
+                startX = (int) (size.getWidth() * 0.2);
+                endX   = (int) (size.getWidth() * 0.8);
+                endY   = startY;
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unsupported direction: " + direction);
+        }
+
+        performSwipe(driver, startX, startY, endX, endY, durationMs);
+    }
+
+    private static void performSwipe(AppiumDriver driver,
+                                     int startX, int startY,
+                                     int endX, int endY,
+                                     int durationMs) {
+
+        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+        Sequence swipe = new Sequence(finger, 1);
+
+        // Move finger to the start position
+        swipe.addAction(finger.createPointerMove(
+                Duration.ZERO,
+                PointerInput.Origin.viewport(),
+                startX,
+                startY
+        ));
+
+        // Finger down
+        swipe.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+
+        // Move to end position over the given duration
+        swipe.addAction(finger.createPointerMove(
+                Duration.ofMillis(durationMs),
+                PointerInput.Origin.viewport(),
+                endX,
+                endY
+        ));
+
+        // Finger up
+        swipe.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+
+        driver.perform(Collections.singletonList(swipe));
     }
 
 }
