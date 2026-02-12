@@ -297,32 +297,32 @@ public class MobileAbstractComponents {
                 // swipe from bottom to top
                 startX = size.getWidth() / 2;
                 startY = (int) (size.getHeight() * 0.8);
-                endX   = startX;
-                endY   = (int) (size.getHeight() * 0.2);
+                endX = startX;
+                endY = (int) (size.getHeight() * 0.2);
                 break;
 
             case DOWN:
                 // swipe from top to bottom
                 startX = size.getWidth() / 2;
                 startY = (int) (size.getHeight() * 0.2);
-                endX   = startX;
-                endY   = (int) (size.getHeight() * 0.8);
+                endX = startX;
+                endY = (int) (size.getHeight() * 0.8);
                 break;
 
             case LEFT:
                 // swipe from right to left
                 startY = size.getHeight() / 2;
                 startX = (int) (size.getWidth() * 0.8);
-                endX   = (int) (size.getWidth() * 0.2);
-                endY   = startY;
+                endX = (int) (size.getWidth() * 0.2);
+                endY = startY;
                 break;
 
             case RIGHT:
                 // swipe from left to right
                 startY = size.getHeight() / 2;
                 startX = (int) (size.getWidth() * 0.2);
-                endX   = (int) (size.getWidth() * 0.8);
-                endY   = startY;
+                endX = (int) (size.getWidth() * 0.8);
+                endY = startY;
                 break;
 
             default:
@@ -364,7 +364,6 @@ public class MobileAbstractComponents {
 
         driver.perform(Collections.singletonList(swipe));
     }
-
 }
 
 

@@ -12,7 +12,7 @@ import java.io.IOException;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 public class MIOLoginSteps extends BaseTest {
-    public MIOPOManager mioPoManager;
+    public static MIOPOManager mioPoManager;
     @Given("the user lands on MIO Admin Portal login page")
     public void the_user_lands_on_MIO_Admin_Portal_login_page() throws IOException, InterruptedException {
         page = initializePage();
