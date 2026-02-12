@@ -20,6 +20,7 @@ public class AdminLoginPagePW {
         this.loginButton = page.locator(".css-1m4mrb3-root-contained-root-contained");
         this.invalidErrorText = page.getByText("Invalid username or password.", new Page.GetByTextOptions().setExact(true));
         this.suspendErrorText = page.getByText("User account is suspended! Please contact administration", new Page.GetByTextOptions().setExact(true));
+
     }
     public void fillCredential(String username,String password) {
         userNameField.fill(username);

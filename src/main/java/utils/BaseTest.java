@@ -194,6 +194,7 @@ public class BaseTest {
             return switch (env) {
                 case "bausit" -> "https://d27ekljjcs6mcs.cloudfront.net/login";
                 case "bauuat" -> "https://d27ekljjcs6mcs.cloudfront.net/login";
+                case "mt5uat" -> "https://uat-mt5mio-ap.empfs.net/login";
                 default -> throw new IllegalArgumentException("Invalid environment: " + env);
             };
         }

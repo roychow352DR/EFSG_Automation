@@ -10,7 +10,15 @@ Feature: Native App AO Application
       And the user taps button "Markets" on the app footer
       When the user taps symbol "XAUUSD" on the app markets page
       And the user selects direction "BUY" on the app trade view
+      And the user fills in the text field "Lot Size" with value "0.5" on the app trade view
       And the user switches on take profit and stop loss on the app trade view
-      Then the user sees client agreement page
+      And the user fills in the text field "Stop Loss" with direction "BUY" on the app trade view
+      And the user fills in the text field "Take Profit" with direction "BUY" on the app trade view
+      And the user taps button "BUY" on the app trade view
+      Then the user sees the value "Stop Loss Price" is displayed correctly with the user input value on the confirmation pop up
+      And the user sees the value "Take Profit Price" is displayed correctly with the user input value on the confirmation pop up
+      And the user sees the value "Direction" is displayed correctly with the user input value on the confirmation pop up
+      And the user sees the value "Volume" is displayed correctly with the user input value on the confirmation pop up
+
 
 
