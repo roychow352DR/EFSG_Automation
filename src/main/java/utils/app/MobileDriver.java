@@ -57,12 +57,12 @@ public class MobileDriver {
         try {
             WebDriverWait wait = new WebDriverWait(driver, timeout);
             String loadingIndicator = driver instanceof IOSDriver ? IOS_LOADING_INDICATOR : ANDROID_LOADING_INDICATOR;
-            
+
             try {
                 // Wait for loading indicator to be visible (with shorter timeout)
                 WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(5));
                 shortWait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(loadingIndicator)));
-                
+
                 // Then wait for it to disappear
                 wait.until(ExpectedConditions.invisibilityOfElementLocated(By.xpath(loadingIndicator)));
                 return true;
@@ -92,7 +92,7 @@ public class MobileDriver {
             // We avoid doing any driver operations here that might cause session loss
             System.out.println("Waiting for app to launch...");
             Thread.sleep(5000);
-            
+
             // Note: We intentionally skip active readiness checks here to avoid session loss.
             // The actual test steps will handle element finding and readiness verification.
             // This approach is safer as it doesn't perform operations that might invalidate the session.
@@ -156,7 +156,7 @@ public class MobileDriver {
             try {
                 var state = apps.queryAppState(appPackage);
                 System.out.println("Android app state: " + state);
-                
+
                 // If app is not running or is in background, activate it
                 if (state.name().contains("NOT_RUNNING") || state.name().contains("RUNNING_IN_BACKGROUND")) {
                     System.out.println("App is not in foreground, activating app: " + appPackage);
@@ -177,15 +177,15 @@ public class MobileDriver {
                         }
                     }
                 }
-                
+
                 // Wait for app to be in RUNNING state (foreground)
                 new WebDriverWait(driver, timeout)
                         .until(d -> {
                             try {
                                 var currentState = apps.queryAppState(appPackage);
                                 System.out.println("Android app state: " + currentState);
-                                return currentState.name().contains("RUNNING") && 
-                                       !currentState.name().contains("BACKGROUND");
+                                return currentState.name().contains("RUNNING") &&
+                                        !currentState.name().contains("BACKGROUND");
                             } catch (Exception e) {
                                 System.err.println("Error querying Android app state: " + e.getMessage());
                                 return false;
@@ -259,7 +259,7 @@ public class MobileDriver {
         try {
             // First ensure app is fully launched and ready
             waitForAppReady(driver);
-            
+
             // Wait a bit to ensure app is fully initialized
             Thread.sleep(3000);
 
@@ -272,16 +272,16 @@ public class MobileDriver {
 
                 // Wait for app to be active
                 Thread.sleep(2000);
-                
+
                 // Try to navigate using URL scheme
                 driver.get(IOS_DEEPLINK);
-                
+
             } catch (Exception e) {
                 System.out.println("Deeplink redirection failed: " + e.getMessage());
             }
-            
+
             // Verify if we're on the correct page
-          //  verifyDeeplinkNavigation(driver);
+            //  verifyDeeplinkNavigation(driver);
 
         } catch (Exception e) {
             System.err.println("Failed to handle deeplink: " + e.getMessage());
@@ -311,7 +311,7 @@ public class MobileDriver {
                 if (driver instanceof InteractsWithApps apps) {
                     var state = apps.queryAppState(androidPackage);
                     System.out.println("Initial app state after driver creation: " + state);
-                    
+
                     // If app is not running in foreground, activate it
                     if (state.name().contains("NOT_RUNNING") || state.name().contains("RUNNING_IN_BACKGROUND")) {
                         System.out.println("Activating app to bring to foreground...");
@@ -319,12 +319,12 @@ public class MobileDriver {
                         Thread.sleep(2000);
                     }
                 }
-                
+
                 // If still not in foreground, try starting the activity using mobile command
                 if (driver instanceof AndroidDriver androidDriver) {
                     String currentActivity = androidDriver.currentActivity();
-                    if (currentActivity == null || currentActivity.contains("Launcher") || 
-                        !currentActivity.contains("com.mfinance.copymaster.MainActivity")) {
+                    if (currentActivity == null || currentActivity.contains("Launcher") ||
+                            !currentActivity.contains("com.mfinance.copymaster.MainActivity")) {
                         System.out.println("Starting app activity using mobile command...");
                         try {
                             Map<String, Object> args = new HashMap<>();
@@ -349,7 +349,7 @@ public class MobileDriver {
                 System.err.println("Warning: Error during app readiness check, but continuing: " + e.getMessage());
                 // Continue anyway - the app might still be usable
             }
-            
+
             return (AndroidDriver) driver;
         } catch (Exception e) {
             System.err.println("Error initializing Android driver: " + e.getMessage());
@@ -376,7 +376,7 @@ public class MobileDriver {
 
             // Wait for app to be ready
             waitForAppReady(driver);
-            
+
             return (IOSDriver) driver;
         } catch (Exception e) {
             System.err.println("Error initializing iOS driver: " + e.getMessage());
@@ -391,8 +391,8 @@ public class MobileDriver {
         try {
             // Check if Appium server is already running
             try {
-                java.net.HttpURLConnection connection = (java.net.HttpURLConnection) 
-                    new URL(APPIUM_SERVER_URL + "/status").openConnection();
+                java.net.HttpURLConnection connection = (java.net.HttpURLConnection)
+                        new URL(APPIUM_SERVER_URL + "/status").openConnection();
                 connection.setRequestMethod("GET");
                 connection.setConnectTimeout(2000);
                 connection.connect();
@@ -405,24 +405,24 @@ public class MobileDriver {
                 // Server is not running, proceed to start it
                 System.out.println("Appium server is not running, starting new instance...");
             }
-            
+
             File appiumJS = new File(APPIUM_JS_PATH);
             if (!appiumJS.exists()) {
                 System.err.println("Warning: Appium JS path does not exist: " + APPIUM_JS_PATH);
                 System.err.println("Attempting to start Appium server without explicit path...");
             }
-            
+
             AppiumServiceBuilder builder = new AppiumServiceBuilder()
                     .withIPAddress("127.0.0.1")
                     .usingPort(4723);
-            
+
             if (appiumJS.exists()) {
                 builder.withAppiumJS(appiumJS);
             }
-            
+
             service = builder.build();
             service.start();
-            
+
             // Wait a bit for server to be ready
             Thread.sleep(2000);
             System.out.println("Appium server started successfully");
@@ -454,7 +454,7 @@ public class MobileDriver {
         aosOptions.setAppPackage(androidPackage);
         String mainActivity = "com.mfinance.copymaster.MainActivity";
         aosOptions.setAppActivity(mainActivity);
-        
+
         // Add appWaitActivity to ensure Appium waits for the correct activity
         aosOptions.setCapability("appWaitActivity", mainActivity);
         aosOptions.setCapability("appWaitForLaunch", true);
@@ -465,7 +465,7 @@ public class MobileDriver {
         // Configure reset options - use the system property value, not hardcoded
         aosOptions.setNoReset(true);
         aosOptions.setFullReset(false);
-        
+
         // Additional capabilities to ensure app launches properly
         aosOptions.setCapability("autoLaunch", true);
         aosOptions.setCapability("skipUnlock", true);
@@ -514,21 +514,21 @@ public class MobileDriver {
         iosOptions.setAutomationName("XCUITest");
 
         // Set bundle ID
-      //  iosOptions.setBundleId(IOS_BUNDLE_ID);
+        //  iosOptions.setBundleId(IOS_BUNDLE_ID);
 
         // Set app path
         String appPath = System.getProperty("user.dir") + "/src/main/resources/CopyMaster.app";
         iosOptions.setApp(appPath);
-        
+
         // Add capabilities for better deeplink handling
         iosOptions.setCapability("autoAcceptAlerts", true);
         iosOptions.setCapability("autoDismissAlerts", true);
         iosOptions.setCapability("nativeWebTap", true);
         iosOptions.setCapability("iosSetValueByPaste", true);
-        
+
         // Add URL scheme handling capability
         //iosOptions.setCapability("urlScheme", "eunify.eiehk.uat");
-        
+
         // Add additional capabilities for better app handling
         iosOptions.setCapability("newCommandTimeout", 300);
         iosOptions.setCapability("wdaStartupRetries", 4);
