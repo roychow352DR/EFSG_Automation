@@ -53,6 +53,7 @@ public class CmEmployeeFinInfoPage {
         employeeStatus.click();
         dropdownOption.filter(new Locator.FilterOptions().setHas(page.getByText(abs.userinfoList().get("employStatus"),
                 new Page.GetByTextOptions().setExact(true)))).click();
+
     }
 
     public void selectIndustrial() throws IOException {
