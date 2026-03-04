@@ -16,7 +16,7 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 
 public class AOLoginSteps extends BaseTest {
     public AdminLoginPage login;
-    public AOPOManager aopoManager;
+ //   public AOPOManager aopoManager;
     public Page page;
     public CoreService coreService;
 
@@ -64,9 +64,4 @@ public class AOLoginSteps extends BaseTest {
 
     }
 
-    @Given("webpage launch")
-    public void webpage_launch() throws IOException {
-        Page page = initializePage();
-        aopoManager = new AOPOManager(page);
-    }
 }

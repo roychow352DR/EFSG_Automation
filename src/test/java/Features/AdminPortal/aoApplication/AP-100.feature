@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @L3IndividualCreation @AdminPortal @Smoke @AO @EBL_MT5 @EIEHK @L2IndividualCreation
+  @Regression @L3IndividualCreation @AdminPortal @Smoke @AO @EBL_MT5 @EIEHK @L2IndividualCreation @Test
   Scenario: Create Individual Account with status in Pending Verification
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
