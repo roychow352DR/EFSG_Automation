@@ -247,7 +247,7 @@ public class Hooks extends BaseTest {
             resetToHome();
             cleanupPWSession();
         }
-        reportTestResult(scenario, videoPath);
+     //   reportTestResult(scenario, videoPath);
         cleanupMediaFiles();
     }
 

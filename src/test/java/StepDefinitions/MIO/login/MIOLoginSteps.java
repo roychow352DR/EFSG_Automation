@@ -33,6 +33,7 @@ public class MIOLoginSteps extends BaseTest {
 
     @Then("the user sees {string} is displayed as profile name")
     public void the_user_sees_display_on_the_MIO_Admin_Portal_landing_screen(String text) throws InterruptedException {
+        mioPoManager.getDepositManagementPage().getColIndex();
         assertThat(mioPoManager.getDashboardPage().getProfileName(text)).hasText(text);
     }
 }
