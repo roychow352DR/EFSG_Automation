@@ -8,6 +8,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AppTradeView {
@@ -15,10 +16,14 @@ public class AppTradeView {
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
     public static String stopLossPrice;
+    public static String stopOrderPrice;
+    public static String stopOrderType;
     public static String takeProfitPrice;
     public static String selectedDirection;
     public static String lotSize;
     public static String executedPrice;
+    public static String validity;
+    public static boolean SCROLLED = false;
 
     public AppTradeView(AppiumDriver driver) {
         this.driver = driver;
@@ -39,10 +44,16 @@ public class AppTradeView {
     WebElement stopLossSwitchAos;
 
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[10]/android.widget.EditText")
-    WebElement stopLossTextFieldAos;
+    WebElement marketStopLossTextFieldAos;
 
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[14]/android.widget.EditText")
-    WebElement takeProfitTextFieldAos;
+    WebElement marketTakeProfitTextFieldAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[11]/android.widget.EditText")
+    WebElement stopLimitStopLossTextFieldAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[15]/android.widget.EditText")
+    WebElement stopLimitTakeProfitTextFieldAos;
 
     @FindBy(className = "android.widget.TextView")
     WebElement confirmationTextAos;
@@ -51,13 +62,35 @@ public class AppTradeView {
     WebElement closeButtonAos;
 
     @FindBy(className = "android.widget.EditText")
-    WebElement lotSizeTextFieldAos;
+    List<WebElement> editTextFieldAos;
 
-    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.widget.TextView")
-    List<WebElement> rowsOnPositionTab;
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.widget.TextView")
+    List<WebElement> rowsOnPositionTabAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.widget.TextView")
+    List<WebElement> rowsOnPendingOrdersTabAos;
 
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup")
     WebElement detailsButton;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup")
+    WebElement orderTypeDropdownBtn;
+
+    @FindBy(xpath = "//android.widget.FrameLayout[@resource-id=\"android:id/content\"]/android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.widget.ScrollView/android.view.ViewGroup")
+    List<WebElement> orderTypeOptions;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]")
+    WebElement crossButtonAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[14]")
+    WebElement cancelOrderButtonAos;
+
+    @FindBy(xpath = "(//android.widget.TextView[@text=\"Close Position\"])[2]/parent::android.view.ViewGroup")
+    WebElement closePositionAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[11]")
+    WebElement confirmClosePositionBtnAos;
+
 
     public void selectDirection(String direction) {
         selectedDirection = direction;
@@ -119,12 +152,60 @@ public class AppTradeView {
         return price;
     }
 
+    public String getStopOrderPrice(String direction, String stopOrderType) {
+        String price = "";
+        WebElement text;
+        selectedDirection = direction;
+        if (stopOrderType.contains("Stop")) {
+            switch (selectedDirection) {
+                case "BUY" -> {
+                    text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Price (≥\")]"));
+                    price = Float.toString(Float.parseFloat(text.getText().split("≥")[1].trim().split("\\)")[0]) + 100);
+                }
+                case "SELL" -> {
+                    text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Price (≤\")]"));
+                    price = Float.toString(Float.parseFloat(text.getText().split("≤")[1].trim().split("\\)")[0]) - 100);
+                }
+            }
+        } else if (stopOrderType.contains("Limit")) {
+            switch (selectedDirection) {
+                case "BUY" -> {
+                    text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Price (≤\")]"));
+                    price = Float.toString(Float.parseFloat(text.getText().split("≤")[1].trim().split("\\)")[0]) - 100);
+                }
+                case "SELL" -> {
+                    text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Price (≥\")]"));
+                    price = Float.toString(Float.parseFloat(text.getText().split("≥")[1].trim().split("\\)")[0]) + 100);
+                }
+            }
+        }
+        stopOrderPrice = price;
+        return price;
+    }
+
     public void fillInTextField(String textFieldName, String direction) {
         if (driver instanceof AndroidDriver) {
             switch (textFieldName) {
-                case "Stop Loss" -> stopLossTextFieldAos.sendKeys(getStopLossPrice(direction));
-                case "Take Profit" -> takeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction));
-                case "Lot Size" -> lotSizeTextFieldAos.sendKeys("0.45");
+                case "Stop Loss" -> {
+                    if (!SCROLLED) {
+                        marketStopLossTextFieldAos.sendKeys(getStopLossPrice(direction));
+                    } else {
+                        stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction));
+                    }
+                }
+                case "Take Profit" -> {
+                    if (!SCROLLED) {
+                        marketTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction));
+                    } else {
+                        stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction));
+                    }
+                }
+                case "Lot Size" -> editTextFieldAos.getFirst().sendKeys("0.45");
+                case "Price" -> {
+                    editTextFieldAos.get(1).clear();
+                    // editTextFieldAos.get(1).sendKeys(getStopOrderPrice(direction));
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType));
+                }
             }
         }
     }
@@ -148,27 +229,30 @@ public class AppTradeView {
         return null;
     }
 
-    public String getValidationValue(String label){
+    public String getValidationValue(String label) {
         return switch (label) {
-            case "Stop Loss Price" -> String.format("%.2f",Double.parseDouble(stopLossPrice));
-            case "Take Profit Price" -> String.format("%.2f",Double.parseDouble(takeProfitPrice));
+            case "Stop Loss Price" -> String.format("%.2f", Double.parseDouble(stopLossPrice));
+            case "Take Profit Price" -> String.format("%.2f", Double.parseDouble(takeProfitPrice));
             case "Direction" -> selectedDirection;
             case "Volume" -> lotSize;
+            case "Stop Order Price" -> stopOrderPrice;
+            case "Validity" -> validity;
             default -> null;
         };
     }
 
-    public void closeConfirmationPopUp(){
+    public void closeConfirmationPopUp() {
         if (driver instanceof AndroidDriver) {
             closeButtonAos.click();
         }
     }
 
-    public String getLotSize(){
-        return driver.findElement(By.className("android.widget.EditText")).getText();
+    public String getLotSize() {
+        // return driver.findElement(By.className("android.widget.EditText")).getText();
+        return driver.findElements(By.className("android.widget.EditText")).getFirst().getText();
     }
 
-    public void getDirection(){
+    public void getDirection() {
         List<WebElement> direction = driver.findElements(By.xpath("//android.widget.FrameLayout[@resource-id=\"android:id/content\"]/android.widget.FrameLayout/android.view.ViewGroup" +
                 "/android.view.ViewGroup[3]/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]/" +
                 "android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup"));
@@ -178,11 +262,11 @@ public class AppTradeView {
         }
     }
 
-    public void fillValueIntoTextField(String textFieldName,String value) throws InterruptedException {
+    public void fillValueIntoTextField(String textFieldName, String value) throws InterruptedException {
         if (driver instanceof AndroidDriver) {
             switch (textFieldName) {
                 case "Lot Size" -> {
-                    driver.findElement(By.xpath("//android.widget.TextView[@text=\""+value+"\"]/parent::android.view.ViewGroup")).click();
+                    driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + value + "\"]/parent::android.view.ViewGroup")).click();
                     Thread.sleep(1000);
                     lotSize = getLotSize();
                 }
@@ -190,9 +274,9 @@ public class AppTradeView {
         }
     }
 
-    public boolean getPositionDetail(String positionDetail){
-        for (WebElement element : rowsOnPositionTab) {
-            if (element.getText().equalsIgnoreCase(positionDetail)){
+    public boolean getPositionDetail(String positionDetail) {
+        for (WebElement element : rowsOnPositionTabAos) {
+            if (element.getText().equalsIgnoreCase(positionDetail)) {
                 return true;
             }
         }
@@ -200,16 +284,105 @@ public class AppTradeView {
         return false;
     }
 
-    public void getExecutedPrice(){
+    public void getExecutedPrice() {
         executedPrice = getConfirmationValue("Price");
     }
 
-    public void tabCtaButton(String buttonName) {
+    public void tapCtaButton(String buttonName) {
         if (driver instanceof AndroidDriver) {
             switch (buttonName) {
                 case "Deposit detail" -> detailsButton.click();
             }
         }
+    }
+
+    //        public void selectOrderType(String orderType) {
+//        if (driver instanceof AndroidDriver) {
+//            orderTypeDropdownBtn.click();
+//            for (WebElement element : orderTypeOptions) {
+//                if (element.getText().equalsIgnoreCase(orderType)) {
+//                    element.click();
+//                    break;
+//                }
+//            }
+//        }
+//    }
+    public void selectOrderType(String orderType) throws InterruptedException {
+        if (driver instanceof AndroidDriver) {
+            orderTypeDropdownBtn.click();
+            Thread.sleep(2000);
+            driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + orderType + "\"]/parent::android.view.ViewGroup")).click();
+        }
+    }
+
+    public void selectStopLimitOption(String option) {
+        stopOrderType = option;
+        if (driver instanceof AndroidDriver) {
+            driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup")).click();
+        }
+    }
+
+    public void scrollDown() {
+        SCROLLED = true;
+        abs.swipeUp(driver);
+    }
+
+    public boolean tabIsSelected(String tabName) {
+        return driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + tabName + "\"]/parent::android.view.ViewGroup")).isSelected();
+
+    }
+
+    public boolean getPendingOrdersDetail(String pendingOrderDetail) {
+        for (WebElement element : rowsOnPendingOrdersTabAos) {
+            if (element.getText().equalsIgnoreCase(pendingOrderDetail)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void cancelOrder() {
+        if (driver instanceof AndroidDriver) {
+            crossButtonAos.click();
+            abs.waitUtilElementFind(cancelOrderButtonAos);
+            cancelOrderButtonAos.click();
+        }
+    }
+
+    public void closePosition() {
+        if (driver instanceof AndroidDriver) {
+            crossButtonAos.click();
+            abs.waitUtilElementFind(closePositionAos);
+            closePositionAos.click();
+            confirmClosePositionBtnAos.click();
+        }
+    }
+
+    public void selectValidity(String option) {
+        validity = option;
+        if (driver instanceof AndroidDriver) {
+            driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup")).click();
+        }
+    }
+
+    public List<String> stopOrderConfirmationPageValues() {
+        List<String> values = new ArrayList<>();
+        values.add("Stop Loss Price");
+        values.add("Take Profit Price");
+        values.add("Direction");
+        values.add("Volume");
+        values.add("Validity");
+        return values;
+    }
+
+    public List<String> marketOrderConfirmationPageValues() {
+        List<String> values = new ArrayList<>();
+        values.add("Stop Loss Price");
+        values.add("Take Profit Price");
+        values.add("Direction");
+        values.add("Volume");
+        return values;
     }
 
 

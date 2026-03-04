@@ -1,7 +1,7 @@
 Feature: Native App AO Application
 
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
-    Scenario: User can see market Buy order details
+    Scenario: User can see Buy market order details
       Given the user launch the app
       And the user lands on app home page
       And the user lands on the app login page
