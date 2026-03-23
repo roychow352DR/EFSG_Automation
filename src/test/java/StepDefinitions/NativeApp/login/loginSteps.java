@@ -14,18 +14,14 @@ import utils.BaseTest;
 import java.io.IOException;
 
 public class loginSteps extends BaseTest {
-    private AppLoginPage loginPage;
-    private BiometricsPage biometricsPage;
-    private AppHomePage appHomePage;
     public static AppPOManager appPOManager;
     private AppiumDriver driver;
 
     @Given("the user launch the app")
     public void the_user_launch_the_app() throws IOException, InterruptedException {
-       // initAppDriver();
         driver = initAppDriver();
         appPOManager= new AppPOManager(driver);
-      //  Thread.sleep(3000);
+        Assert.assertTrue(appPOManager.getAppHomePage().bottomButtonIsTapped());
     }
 
     @Given("the user lands on the app login page")
@@ -81,6 +77,15 @@ public class loginSteps extends BaseTest {
     @Then("the user sees trade account label on the app me page")
     public void the_user_sees_trade_account_label_on_the_app_me_page() throws InterruptedException {
         Assert.assertTrue(appPOManager.getAppMePage().getTradeAccountLabel());
+    }
+
+    @And("the user login as username {string} and password {string} on App login page")
+    public void the_user_login_as_username_and_password_on_App_login_page(String username,String password) throws InterruptedException {
+        appPOManager.getAppHomePage().navigateToSignupPage();
+        appPOManager.getAppSignupPage().navigateToLoginPage();
+        Assert.assertTrue(appPOManager.getAppLoginPage().loginPageValidation());
+        appPOManager.getAppLoginPage().fillCredential(username, password);
+        appPOManager.getAppLoginPage().clickLogin();
     }
 
 }

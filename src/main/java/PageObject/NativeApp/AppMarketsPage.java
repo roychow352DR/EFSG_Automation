@@ -14,6 +14,8 @@ public class AppMarketsPage {
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
 
+    public static String tradeSymbol;
+
     public AppMarketsPage(AppiumDriver driver) {
         this.driver = driver;
         this.abs = new MobileAbstractComponents(driver);
@@ -44,6 +46,7 @@ public class AppMarketsPage {
     }
 
     public void tapSymbol(String symbol) {
+        tradeSymbol = symbol;
         if (driver instanceof AndroidDriver) {
             driver.findElement(By.xpath("//android.widget.TextView[@text=\""+symbol+"\"]/parent::android.view.ViewGroup")).click();
         }
