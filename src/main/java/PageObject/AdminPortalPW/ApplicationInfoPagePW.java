@@ -30,6 +30,7 @@ public class ApplicationInfoPagePW {
     public static String applicantIndividualEmail;
     public SetCondition setCondition;
 
+
     public ApplicationInfoPagePW(Page page) {
         this.page = page;
         abs = new AbstractComponentsPW(page);

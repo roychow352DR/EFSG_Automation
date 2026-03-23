@@ -363,6 +363,42 @@ public class MobileAbstractComponents {
         driver.perform(Collections.singletonList(swipe));
     }
 
+    public String normalizePriceToDecimals(String priceStr,String symbolDecimal) {
+        String pattern = "%." + symbolDecimal + "f";
+        if (priceStr == null) {
+            return null;
+        }
+//
+//        if (priceStr.matches("^\\d+\\.\\d{2}$") ) {
+//            double value = Double.parseDouble(priceStr);
+//            return String.format("%.3f", value);
+//        }
+
+        if (getDecimalPlaces(priceStr) < Integer.parseInt(symbolDecimal)) {
+            double value = Double.parseDouble(priceStr);
+            return String.format(pattern,value);
+        }
+
+        return priceStr;
+    }
+
+    public int getDecimalPlaces(String numberStr) {
+        if (numberStr == null) {
+            return 0;
+        }
+
+        numberStr = numberStr.trim();
+
+        int dotIndex = numberStr.indexOf('.');
+        if (dotIndex < 0) {
+            return 0;
+        }
+
+        String fractionalPart = numberStr.substring(dotIndex + 1);
+
+        return fractionalPart.length();
+    }
+
 }
 
 

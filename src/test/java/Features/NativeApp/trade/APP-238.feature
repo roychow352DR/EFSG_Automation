@@ -1,7 +1,7 @@
 Feature: Native App AO Application
 
   @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
-  Scenario: User can place sell stop pending order successfully
+  Scenario: User can place sell limit pending order successfully
     Given the user launch the app
     And the user login as username "autol3" and password "Test1234@" on App login page
     And the user taps button "Markets" on the app footer
@@ -9,7 +9,7 @@ Feature: Native App AO Application
     And the user selects direction "SELL" on the app trade view
     And the user selects order type "Limit / Stop Order" on the app trade view
     And the user fills in the text field "Lot Size" with value "0.5" on the app trade view
-    And the user selects stop limit order option "Sell Stop" on the app trade view
+    And the user selects stop limit order option "Sell Limit" on the app trade view
     And the user fills in the text field "Price" with direction "SELL" on the app trade view
     And the user taps button "SELL" on the app trade view
     And the user taps button "SELL" on the confirmation pop up
