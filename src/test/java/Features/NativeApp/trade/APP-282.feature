@@ -1,11 +1,11 @@
 Feature: Native App AO Application
 
   @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
-  Scenario: User can place buy stop pending order successfully
+  Scenario: User can edit pending order successfully
     Given the user launch the app
     And the user login as username "autol3" and password "Test1234@" on App login page
     And the user taps button "Markets" on the app footer
-    When the user taps symbol "XAUUSD" on the app markets page
+    And the user taps symbol "XAGUSD" on the app markets page
     And the user selects direction "BUY" on the app trade view
     And the user selects order type "Limit / Stop Order" on the app trade view
     And the user fills in the text field "Lot Size" with value "0.5" on the app trade view
@@ -13,8 +13,12 @@ Feature: Native App AO Application
     And the user fills in the text field "Price" with direction "BUY" on the app trade view
     And the user taps button "BUY" on the app trade view
     And the user taps button "BUY" on the confirmation pop up
-    Then the user sees a new pending order is displayed at the pending order tab of instrument details page
-
+    When the user taps "edit" cta button on the position tab of instrument details page
+    And the user edit price type "Stop" of the pending order on the app trade view
+    And the user taps button "Modify Order" on the app trade view
+    And the user taps button "Modify Order" on the confirmation pop up
+    And the user taps "detail" cta button on the position tab of instrument details page
+    Then the user sees the value "Target Price" is updated on the pending order details page
 
 
 
