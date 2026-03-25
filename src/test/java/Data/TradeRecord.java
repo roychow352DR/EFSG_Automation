@@ -32,6 +32,12 @@ public class TradeRecord {
         confirmPlaceOrder(direction);
     }
 
+    public void createOpenPosition(String direction) throws IOException, InterruptedException {
+        tapSymbol();
+        selectDirection(direction);
+        confirmPlaceOrder(direction);
+    }
+
     public void tapSymbol() throws IOException {
         appPoManager.getAppMarketsPage().tapSymbol(getDefaultSymbol());
     }
