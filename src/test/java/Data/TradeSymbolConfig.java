@@ -11,4 +11,8 @@ public class TradeSymbolConfig {
             default -> "";
         };
     }
+
+//    public String getMinLotSize(String symbol){
+//
+//    }
 }

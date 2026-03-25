@@ -3,6 +3,7 @@ package PageObject.NativeApp;
 import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
+import io.cucumber.java.en.And;
 import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
@@ -544,6 +545,16 @@ public class AppTradeView {
                 return false;
             }
             return rowsOnPendingOrdersTabAos.get(0).isDisplayed();
+        }
+        return false;
+    }
+
+    public boolean getPosition(){
+        if (driver instanceof AndroidDriver) {
+            if (rowsOnPositionTabAos == null || rowsOnPositionTabAos.isEmpty()) {
+                return false;
+            }
+            return rowsOnPositionTabAos.get(0).isDisplayed();
         }
         return false;
     }
