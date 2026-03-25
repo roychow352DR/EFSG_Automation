@@ -20,9 +20,9 @@ public class tradeSteps extends BaseTest {
     TradeSymbolConfig tradeSymbolConfig = new TradeSymbolConfig();
     TradeRecord tradeRecord = new TradeRecord(appPoManager);
 
-    @When("the user taps symbol {string} on the app markets page")
-    public void the_user_taps_symbol_on_the_app_markets_page(String symbol) {
-        appPoManager.getAppMarketsPage().tapSymbol(symbol);
+    @When("the user taps symbol on the app markets page")
+    public void the_user_taps_symbol_on_the_app_markets_page() throws IOException {
+        tradeRecord.tapSymbol();
     }
 
     @And("the user selects direction {string} on the app trade view")
@@ -31,18 +31,18 @@ public class tradeSteps extends BaseTest {
 
     }
 
-    @And("the user switches on take profit and stop loss on the app trade view")
+    @And("the user switches on take profit and stop loss on the instrument details page")
     public void the_user_switches_on_take_profit_and_stop_loss_on_the_app_trade_view() throws InterruptedException {
         appPoManager.getAppTradeView().switchProfitStopLoss();
     }
 
-    @And("the user fills in the text field {string} with direction {string} on the app trade view")
+    @And("the user fills in the text field {string} with direction {string} on the instrument details page")
     public void the_user_fills_in_the_text_field_on_the_app_trade_view(String textFieldName, String direction) throws InterruptedException {
         Thread.sleep(8000);
-        appPoManager.getAppTradeView().fillInTextField(textFieldName, direction,tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
+        appPoManager.getAppTradeView().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
     }
 
-    @And("the user taps button {string} on the app trade view")
+    @And("the user taps button {string} on the instrument details page")
     public void the_user_taps_button_buy_on_the_app_trade_view(String buttonName) throws InterruptedException {
         Thread.sleep(200);
         appPoManager.getAppTradeView().tapsButton(buttonName);
@@ -56,13 +56,13 @@ public class tradeSteps extends BaseTest {
         //appPoManager.getAppTradeView().closeConfirmationPopUp();
     }
 
-    @And("the user fills in the text field {string} with value {string} on the app trade view")
+    @And("the user fills in the text field {string} with value {string} on the instrument details page")
     public void the_user_fills_in_the_text_field_with_value_on_the_app_trade_view(String textFieldName, String value) throws InterruptedException {
         appPoManager.getAppTradeView().fillValueIntoTextField(textFieldName, value);
     }
 
-    @Then("the user sees a new open position is displayed at the position tab of instrument details page")
-    public void the_user_sees_a_new_open_position_is_displayed_at_the_position_tab_of_instrument_details_page() throws InterruptedException {
+    @Then("the user sees a new open position is displayed at the position tab of app trade view")
+    public void the_user_sees_a_new_open_position_is_displayed_at_the_position_tab_of_app_trade_view() throws InterruptedException {
         Thread.sleep(2000);
         Assert.assertTrue(appPoManager.getAppTradeView().getPositionDetail(AppTradeView.executedPrice));
         Assert.assertTrue(appPoManager.getAppTradeView().getPositionDetail(AppTradeView.selectedDirection));
@@ -77,30 +77,30 @@ public class tradeSteps extends BaseTest {
         appPoManager.getAppTradeView().tapsButtonOnConfirm(buttonName);
     }
 
-    @And("the user taps {string} cta button on the position tab of instrument details page")
-    public void the_user_taps_cta_button_on_the_position_tab_of_instrument_details_page(String buttonName) {
+    @And("the user taps {string} cta button on the position tab of app trade view")
+    public void the_user_taps_cta_button_on_the_position_tab_of_app_trade_view(String buttonName) {
         appPoManager.getAppTradeView().tapCtaButton(buttonName);
     }
 
-    @And("the user selects order type {string} on the app trade view")
+    @And("the user selects order type {string} on the instrument details page")
     public void the_user_selects_order_type_on_the_app_trade_view(String orderType) throws InterruptedException {
         Thread.sleep(2000);
         appPoManager.getAppTradeView().selectOrderType(orderType);
     }
 
-    @And("the user selects stop limit order option {string} on the app trade view")
+    @And("the user selects stop limit order option {string} on the instrument details page")
     public void the_user_selects_stop_limit_order_option_as_detail_on_the_app_trade_view(String option) {
         appPoManager.getAppTradeView().selectStopLimitOption(option);
     }
 
-    @And("the user scrolls down the app trade view")
+    @And("the user scrolls down the instrument details page")
     public void the_user_scrolls_down_the_app_trade_view() throws InterruptedException {
         Thread.sleep(500);
         appPoManager.getAppTradeView().scrollDown();
     }
 
-    @Then("the user sees a new pending order is displayed at the pending order tab of instrument details page")
-    public void the_user_sees_a_new_pending_order_is_displayed_at_the_pending_order_tab_of_instrument_details_page() throws InterruptedException {
+    @Then("the user sees a new pending order is displayed at the pending order tab of app trade view")
+    public void the_user_sees_a_new_pending_order_is_displayed_at_the_pending_order_tab_of_app_trade_view() throws InterruptedException {
         Thread.sleep(2000);
         Assert.assertTrue(appPoManager.getAppTradeView().getPendingOrdersDetail(AppTradeView.executedPrice));
         Assert.assertTrue(appPoManager.getAppTradeView().getPendingOrdersDetail(AppTradeView.selectedDirection));
@@ -108,7 +108,7 @@ public class tradeSteps extends BaseTest {
         appPoManager.getAppTradeView().cancelOrder();
     }
 
-    @And("the user selects validity option {string} on the app trade view")
+    @And("the user selects validity option {string} on the instrument details page")
     public void the_user_selects_validity_option_on_the_app_trade_view(String validity) {
         appPoManager.getAppTradeView().selectValidity(validity);
     }
@@ -134,44 +134,59 @@ public class tradeSteps extends BaseTest {
     @Then("the user sees the message {string} is displayed at the dialogue")
     public void the_user_sees_the_message_is_displayed_at_the_dialogue(String dialogueMsg) throws InterruptedException {
         Thread.sleep(500);
-        Assert.assertEquals(appPoManager.getAppTradeView().getDialogueTextAos(),dialogueMsg);
+        Assert.assertEquals(appPoManager.getAppTradeView().getDialogueTextAos(), dialogueMsg);
     }
 
-    @And("the user edit price type {string} of the position on the app trade view")
-    public void the_user_edit_price_type_of_the_position_on_the_app_trade_view(String priceType){
-        appPoManager.getAppTradeView().editTextField(priceType,AppTradeView.selectedDirection,tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
+    @And("the user edit price type {string} of the position on the instrument details page")
+    public void the_user_edit_price_type_of_the_position_on_the_app_trade_view(String priceType) {
+        appPoManager.getAppTradeView().editTextField(priceType, AppTradeView.selectedDirection, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
     }
 
     @Then("the user sees market order values are displayed correctly with the user input value on the position details page")
     public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_position_details_page() throws InterruptedException {
         Thread.sleep(5000);
         for (String value : appPoManager.getAppTradeView().marketOrderConfirmationPageValues()) {
-            Assert.assertEquals(appPoManager.getAppTradeView().getPositionValueWithRetry(value,tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
+            Assert.assertEquals(appPoManager.getAppTradeView().getPositionValueWithRetry(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
                     appPoManager.getAppTradeView().getValidationValue(value));
         }
         appPoManager.getAppTradeView().closePositionInDetails();
     }
 
-    @And("the user edit price type {string} of the pending order on the app trade view")
-    public void the_user_edit_price_type_of_the_pending_order_on_the_app_trade_view(String priceType){
-        appPoManager.getAppTradeView().editTextField(priceType,AppTradeView.selectedDirection,tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
+    @And("the user edit price type {string} of the pending order on the instrument details page")
+    public void the_user_edit_price_type_of_the_pending_order_on_the_app_trade_view(String priceType) {
+        appPoManager.getAppTradeView().editTextField(priceType, AppTradeView.selectedDirection, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
     }
 
     @Then("the user sees the value {string} is updated on the pending order details page")
     public void the_user_sees_the_value_is_updated_on_the_pending_order_details_page(String value) throws InterruptedException {
         Thread.sleep(500);
-        Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value),AppTradeView.editPrice);
+        Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value), AppTradeView.editPrice);
         appPoManager.getAppTradeView().cancelPendingOrderInDetail();
     }
 
     @Then("the user sees the pending order is disappeared on the pending order list")
-    public void the_user_sees_the_pending_order_is_disappeared_on_the_pending_order_list(){
+    public void the_user_sees_the_pending_order_is_disappeared_on_the_pending_order_list() {
         Assert.assertFalse(appPoManager.getAppTradeView().getPendingOrder());
     }
 
-    @And("the user places a pending order with direction {string} and order type {string} on the app trade view")
-    public void the_user_places_a_pending_order_with_direction_and_order_type_on_the_app_trade_view(String direction,String orderType) throws InterruptedException, IOException {
-        tradeRecord.placePendingOrder(direction,orderType,tradeSymbolConfig);
+    @And("the user places a pending order with direction {string} and order type {string} on the instrument details page")
+    public void the_user_places_a_pending_order_with_direction_and_order_type_on_the_app_trade_view(String direction, String orderType) throws InterruptedException, IOException {
+        tradeRecord.placePendingOrder(direction, orderType, tradeSymbolConfig);
+    }
+
+    @And("the user creates a {string} position on the instrument details page")
+    public void the_user_creates_a_position_on_the_app_trade_view(String direction) throws IOException, InterruptedException {
+        tradeRecord.createOpenPosition(direction);
+    }
+
+    @Then("the user sees the open position is disappeared on the position list")
+    public void the_user_sees_the_open_position_is_disappeared_on_the_position_list(){
+        Assert.assertFalse(appPoManager.getAppTradeView().getPosition());
+    }
+
+    @Then("the user sees expected default volume on the instrument details page")
+    public void the_user_sees_expected_default_volume_on_the_instrument_details_page(){
+        Assert.assertEquals(appPoManager.getAppTradeView().getLotSize(),"1.00");
     }
 
 }
