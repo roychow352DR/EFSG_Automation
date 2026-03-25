@@ -40,7 +40,7 @@ public class ApplicationListPagePW {
         this.status = page.locator(".css-9iedg7");
         this.entityRow = page.locator(".css-ff6t81:nth-child(1)");
         this.entity = abs.userinfoList().get("entity");
-        this.emailRow = page.locator(".css-ff6t81:nth-child(2)");
+        this.emailRow = page.locator(".css-ff6t81:nth-child(3)");
         this.filterInputField = page.locator(".css-1svhit8");
         this.searchField = page.locator(".css-1ixds2g");
     }
