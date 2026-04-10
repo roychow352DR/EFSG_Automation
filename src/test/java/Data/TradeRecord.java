@@ -48,27 +48,27 @@ public class TradeRecord {
 
     public void selectOrderType(String orderType) throws InterruptedException {
         Thread.sleep(500);
-        appPoManager.getAppTradeView().selectOrderType(orderType);
+        appPoManager.getAppInstrumentDetailsPage().selectOrderType(orderType);
     }
 
     public void fillLotSize() throws InterruptedException {
-        appPoManager.getAppTradeView().fillValueIntoTextField("Lot Size", LOT_SIZE);
+        appPoManager.getAppInstrumentDetailsPage().fillValueIntoTextField("Lot Size", LOT_SIZE);
     }
 
     public void selectStopLimitOption(String stopLimitOption) {
-        appPoManager.getAppTradeView().selectStopLimitOption(stopLimitOption);
+        appPoManager.getAppInstrumentDetailsPage().selectStopLimitOption(stopLimitOption);
     }
 
     public void fillStopLimitPrice(String direction, TradeSymbolConfig tradeSymbolConfig) throws InterruptedException, IOException {
         Thread.sleep(500);
-        appPoManager.getAppTradeView().fillInTextField("Price", direction, tradeSymbolConfig.getDecimalPlace(getDefaultSymbol()));
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField("Price", direction, tradeSymbolConfig.getDecimalPlace(getDefaultSymbol()));
     }
 
     public void confirmPlaceOrder(String direction) throws InterruptedException {
         Thread.sleep(200);
-        appPoManager.getAppTradeView().tapsButton(direction);
+        appPoManager.getAppInstrumentDetailsPage().tapsButton(direction);
         Thread.sleep(500);
-        appPoManager.getAppTradeView().getExecutedPrice();
-        appPoManager.getAppTradeView().tapsButtonOnConfirm(direction);
+        appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
+        appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(direction);
     }
 }
