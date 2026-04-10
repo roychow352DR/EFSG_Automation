@@ -363,20 +363,14 @@ public class MobileAbstractComponents {
         driver.perform(Collections.singletonList(swipe));
     }
 
-    public String normalizePriceToDecimals(String priceStr,String symbolDecimal) {
+    public String normalizePriceToDecimals(String priceStr, String symbolDecimal) {
         String pattern = "%." + symbolDecimal + "f";
         if (priceStr == null) {
             return null;
         }
-//
-//        if (priceStr.matches("^\\d+\\.\\d{2}$") ) {
-//            double value = Double.parseDouble(priceStr);
-//            return String.format("%.3f", value);
-//        }
-
-        if (getDecimalPlaces(priceStr) < Integer.parseInt(symbolDecimal)) {
+        if (getDecimalPlaces(priceStr) != Integer.parseInt(symbolDecimal)) {
             double value = Double.parseDouble(priceStr);
-            return String.format(pattern,value);
+            return String.format(pattern, value);
         }
 
         return priceStr;
@@ -397,6 +391,16 @@ public class MobileAbstractComponents {
         String fractionalPart = numberStr.substring(dotIndex + 1);
 
         return fractionalPart.length();
+    }
+
+    public String getLabelValue(String label) {
+        List<WebElement> text = driver.findElements(By.className("android.widget.TextView"));
+        for (int i = 0; i < text.size(); i++) {
+            if (text.get(i).getText().equalsIgnoreCase(label)) {
+                return text.get(i + 1).getText().split(" ")[1].replace(",", "");
+            }
+        }
+        return null;
     }
 
 }
