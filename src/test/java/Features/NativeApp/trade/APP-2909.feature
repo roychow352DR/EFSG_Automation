@@ -1,0 +1,17 @@
+Feature: Native App AO Application
+
+    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
+    Scenario: The take profit price is populate to the input field on the edit position page after plus button is tapped
+      Given the user launch the app
+      And the user login as username "autol3" and password "Test1234@" on App login page
+      And the user taps button "Markets" on the app footer
+      And the user taps symbol on the app markets page
+      And the user selects direction "BUY" on the app trade view
+      And the user fills in the text field "Lot Size" with value "0.5" on the instrument details page
+      And the user taps button "BUY" on the instrument details page
+      And the user taps button "BUY" on the confirmation pop up
+      When the user taps "edit" cta button on the position tab of app trade view
+      And the user taps button "+" of the "Take Profit" input text field on the edit position page
+      Then the user sees the "Take Profit" price is populate to the input field on the edit position page
+
+

@@ -125,6 +125,38 @@ public class MobileAbstractComponents {
         w.until(ExpectedConditions.visibilityOf(ele));
     }
 
+    public void waitUtilAllElementFind(List<WebElement> ele) {
+        WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(60));
+
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                w.until(ExpectedConditions.invisibilityOfAllElements(ele));
+                return;
+            } catch (StaleElementReferenceException e) {
+                System.out.println("Attempt " + attempt + ": stale element, retrying...");
+            }
+        }
+
+        throw new StaleElementReferenceException("Element remained stale after 3 attempts: " + ele);
+
+    }
+
+    public void waitUtilElementClickable(WebElement ele) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                WebElement element = wait.until(ExpectedConditions.elementToBeClickable(ele));
+                element.click();
+                return;
+            } catch (StaleElementReferenceException e) {
+                System.out.println("Attempt " + attempt + ": stale element, retrying...");
+            }
+        }
+
+        throw new StaleElementReferenceException("Element remained stale after 3 attempts: " + ele);
+    }
+
     /**
      * Verifies if the deeplink navigation was successful
      *

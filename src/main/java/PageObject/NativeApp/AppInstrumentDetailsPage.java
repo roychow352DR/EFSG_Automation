@@ -225,15 +225,17 @@ public class AppInstrumentDetailsPage {
             switch (textFieldName) {
                 case "Stop Loss" -> {
                     if (direction.equalsIgnoreCase("BUY")) {
-                        enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) + priceDifVal);
-                    } else {
                         enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) - priceDifVal);
+                    } else {
+                        enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) + priceDifVal);
                     }
                     if (!SCROLLED) {
+                        abs.waitUtilElementFind(marketStopLossTextFieldAos);
                         abs.typeWithAndroidKeys((AndroidDriver) driver, marketStopLossTextFieldAos,
                                 enterPrice);
                         //  marketStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
                     } else {
+                        abs.waitUtilElementFind(stopLimitStopLossTextFieldAos);
                         abs.typeWithAndroidKeys((AndroidDriver) driver, stopLimitStopLossTextFieldAos,
                                 enterPrice);
                         //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
@@ -247,10 +249,12 @@ public class AppInstrumentDetailsPage {
                         enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - priceDifVal);
                     }
                     if (!SCROLLED) {
+                        abs.waitUtilElementFind(marketTakeProfitTextFieldAos);
                         abs.typeWithAndroidKeys((AndroidDriver) driver, marketTakeProfitTextFieldAos,
                                 enterPrice);
                         //  marketTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
                     } else {
+                        abs.waitUtilElementFind(stopLimitTakeProfitTextFieldAos);
                         abs.typeWithAndroidKeys((AndroidDriver) driver, stopLimitTakeProfitTextFieldAos,
                                 enterPrice);
                         // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));

@@ -1,0 +1,177 @@
+package PageObject.NativeApp;
+
+import AbstractComponent.MobileAbstractComponents;
+import io.appium.java_client.AppiumDriver;
+import io.appium.java_client.android.AndroidDriver;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+
+import java.util.List;
+
+public class AppEditPositionPage {
+
+    private final AppiumDriver driver;
+    private final MobileAbstractComponents abs;
+    public static String stopLossPrice;
+    public static String takeProfitPrice;
+
+    public AppEditPositionPage(AppiumDriver driver) {
+        this.driver = driver;
+        abs = new MobileAbstractComponents(driver);
+        PageFactory.initElements(driver, this);
+    }
+
+    @FindBy(className = "android.widget.EditText")
+    List<WebElement> inputFields;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[2]")
+    WebElement stopLossPlusBtnAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[1]")
+    WebElement stopLossMinusBtnAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[5]")
+    WebElement takeProfitPlusBtnAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[4]")
+    WebElement takeProfitMinusBtnAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[3]")
+    WebElement stopLossClearBtnAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[6]")
+    WebElement takeProfitClearBtnAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.widget.EditText[1]")
+    WebElement stopLossTextFieldAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.widget.EditText[2]")
+    WebElement takeProfitTextFieldAos;
+
+
+    public String getInputFieldValue(String inputFieldName) {
+        if (driver instanceof AndroidDriver) {
+            return switch (inputFieldName) {
+                case "Stop Loss" -> inputFields.getFirst().getText();
+                case "Take Profit" -> inputFields.getLast().getText();
+                default -> throw new IllegalStateException("Unexpected value: " + inputFieldName);
+            };
+        }
+        return inputFieldName;
+    }
+
+    public void adjustPrice(String ctaBtn, String priceType) {
+        if (driver instanceof AndroidDriver) {
+            if (ctaBtn.equalsIgnoreCase("+")) {
+                switch (priceType) {
+                    case "Stop Loss" -> stopLossPlusBtnAos.click();
+                    case "Take Profit" -> takeProfitPlusBtnAos.click();
+                }
+            } else if (ctaBtn.equalsIgnoreCase("-")) {
+                switch (priceType) {
+                    case "Stop Loss" -> stopLossMinusBtnAos.click();
+                    case "Take Profit" -> takeProfitMinusBtnAos.click();
+                }
+            } else if (ctaBtn.equalsIgnoreCase("✕")) {
+                switch (priceType) {
+                    case "Stop Loss" -> stopLossClearBtnAos.click();
+                    case "Take Profit" -> takeProfitClearBtnAos.click();
+                }
+            }
+        }
+    }
+
+    public void fillInTextField(String textFieldName, String direction, String decimal, int priceDifVal) {
+        String enterPrice;
+        if (driver instanceof AndroidDriver) {
+            switch (textFieldName) {
+                case "Stop Loss" -> {
+                    if (direction.equalsIgnoreCase("BUY")) {
+                        enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) - priceDifVal);
+                    } else {
+                        enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) + priceDifVal);
+                    }
+                    abs.waitUtilElementFind(stopLossTextFieldAos);
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossTextFieldAos,
+                                enterPrice);
+                        //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
+                    stopLossPrice = abs.normalizePriceToDecimals(enterPrice,decimal);
+                }
+                case "Take Profit" -> {
+                    if (direction.equalsIgnoreCase("BUY")) {
+                        enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) + priceDifVal);
+                    } else {
+                        enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - priceDifVal);
+                    }
+
+                    abs.waitUtilElementFind(takeProfitTextFieldAos);
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitTextFieldAos,
+                                enterPrice);
+                        // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
+
+                    takeProfitPrice = enterPrice;
+                }
+            }
+        }
+    }
+
+    public String getStopLossPrice(String direction, String symbolDecimal) {
+        String price = "";
+        WebElement text;
+        switch (direction) {
+            case "BUY" -> {
+                text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Stop Loss (≤\")]"));
+                price = Float.toString(Float.parseFloat(text.getText().split("≤")[1].trim().split("\\)")[0]));
+            }
+            case "SELL" -> {
+                text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Stop Loss (≥\")]"));
+                price = Float.toString(Float.parseFloat(text.getText().split("≥")[1].trim().split("\\)")[0]));
+            }
+        }
+        String formattedPrice = abs.normalizePriceToDecimals(price, symbolDecimal);
+        stopLossPrice = formattedPrice;
+        return formattedPrice;
+    }
+
+    public String getTakeProfitPrice(String direction, String symbolDecimal) {
+        String price = "";
+        WebElement text;
+        switch (direction) {
+            case "BUY" -> {
+                text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Take Profit (≥\")]"));
+                price = Float.toString(Float.parseFloat(text.getText().split("≥")[1].trim().split("\\)")[0]));
+            }
+            case "SELL" -> {
+                text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Take Profit (≤\")]"));
+                price = Float.toString(Float.parseFloat(text.getText().split("≤")[1].trim().split("\\)")[0]));
+            }
+        }
+        String formattedPrice = abs.normalizePriceToDecimals(price, symbolDecimal);
+        takeProfitPrice = formattedPrice;
+        return formattedPrice;
+    }
+
+    public String getValidationValue(String label) {
+        return switch (label) {
+            case "Stop Loss Price", "Stop Loss" -> stopLossPrice;
+            case "Take Profit Price", "Take Profit" -> takeProfitPrice;
+            case "Direction" -> AppTradeView.selectedDirection;
+            default -> null;
+        };
+    }
+    public void tapsButton(String buttonName) {
+        if (driver instanceof AndroidDriver) {
+            if (buttonName.contains("Cancel Order")) {
+                WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
+                abs.waitUtilElementFind(button);
+                button.click();
+            } else {
+                driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
+            }
+        }
+    }
+
+
+}
