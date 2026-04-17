@@ -28,7 +28,6 @@ public class AppTradeView {
     public static String editPrice;
 
 
-
     public AppTradeView(AppiumDriver driver) {
         this.driver = driver;
         abs = new MobileAbstractComponents(driver);
@@ -75,10 +74,15 @@ public class AppTradeView {
             "android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup/android.view.ViewGroup[2]")
     WebElement closePositionBtnInDetailsAos;
 
-    @FindBy(xpath="//android.widget.FrameLayout[@resource-id=\"android:id/content\"]/android.widget.FrameLayout" +
+    @FindBy(xpath = "//android.widget.FrameLayout[@resource-id=\"android:id/content\"]/android.widget.FrameLayout" +
             "/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup/android.view.ViewGroup" +
             "/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup")
     WebElement closePositionBtnWithLotsAos;
+
+    @FindBy(xpath = "//android.widget.FrameLayout[@resource-id=\"android:id/content\"]/android.widget.FrameLayout" +
+            "/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup/android.view.ViewGroup" +
+            "/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[1]")
+    WebElement backBtnAos;
 
 
     public void selectDirection(String direction) {
@@ -92,7 +96,7 @@ public class AppTradeView {
     }
 
 
-    public String getStopLossPrice(String direction,String symbolDecimal) {
+    public String getStopLossPrice(String direction, String symbolDecimal) {
         String price = "";
         WebElement text;
         selectedDirection = direction;
@@ -106,12 +110,12 @@ public class AppTradeView {
                 price = Float.toString(Float.parseFloat(text.getText().split("≥")[1].trim().split("\\)")[0]) + 25);
             }
         }
-        String formattedPrice = abs.normalizePriceToDecimals(price,symbolDecimal);
+        String formattedPrice = abs.normalizePriceToDecimals(price, symbolDecimal);
         stopLossPrice = formattedPrice;
         return formattedPrice;
     }
 
-    public String getTakeProfitPrice(String direction,String symbolDecimal) {
+    public String getTakeProfitPrice(String direction, String symbolDecimal) {
         String price = "";
         WebElement text;
         selectedDirection = direction;
@@ -125,7 +129,7 @@ public class AppTradeView {
                 price = Float.toString(Float.parseFloat(text.getText().split("≤")[1].trim().split("\\)")[0]) - 25);
             }
         }
-        String formattedPrice = abs.normalizePriceToDecimals(price,symbolDecimal);
+        String formattedPrice = abs.normalizePriceToDecimals(price, symbolDecimal);
         takeProfitPrice = formattedPrice;
         return formattedPrice;
     }
@@ -163,12 +167,11 @@ public class AppTradeView {
 
     public void tapsButton(String buttonName) {
         if (driver instanceof AndroidDriver) {
-            if (buttonName.contains("Cancel Order")){
-                WebElement button =  driver.findElement(By.xpath("//android.widget.TextView[@text=\""+ buttonName +"\"]/parent::android.view.ViewGroup"));
+            if (buttonName.contains("Cancel Order")) {
+                WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
                 abs.waitUtilElementFind(button);
                 button.click();
-            }
-            else {
+            } else {
                 driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
             }
         }
@@ -176,33 +179,55 @@ public class AppTradeView {
 
     public void tapsButtonOnConfirm(String buttonName) {
         if (driver instanceof AndroidDriver) {
-            if (buttonName.contains("Position") || buttonName.contains("Modify") || buttonName.contains("Cancel Order")){
-                WebElement button =  driver.findElement(By.xpath("//android.widget.TextView[@text=\""+ buttonName +"\"]/parent::android.view.ViewGroup"));
+            if (buttonName.contains("Position") || buttonName.contains("Modify") || buttonName.contains("Cancel Order")) {
+                WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
                 abs.waitUtilElementFind(button);
                 button.click();
-            }
-            else {
+            } else {
                 driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
             }
         }
     }
 
+//    public String getDetailValue(String value) {
+//        List<WebElement> text = driver.findElements(By.className("android.widget.TextView"));
+//        abs.waitUtilAllElementFind(text);
+//        for (int i = 0; i < text.size(); i++) {
+//            if (text.get(i).getText().equalsIgnoreCase(value)) {
+//                if (value.equalsIgnoreCase("Volume")) {
+//                    return text.get(i + 1).getText().split("Lots")[0].trim();
+//                }
+//                return text.get(i + 1).getText();
+//            }
+//        }
+//        return null;
+//    }
+
     public String getDetailValue(String value) {
-        List<WebElement> text = driver.findElements(By.className("android.widget.TextView"));
-        for (int i = 0; i < text.size(); i++) {
-            if (text.get(i).getText().equalsIgnoreCase(value)) {
-                if (value.equalsIgnoreCase("Volume")) {
-                    return text.get(i + 1).getText().split("Lots")[0].trim();
+        By locator = By.className("android.widget.TextView");
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                List<WebElement> text = driver.findElements(locator);
+                for (int i = 0; i < text.size(); i++) {
+                    if (text.get(i).getText().equalsIgnoreCase(value)) {
+                        if (value.equalsIgnoreCase("Volume")) {
+                            return text.get(i + 1).getText().split("Lots")[0].trim();
+                        }
+                        return text.get(i + 1).getText();
+                    }
                 }
-                return text.get(i + 1).getText();
+            } catch (StaleElementReferenceException e) {
+                System.out.println("Stale elements while reading texts, retrying...");
             }
         }
-        return null;
+        throw new RuntimeException("Unable to get texts from TextViews");
+
     }
 
-    public String getPositionValue(String value,String symbolDecimal) {
+    public String getPositionValue(String value, String symbolDecimal) {
         List<WebElement> elements = driver.findElements(By.className("android.widget.TextView"));
         List<String> texts = new ArrayList<>(elements.size());
+        abs.waitUtilElementFind(elements.getFirst());
         for (WebElement el : elements) {
             texts.add(el.getText());
         }
@@ -214,7 +239,7 @@ public class AppTradeView {
                 }
 
                 if (value.equalsIgnoreCase("Take Profit Price") || value.equalsIgnoreCase("Stop Loss Price")) {
-                    return abs.normalizePriceToDecimals(texts.get(i+1),symbolDecimal);
+                    return abs.normalizePriceToDecimals(texts.get(i + 1), symbolDecimal);
                 }
                 return texts.get(i + 1);
             }
@@ -222,17 +247,17 @@ public class AppTradeView {
         return null;
     }
 
-    public String getPositionValueWithRetry(String value,String symbolDecimal) {
+    public String getPositionValueWithRetry(String value, String symbolDecimal) {
         int attempts = 3;
         while (attempts-- > 0) {
             try {
-                return getPositionValue(value,symbolDecimal); // the snapshot version above
+                return getPositionValue(value, symbolDecimal); // the snapshot version above
             } catch (StaleElementReferenceException e) {
                 if (attempts == 0) throw e;
                 // small pause or just retry
             }
         }
-            return null;
+        return null;
     }
 
     public String getValidationValue(String label) {
@@ -284,7 +309,8 @@ public class AppTradeView {
                 case "detail" -> detailsButton.click();
                 case "close" -> {
                     abs.waitUtilElementFind(crossButtonAos);
-                    crossButtonAos.click();}
+                    crossButtonAos.click();
+                }
                 case "edit" -> editPositionButtonAos.click();
             }
 
@@ -323,6 +349,7 @@ public class AppTradeView {
 
     public void closePosition() {
         if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementClickable(crossButtonAos);
             crossButtonAos.click();
             abs.waitUtilElementFind(closePositionAos);
             closePositionAos.click();
@@ -361,7 +388,7 @@ public class AppTradeView {
         return values;
     }
 
-    public String getDialogueTextAos(){
+    public String getDialogueTextAos() {
         if (driver instanceof AndroidDriver) {
             abs.waitUtilElementFind(dialogueTextAos);
             return dialogueTextAos.getText();
@@ -375,8 +402,8 @@ public class AppTradeView {
         tapsButtonOnConfirm("Cancel Order");
     }
 
-    public boolean getPendingOrder(){
-        if (driver instanceof AndroidDriver){
+    public boolean getPendingOrder() {
+        if (driver instanceof AndroidDriver) {
             if (rowsOnPendingOrdersTabAos == null || rowsOnPendingOrdersTabAos.isEmpty()) {
                 return false;
             }
@@ -385,7 +412,7 @@ public class AppTradeView {
         return false;
     }
 
-    public boolean getPosition(){
+    public boolean getPosition() {
         if (driver instanceof AndroidDriver) {
             if (rowsOnPositionTabAos == null || rowsOnPositionTabAos.isEmpty()) {
                 return false;
@@ -395,7 +422,13 @@ public class AppTradeView {
         return false;
     }
 
-    public void setLotSize(String symbolLotSize){
+    public void setLotSize(String symbolLotSize) {
         lotSize = symbolLotSize;
+    }
+
+    public void tapBack() {
+        if (driver instanceof AndroidDriver) {
+            backBtnAos.click();
+        }
     }
 }
