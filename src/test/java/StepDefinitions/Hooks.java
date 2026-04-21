@@ -88,7 +88,7 @@ public class Hooks extends BaseTest {
      * Handles test cleanup and reporting
      */
 
-    // @After
+   //  @After
     public void cleanupAndReport(Scenario scenario) throws Exception {
         handleVideoRecording(scenario);
         cleanupDriver();

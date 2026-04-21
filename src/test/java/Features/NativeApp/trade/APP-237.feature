@@ -1,4 +1,4 @@
-Feature: Native App AO Application
+Feature: Native App trade
 
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
     Scenario: User sees sell Limit order Confirmation page info based on the input values in previous page

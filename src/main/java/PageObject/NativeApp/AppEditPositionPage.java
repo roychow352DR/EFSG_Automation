@@ -50,6 +50,9 @@ public class AppEditPositionPage {
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.widget.EditText[2]")
     WebElement takeProfitTextFieldAos;
 
+    @FindBy(className = "android.widget.TextView")
+    List<WebElement> textMessages;
+
 
     public String getInputFieldValue(String inputFieldName) {
         if (driver instanceof AndroidDriver) {
@@ -95,9 +98,9 @@ public class AppEditPositionPage {
                     }
                     abs.waitUtilElementFind(stopLossTextFieldAos);
                     abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossTextFieldAos,
-                                enterPrice);
-                        //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
-                    stopLossPrice = abs.normalizePriceToDecimals(enterPrice,decimal);
+                            enterPrice);
+                    //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
+                    stopLossPrice = abs.normalizePriceToDecimals(enterPrice, decimal);
                 }
                 case "Take Profit" -> {
                     if (direction.equalsIgnoreCase("BUY")) {
@@ -108,10 +111,10 @@ public class AppEditPositionPage {
 
                     abs.waitUtilElementFind(takeProfitTextFieldAos);
                     abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitTextFieldAos,
-                                enterPrice);
-                        // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
+                            enterPrice);
+                    // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
 
-                    takeProfitPrice = enterPrice;
+                    takeProfitPrice = abs.normalizePriceToDecimals(enterPrice, decimal);
                 }
             }
         }
@@ -161,6 +164,7 @@ public class AppEditPositionPage {
             default -> null;
         };
     }
+
     public void tapsButton(String buttonName) {
         if (driver instanceof AndroidDriver) {
             if (buttonName.contains("Cancel Order")) {
@@ -171,6 +175,18 @@ public class AppEditPositionPage {
                 driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
             }
         }
+    }
+
+    public boolean getTextMessage(String messageContent) {
+        if (driver instanceof AndroidDriver) {
+            for (WebElement ele : textMessages) {
+                if (ele.getText().equalsIgnoreCase(messageContent)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
 

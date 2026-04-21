@@ -205,7 +205,7 @@ public class AppTradeView {
 
     public String getDetailValue(String value) {
         By locator = By.className("android.widget.TextView");
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        for (int attempt = 1; attempt <= 5; attempt++) {
             try {
                 List<WebElement> text = driver.findElements(locator);
                 for (int i = 0; i < text.size(); i++) {

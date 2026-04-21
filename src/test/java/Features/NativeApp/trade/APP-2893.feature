@@ -1,4 +1,4 @@
-Feature: Native App AO Application
+Feature: Native App trade
 
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
     Scenario: User sees an error message when the take profit price of buy order is smaller than current price plus BS point
