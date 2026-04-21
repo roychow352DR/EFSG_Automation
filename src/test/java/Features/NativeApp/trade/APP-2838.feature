@@ -1,4 +1,4 @@
-Feature: Native App AO Application
+Feature: Native App trade
 
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
     Scenario: It prompted error message when the inputted lot size of the market order is more than maximum lot

@@ -337,7 +337,24 @@ public class tradeSteps extends BaseTest {
         Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value), appPoManager.getAppEditPositionPage().getValidationValue(value));
         appPoManager.getAppTradeView().closePositionInDetails();
 
+
     }
 
+    @And("the user fills in the text field {string} with direction {string} and the price is greater than current price minus BS point on the edit position page")
+    public void the_user_fills_in_the_text_field_and_the_price_is_greater_than_current_price_minus_BS_point_on_the_edit_position_page(String textFieldName, String direction) throws InterruptedException {
+        appPoManager.getAppEditPositionPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),-10);
+    }
+
+    @Then("the user sees an error message {string} is displayed on the edit position page")
+    public void the_user_sees_an_error_message_is_displayed_on_the_edit_position_page(String errorMsg){
+        Assert.assertTrue(appPoManager.getAppEditPositionPage().getTextMessage(errorMsg));
+        appPoManager.getAppTradeView().tapBack();
+        appPoManager.getAppTradeView().closePosition();
+    }
+
+    @And("the user fills in the text field {string} with direction {string} and the price is smaller than current price plus BS point on the edit position page")
+    public void the_user_fills_in_the_text_field_and_the_price_is_smaller_than_current_price_plus_BS_point_on_the_edit_position_page(String textFieldName, String direction) throws InterruptedException {
+        appPoManager.getAppEditPositionPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),-10);
+    }
 
 }
