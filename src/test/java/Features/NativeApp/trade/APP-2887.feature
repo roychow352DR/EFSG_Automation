@@ -1,4 +1,4 @@
-Feature: Native App AO Application
+Feature: Native App trade
 
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
     Scenario: The take profit price is populate to the input field after minus button is tapped

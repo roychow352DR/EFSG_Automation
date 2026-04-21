@@ -1,4 +1,4 @@
-Feature: Native App AO Application
+Feature: Native App trade
 
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
     Scenario: The trading volume and estimated margin are displayed correctly after the "1 lot" button is tapped
