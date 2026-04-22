@@ -1,6 +1,6 @@
   Feature: Customer Management
 
-    @Regression @AdminPortal @CM @EBL_MT5 @EIEHK @XPro
+    @Regression @Smoke @AdminPortal @CM @EBL_MT5 @EIEHK @XPro
     Scenario: CM status in Activated after second approval
       Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
       And the user clicks "Customer Management" on the ao admin portal menu
