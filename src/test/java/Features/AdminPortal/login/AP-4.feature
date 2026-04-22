@@ -1,6 +1,6 @@
 Feature: Admin Portal login
 
-  @Regression @AdminPortal @Smoke @EBL_MT5 @EIEHK @XPro @Login
+  @Regression @AdminPortal @EBL_MT5 @EIEHK @XPro @Login
   Scenario: Login with unauthorized account credentials - valid username but incorrect password
     Given the user lands on Admin Portal login page
     And the user fills in with username "qaauto" and password "Test1234@@"

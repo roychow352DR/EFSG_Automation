@@ -32,9 +32,9 @@ public class QASEConfig extends GlobalConfig {
         qaseConfig.put("qasePropertyPath",path);
         qaseConfig.put("apiToken",getProperty(path,"qase.api.token"));
         qaseConfig.put("projectCode",getProperty(path,"qase.project.code"));
-        qaseConfig.put("testPlanId",getTestPlanId(getProperty(path, "testType"),path,productEntity));
+        qaseConfig.put("testPlanId",getTestPlanId(getProperty(path, "test_type"),path,productEntity));
        // qaseConfig.put("runTitle",qaseApiClient.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "testType"), path,productEntity)), getProperty(path,"qase.project.code")));
-        qaseConfig.put("runTitle",qaseApiClientOptimized.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "testType"), path,productEntity))));
+        qaseConfig.put("runTitle",qaseApiClientOptimized.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "test_type"), path,productEntity))));
         return qaseConfig;
 
     }
