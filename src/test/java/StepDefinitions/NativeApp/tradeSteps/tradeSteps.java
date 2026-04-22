@@ -357,4 +357,25 @@ public class tradeSteps extends BaseTest {
         appPoManager.getAppEditPositionPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),-10);
     }
 
+    @When("the user taps button {string} on the portfolio page")
+    public void the_user_taps_button_on_the_portfolio_page(String buttonText){
+        appPoManager.getAppPortfolioPage().clickButton(buttonText);
+    }
+
+    @Then("the user sees the portfolio filtering page with correct items displayed")
+    public void the_user_sees_the_portfolio_filtering_page_with_correct_items_displayed(){
+        System.out.println(appPoManager.getAppPortfolioPage().getTitleAos());
+    }
+
+    @Then("the user sees heading {string} on the portfolio filtering page")
+    public void the_user_sees_heading_on_the_portfolio_filtering_page(String title){
+        Assert.assertEquals(appPoManager.getAppPortfolioPage().getTitleAos(),title);
+    }
+
+    @Then("the user sees the product {string} is selected on the portfolio filtering page")
+    public void the_user_sees_the_product_is_selected_on_the_portfolio_filtering_page(String product){
+        Assert.assertEquals(appPoManager.getAppPortfolioPage().getCheckedProduct(),product);
+    }
+
+
 }

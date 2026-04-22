@@ -1,6 +1,6 @@
   Feature: Customer Management
 
-    @Regression @AdminPortal @CM @EBL_MT5 @EIEHK @XPro
+    @Regression @Smoke @AdminPortal @CM @EBL_MT5 @EIEHK @XPro
     Scenario: CM status in Pending Approval after first approval
       Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
       And the user clicks "Customer Management" on the ao admin portal menu
