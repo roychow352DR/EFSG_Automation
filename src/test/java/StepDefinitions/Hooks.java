@@ -76,7 +76,7 @@ public class Hooks extends BaseTest {
      * Initializes test case and gets case ID
      */
 
-    @Before
+   @Before
     public void initializeTestCase(Scenario scenario) throws IOException, InterruptedException {
         caseId = qaseConfig.getCaseId(scenario);
         steps.clear();

@@ -10,7 +10,7 @@ Feature: Native App trade
       And the user fills in the text field "Lot Size" with value "0.5" on the instrument details page
       And the user taps button "BUY" on the instrument details page
       And the user taps button "BUY" on the confirmation pop up
-      When the user taps "edit" cta button on the position tab of app trade view
+      When the user taps "edit" cta button on the app trade view
       Then the user sees the "Take Profit" input field is displayed empty by default on the edit position page
 
 

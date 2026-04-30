@@ -2,14 +2,12 @@ package StepDefinitions.NativeApp.tradeSteps;
 
 import Data.TradeRecord;
 import Data.TradeSymbolConfig;
-import PageObject.NativeApp.AppInstrumentDetailsPage;
-import PageObject.NativeApp.AppMarketsPage;
-import PageObject.NativeApp.AppPOManager;
-import PageObject.NativeApp.AppTradeView;
+import PageObject.NativeApp.*;
 import io.cucumber.java.en.And;
 import StepDefinitions.NativeApp.login.loginSteps;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.cucumber.java.sl.In;
 import org.testng.Assert;
 import utils.BaseTest;
 
@@ -40,12 +38,12 @@ public class tradeSteps extends BaseTest {
     @And("the user fills in the text field {string} with direction {string} on the instrument details page")
     public void the_user_fills_in_the_text_field_on_the_app_trade_view(String textFieldName, String direction) throws InterruptedException {
         //Thread.sleep(8000);
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),25);
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), 25);
     }
 
     @And("the user taps button {string} on the instrument details page")
     public void the_user_taps_button_buy_on_the_app_trade_view(String buttonName) throws InterruptedException {
-       // Thread.sleep(200);
+        // Thread.sleep(200);
         appPoManager.getAppInstrumentDetailsPage().tapsButton(buttonName);
     }
 
@@ -79,8 +77,8 @@ public class tradeSteps extends BaseTest {
         appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(buttonName);
     }
 
-    @And("the user taps {string} cta button on the position tab of app trade view")
-    public void the_user_taps_cta_button_on_the_position_tab_of_app_trade_view(String buttonName) {
+    @And("the user taps {string} cta button on the app trade view")
+    public void the_user_taps_cta_button_on_the_app_trade_view(String buttonName) {
         appPoManager.getAppTradeView().tapCtaButton(buttonName);
     }
 
@@ -182,44 +180,43 @@ public class tradeSteps extends BaseTest {
     }
 
     @Then("the user sees the open position is disappeared on the position list")
-    public void the_user_sees_the_open_position_is_disappeared_on_the_position_list(){
+    public void the_user_sees_the_open_position_is_disappeared_on_the_position_list() {
         Assert.assertFalse(appPoManager.getAppTradeView().getPosition());
     }
 
     @Then("the user sees expected default volume on the instrument details page")
-    public void the_user_sees_expected_default_volume_on_the_instrument_details_page(){
-        Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getInputFieldValue("Lots"),"1.00");
+    public void the_user_sees_expected_default_volume_on_the_instrument_details_page() {
+        Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getInputFieldValue("Lots"), "1.00");
     }
 
     @And("the user fills in the text field {string} with the value less than minimum on the instrument details page")
     public void the_user_fills_in_the_text_field_with_the_value_less_than_minimum_on_the_instrument_details_page(String textFieldName) throws InterruptedException {
-        appPoManager.getAppInstrumentDetailsPage().setLotSize(String.valueOf(tradeSymbolConfig.getMinLotSize(AppMarketsPage.tradeSymbol)-0.01));
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName,AppTradeView.selectedDirection,tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
+        appPoManager.getAppInstrumentDetailsPage().setLotSize(String.valueOf(tradeSymbolConfig.getMinLotSize(AppMarketsPage.tradeSymbol) - 0.01));
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, AppTradeView.selectedDirection, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
     }
 
     @And("the user fills in the text field {string} with the value more than maximum on the instrument details page")
     public void the_user_fills_in_the_text_field_with_the_value_more_than_maximum_on_the_instrument_details_page(String textFieldName) throws InterruptedException {
-        appPoManager.getAppInstrumentDetailsPage().setLotSize(String.valueOf(tradeSymbolConfig.getMaxLotSize(AppMarketsPage.tradeSymbol)+0.01));
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName,AppTradeView.selectedDirection,tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
+        appPoManager.getAppInstrumentDetailsPage().setLotSize(String.valueOf(tradeSymbolConfig.getMaxLotSize(AppMarketsPage.tradeSymbol) + 0.01));
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, AppTradeView.selectedDirection, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
     }
 
     @Then("the user sees an error message {string} is displayed on the instrument details page")
-    public void the_user_sees_an_error_message_is_displayed_on_the_instrument_details_page(String text){
+    public void the_user_sees_an_error_message_is_displayed_on_the_instrument_details_page(String text) {
         Assert.assertTrue(appPoManager.getAppInstrumentDetailsPage().getTextMessage(text));
     }
 
     @Then("the user sees the {string} value is displayed correctly on the instrument details page")
-    public void the_user_sees_the_value_is_displayed_correctly_on_the_instrument_details_page(String label){
-        Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getValue(label,tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
+    public void the_user_sees_the_value_is_displayed_correctly_on_the_instrument_details_page(String label) {
+        Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getValue(label, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
                 appPoManager.getAppInstrumentDetailsPage().getValidationValue(label));
     }
 
     @Then("the user sees that the Take Profit and Stop Loss toggles are turned {string} on the instrument details page")
-    public void the_user_sees_that_the_Take_Profit_and_Stop_Loss_toggles_are_turned_on_the_instrument_details_page(String toggleState){
+    public void the_user_sees_that_the_Take_Profit_and_Stop_Loss_toggles_are_turned_on_the_instrument_details_page(String toggleState) {
         if (toggleState.equalsIgnoreCase("on")) {
             Assert.assertTrue(appPoManager.getAppInstrumentDetailsPage().getToggleStatus());
-        }
-        else {
+        } else {
             Assert.assertFalse(appPoManager.getAppInstrumentDetailsPage().getToggleStatus());
         }
     }
@@ -238,36 +235,36 @@ public class tradeSteps extends BaseTest {
     @And("the user taps button {string} of the {string} input text field on the instrument details page")
     public void the_user_taps_button_of_the_input_text_field_on_the_instrument_details_page(String ctaBtn, String priceType) throws InterruptedException {
         Thread.sleep(2000);
-        appPoManager.getAppInstrumentDetailsPage().adjustPrice(ctaBtn,priceType);
+        appPoManager.getAppInstrumentDetailsPage().adjustPrice(ctaBtn, priceType);
     }
 
     @Then("the user sees the {string} price is increased by {int} point on the instrument details page")
-    public void the_user_sees_the_price_is_increased_by_point_on_the_instrument_details_page(String priceType,int point){
+    public void the_user_sees_the_price_is_increased_by_point_on_the_instrument_details_page(String priceType, int point) {
         Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getInputFieldValue(priceType),
-                String.format("%." + tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol) + "f", Float.parseFloat(appPoManager.getAppInstrumentDetailsPage().getValidationValue(priceType))+
+                String.format("%." + tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol) + "f", Float.parseFloat(appPoManager.getAppInstrumentDetailsPage().getValidationValue(priceType)) +
                         point / Math.pow(10, Integer.parseInt(tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)))));
     }
 
     @Then("the user sees the {string} price is decreased by {int} point on the instrument details page")
-    public void the_user_sees_the_price_is_decreased_by_point_on_the_instrument_details_page(String priceType,int point){
+    public void the_user_sees_the_price_is_decreased_by_point_on_the_instrument_details_page(String priceType, int point) {
         Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getInputFieldValue(priceType),
-                String.format("%." + tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol) + "f", Float.parseFloat(appPoManager.getAppInstrumentDetailsPage().getValidationValue(priceType))-
+                String.format("%." + tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol) + "f", Float.parseFloat(appPoManager.getAppInstrumentDetailsPage().getValidationValue(priceType)) -
                         point / Math.pow(10, Integer.parseInt(tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)))));
     }
 
     @And("the user fills in the text field {string} with direction {string} and the price is greater than current price minus BS point on the instrument details page")
     public void the_user_fills_in_the_text_field_and_the_price_is_greater_than_current_price_minus_BS_point_on_the_app_trade_view(String textFieldName, String direction) throws InterruptedException {
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),-10);
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), -10);
     }
 
     @Then("the user sees the {string} price is populate to the input field on the instrument details page")
-    public void the_user_sees_the_price_is_populate_to_the_input_field_on_the_instrument_details_page(String priceType){
+    public void the_user_sees_the_price_is_populate_to_the_input_field_on_the_instrument_details_page(String priceType) {
         Assert.assertNotNull(appPoManager.getAppInstrumentDetailsPage().getInputFieldValue(priceType));
     }
 
     @And("the user fills in the text field {string} with direction {string} and the price is smaller than current price plus BS point on the instrument details page")
     public void the_user_fills_in_the_text_field_and_the_price_is_smaller_than_current_price_plus_BS_point_on_the_app_trade_view(String textFieldName, String direction) throws InterruptedException {
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),-10);
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), -10);
     }
 
     @Then("the user sees the value {string} is displayed correctly on the edit position page")
@@ -279,40 +276,40 @@ public class tradeSteps extends BaseTest {
     }
 
     @Then("the user sees the {string} input field is displayed empty by default on the edit position page")
-    public void the_user_sees_the_input_field_is_displayed_empty_by_default_on_the_edit_position_page(String inputFieldName){
-        Assert.assertEquals(appPoManager.getAppEditPositionPage().getInputFieldValue(inputFieldName),"");
+    public void the_user_sees_the_input_field_is_displayed_empty_by_default_on_the_edit_position_page(String inputFieldName) {
+        Assert.assertEquals(appPoManager.getAppEditPositionPage().getInputFieldValue(inputFieldName), "");
     }
 
     @And("the user taps button {string} of the {string} input text field on the edit position page")
-    public void the_user_taps_button_of_the_input_text_field_on_the_edit_position_page(String ctaBtn, String inputField){
-        appPoManager.getAppEditPositionPage().adjustPrice(ctaBtn,inputField);
+    public void the_user_taps_button_of_the_input_text_field_on_the_edit_position_page(String ctaBtn, String inputField) {
+        appPoManager.getAppEditPositionPage().adjustPrice(ctaBtn, inputField);
     }
 
     @Then("the user sees the {string} price is populate to the input field on the edit position page")
-    public void the_user_sees_the_price_is_populate_to_the_input_field_on_the_edit_position_page(String inputField){
+    public void the_user_sees_the_price_is_populate_to_the_input_field_on_the_edit_position_page(String inputField) {
         Assert.assertNotNull(appPoManager.getAppEditPositionPage().getInputFieldValue(inputField));
         appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
     @And("the user fills in the text field {string} with direction {string} on the edit position page")
-    public void the_user_fills_in_the_text_field_with_direction_on_the_edit_position_page(String textFieldName, String direction){
-        appPoManager.getAppEditPositionPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),25);
+    public void the_user_fills_in_the_text_field_with_direction_on_the_edit_position_page(String textFieldName, String direction) {
+        appPoManager.getAppEditPositionPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), 25);
     }
 
     @Then("the user sees the {string} price is decreased by {int} point on the edit position page")
-    public void the_user_sees_the_price_is_decreased_by_point_on_the_edit_position_page(String priceType,int point){
+    public void the_user_sees_the_price_is_decreased_by_point_on_the_edit_position_page(String priceType, int point) {
         Assert.assertEquals(appPoManager.getAppEditPositionPage().getInputFieldValue(priceType),
-                String.format("%." + tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol) + "f", Float.parseFloat(appPoManager.getAppEditPositionPage().getValidationValue(priceType))-
+                String.format("%." + tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol) + "f", Float.parseFloat(appPoManager.getAppEditPositionPage().getValidationValue(priceType)) -
                         point / Math.pow(10, Integer.parseInt(tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)))));
         appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
     @Then("the user sees the {string} price is increased by {int} point on the edit position page")
-    public void the_user_sees_the_price_is_increased_by_point_on_the_edit_position_page(String priceType,int point){
+    public void the_user_sees_the_price_is_increased_by_point_on_the_edit_position_page(String priceType, int point) {
         Assert.assertEquals(appPoManager.getAppEditPositionPage().getInputFieldValue(priceType),
-                String.format("%." + tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol) + "f", Float.parseFloat(appPoManager.getAppEditPositionPage().getValidationValue(priceType))+
+                String.format("%." + tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol) + "f", Float.parseFloat(appPoManager.getAppEditPositionPage().getValidationValue(priceType)) +
                         point / Math.pow(10, Integer.parseInt(tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)))));
         appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
@@ -327,13 +324,13 @@ public class tradeSteps extends BaseTest {
     }
 
     @And("the user taps button {string} on the edit position page")
-    public void the_user_taps_button_on_the_edit_position_page(String buttonName){
+    public void the_user_taps_button_on_the_edit_position_page(String buttonName) {
         appPoManager.getAppEditPositionPage().tapsButton(buttonName);
     }
 
     @Then("the user sees the value {string} is updated on the position details page")
     public void the_user_sees_the_value_is_updated_on_the_position_details_page(String value) throws InterruptedException {
-       // Thread.sleep(500);
+        // Thread.sleep(500);
         Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value), appPoManager.getAppEditPositionPage().getValidationValue(value));
         appPoManager.getAppTradeView().closePositionInDetails();
 
@@ -342,11 +339,11 @@ public class tradeSteps extends BaseTest {
 
     @And("the user fills in the text field {string} with direction {string} and the price is greater than current price minus BS point on the edit position page")
     public void the_user_fills_in_the_text_field_and_the_price_is_greater_than_current_price_minus_BS_point_on_the_edit_position_page(String textFieldName, String direction) throws InterruptedException {
-        appPoManager.getAppEditPositionPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),-10);
+        appPoManager.getAppEditPositionPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), -10);
     }
 
     @Then("the user sees an error message {string} is displayed on the edit position page")
-    public void the_user_sees_an_error_message_is_displayed_on_the_edit_position_page(String errorMsg){
+    public void the_user_sees_an_error_message_is_displayed_on_the_edit_position_page(String errorMsg) {
         Assert.assertTrue(appPoManager.getAppEditPositionPage().getTextMessage(errorMsg));
         appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
@@ -354,28 +351,102 @@ public class tradeSteps extends BaseTest {
 
     @And("the user fills in the text field {string} with direction {string} and the price is smaller than current price plus BS point on the edit position page")
     public void the_user_fills_in_the_text_field_and_the_price_is_smaller_than_current_price_plus_BS_point_on_the_edit_position_page(String textFieldName, String direction) throws InterruptedException {
-        appPoManager.getAppEditPositionPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),-10);
+        appPoManager.getAppEditPositionPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), -10);
     }
 
     @When("the user taps button {string} on the portfolio page")
-    public void the_user_taps_button_on_the_portfolio_page(String buttonText){
+    public void the_user_taps_button_on_the_portfolio_page(String buttonText) {
         appPoManager.getAppPortfolioPage().clickButton(buttonText);
     }
 
     @Then("the user sees the portfolio filtering page with correct items displayed")
-    public void the_user_sees_the_portfolio_filtering_page_with_correct_items_displayed(){
+    public void the_user_sees_the_portfolio_filtering_page_with_correct_items_displayed() {
         System.out.println(appPoManager.getAppPortfolioPage().getTitleAos());
     }
 
     @Then("the user sees heading {string} on the portfolio filtering page")
-    public void the_user_sees_heading_on_the_portfolio_filtering_page(String title){
-        Assert.assertEquals(appPoManager.getAppPortfolioPage().getTitleAos(),title);
+    public void the_user_sees_heading_on_the_portfolio_filtering_page(String title) {
+        Assert.assertEquals(appPoManager.getAppPortfolioPage().getTitleAos(), title);
     }
 
     @Then("the user sees the product {string} is selected on the portfolio filtering page")
-    public void the_user_sees_the_product_is_selected_on_the_portfolio_filtering_page(String product){
-        Assert.assertEquals(appPoManager.getAppPortfolioPage().getCheckedProduct(),product);
+    public void the_user_sees_the_product_is_selected_on_the_portfolio_filtering_page(String product) {
+        Assert.assertEquals(appPoManager.getAppPortfolioPage().getCheckedProduct(), product);
     }
 
+    @And("the user taps back button on the portfolio filtering page")
+    public void the_user_taps_back_button_on_the_portfolio_filtering_page() {
+        appPoManager.getAppPortfolioPage().tapBack();
+    }
+
+    @Then("the user sees {string} tab is selected on the portfolio page")
+    public void the_user_sees_tab_is_selected_on_the_portfolio_page(String tabName) {
+        Assert.assertTrue(appPoManager.getAppPortfolioPage().tabIsSelected(tabName));
+    }
+
+    @Then("the user sees a full volume lot size on the app close position page")
+    public void the_user_sees_a_full_volume_lot_size_on_the_app_close_position_page() {
+        Assert.assertEquals(appPoManager.getAppClosePositionPage().getEditFieldVal(), appPoManager.getAppInstrumentDetailsPage().getValidationValue("Volume"));
+        appPoManager.getAppTradeView().tapBack();
+        appPoManager.getAppTradeView().closePosition();
+    }
+
+    @When("the user taps button {string} on the close position page")
+    public void the_user_taps_button_on_the_close_position_page(String btnName) {
+        appPoManager.getAppClosePositionPage().clickBtn(btnName);
+    }
+
+    @Then("the user sees the lots value is decreased by default step size on the close position page")
+    public void the_user_sees_the_lots_value_is_decreased_by_default_step_size_on_the_close_position_page() throws InterruptedException {
+        Assert.assertEquals(appPoManager.getAppClosePositionPage().getEditFieldVal(),
+                String.valueOf(Float.parseFloat(appPoManager.getAppInstrumentDetailsPage().getValidationValue("Volume")) - Float.parseFloat(tradeSymbolConfig.getStepSize())));
+        appPoManager.getAppTradeView().tapBack();
+        appPoManager.getAppTradeView().closePosition();
+    }
+
+    @Then("the user sees the lots value is increased by default step size on the close position page")
+    public void the_user_sees_the_lots_value_is_increased_by_default_step_size_on_the_close_position_page() throws InterruptedException {
+        Assert.assertEquals(appPoManager.getAppClosePositionPage().getEditFieldVal(), appPoManager.getAppInstrumentDetailsPage().getValidationValue("Volume"));
+        appPoManager.getAppTradeView().tapBack();
+        appPoManager.getAppTradeView().closePosition();
+    }
+
+    @And("the user places a TPSL pending order with direction {string} and order type {string} on the instrument details page")
+    public void the_user_places_a_TPSL_pending_order_with_direction_and_order_type_on_the_instrument_details_page(String direction, String orderType) throws IOException, InterruptedException {
+        tradeRecord.placeTPSLPendingOrder(direction, orderType, tradeSymbolConfig);
+    }
+
+    @And("the user edit price type {string} of the pending order on the modify order page")
+    public void the_user_edit_price_type_of_the_pending_order_on_the_modify_order_page(String priceType) {
+        appPoManager.getAppModifyOrderPage().editTextField(priceType, AppTradeView.selectedDirection, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), 10);
+    }
+
+    @And("the user taps button {string} on the modify order page")
+    public void the_user_taps_button_on_the_modify_order_page(String buttonName) {
+        appPoManager.getAppModifyOrderPage().tapsButton(buttonName);
+    }
+
+    @And("the user scrolls down the modify order page")
+    public void the_user_scrolls_down_the_modify_order_page() {
+        appPoManager.getAppModifyOrderPage().scrollDown();
+    }
+
+    @Then("the user sees the value {string} is edited on the pending order details page")
+    public void the_user_sees_the_value_is_edited_on_the_pending_order_details_page(String value) throws InterruptedException {
+        Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value), AppModifyOrderPage.editPrice);
+        appPoManager.getAppTradeView().cancelPendingOrderInDetail();
+    }
+
+    @And("the user edit price type {string} of the pending order without acceptable range on the modify order page")
+    public void the_user_edit_price_type_of_the_pending_order_without_acceptable_range_on_the_modify_order_page(String priceType) {
+        appPoManager.getAppModifyOrderPage().editTextField(priceType, AppTradeView.selectedDirection, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), -50);
+    }
+
+    @Then("the user sees an error message {string} is displayed on the modify order page")
+    public void the_user_sees_an_error_message_is_displayed_on_the_modify_order_page(String errorMsg) throws InterruptedException {
+        Assert.assertTrue(appPoManager.getAppModifyOrderPage().getTextMessage(errorMsg));
+        appPoManager.getAppModifyOrderPage().tapBack();
+        appPoManager.getAppTradeView().cancelOrder();
+    }
 
 }

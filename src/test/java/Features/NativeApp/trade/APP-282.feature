@@ -13,11 +13,11 @@ Feature: Native App trade
     And the user fills in the text field "Price" with direction "BUY" on the instrument details page
     And the user taps button "BUY" on the instrument details page
     And the user taps button "BUY" on the confirmation pop up
-    When the user taps "edit" cta button on the position tab of app trade view
+    When the user taps "edit" cta button on the app trade view
     And the user edit price type "Stop" of the pending order on the instrument details page
     And the user taps button "Modify Order" on the instrument details page
     And the user taps button "Modify Order" on the confirmation pop up
-    And the user taps "detail" cta button on the position tab of app trade view
+    And the user taps "detail" cta button on the app trade view
     Then the user sees the value "Target Price" is updated on the pending order details page
 
 
