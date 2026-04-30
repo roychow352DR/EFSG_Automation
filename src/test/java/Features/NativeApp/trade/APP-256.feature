@@ -10,7 +10,7 @@ Feature: Native App trade
       And the user fills in the text field "Lot Size" with value "0.5" on the instrument details page
       And the user taps button "BUY" on the instrument details page
       And the user taps button "BUY" on the confirmation pop up
-      When the user taps "close" cta button on the position tab of app trade view
+      When the user taps "close" cta button on the app trade view
       And the user taps button "Close Position" on the instrument details page
       And the user taps button "Close Position" on the confirmation pop up
       Then the user sees the message "Your position is closed" is displayed at the dialogue

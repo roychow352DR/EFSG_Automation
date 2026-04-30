@@ -10,7 +10,7 @@ import static utils.BaseTest.getProperty;
 public class TradeRecord {
 
     private AppPOManager appPoManager;
-    public final String LOT_SIZE = "0.5";
+    public final String LOT_SIZE = "1";
 
     public TradeRecord(AppPOManager appPOManager) {
         this.appPoManager = appPOManager;
@@ -32,9 +32,24 @@ public class TradeRecord {
         confirmPlaceOrder(direction);
     }
 
+    public void placeTPSLPendingOrder(String direction, String orderType, TradeSymbolConfig tradeSymbolConfig) throws InterruptedException, IOException {
+        tapSymbol();
+        selectDirection(direction);
+        selectOrderType("Limit / Stop Order");
+        fillLotSize();
+        selectStopLimitOption(orderType);
+        fillStopLimitPrice(direction, tradeSymbolConfig);
+        switchStopLossOn();
+        scrollPageDown();
+        fillStopLossPrice(direction, tradeSymbolConfig);
+        fillTakeProfitPrice(direction,tradeSymbolConfig);
+        confirmPlaceOrder(direction);
+    }
+
     public void createOpenPosition(String direction) throws IOException, InterruptedException {
         tapSymbol();
         selectDirection(direction);
+        fillLotSize();
         confirmPlaceOrder(direction);
     }
 
@@ -47,7 +62,6 @@ public class TradeRecord {
     }
 
     public void selectOrderType(String orderType) throws InterruptedException {
-        Thread.sleep(500);
         appPoManager.getAppInstrumentDetailsPage().selectOrderType(orderType);
     }
 
@@ -70,5 +84,21 @@ public class TradeRecord {
         Thread.sleep(500);
         appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
         appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(direction);
+    }
+
+    public void fillStopLossPrice(String direction,TradeSymbolConfig tradeSymbolConfig){
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField("Stop Loss", direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),25);
+    }
+
+    public void fillTakeProfitPrice(String direction,TradeSymbolConfig tradeSymbolConfig){
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField("Take Profit", direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),25);
+    }
+
+    public void switchStopLossOn() throws InterruptedException {
+        appPoManager.getAppInstrumentDetailsPage().switchProfitStopLoss();
+    }
+
+    public void scrollPageDown(){
+        appPoManager.getAppInstrumentDetailsPage().scrollDown();
     }
 }
