@@ -41,4 +41,8 @@ public class TradeSymbolConfig {
             default -> 0;
         };
     }
+
+    public String getStepSize() {
+        return "0.1";
+    }
 }

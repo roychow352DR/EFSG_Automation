@@ -306,18 +306,25 @@ public class AppTradeView {
     public void tapCtaButton(String buttonName) {
         if (driver instanceof AndroidDriver) {
             switch (buttonName) {
-                case "detail" -> detailsButton.click();
+                case "detail" -> {
+                    abs.waitUtilElementClickable(detailsButton);
+                    detailsButton.click();
+                }
                 case "close" -> {
-                    abs.waitUtilElementFind(crossButtonAos);
+                    abs.waitUtilElementClickable(crossButtonAos);
                     crossButtonAos.click();
                 }
-                case "edit" -> editPositionButtonAos.click();
+                case "edit" -> {
+                    abs.waitUtilElementClickable(editPositionButtonAos);
+                    editPositionButtonAos.click();
+                }
             }
-
         }
+
     }
 
-    //        public void selectOrderType(String orderType) {
+
+//        public void selectOrderType(String orderType) {
 //        if (driver instanceof AndroidDriver) {
 //            orderTypeDropdownBtn.click();
 //            for (WebElement element : orderTypeOptions) {
@@ -329,106 +336,106 @@ public class AppTradeView {
 //        }
 //    }
 
-    public boolean getPendingOrdersDetail(String pendingOrderDetail) {
-        for (WebElement element : rowsOnPendingOrdersTabAos) {
-            if (element.getText().equalsIgnoreCase(pendingOrderDetail)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public void cancelOrder() {
-        if (driver instanceof AndroidDriver) {
-            crossButtonAos.click();
-            abs.waitUtilElementFind(cancelOrderButtonAos);
-            cancelOrderButtonAos.click();
+public boolean getPendingOrdersDetail(String pendingOrderDetail) {
+    for (WebElement element : rowsOnPendingOrdersTabAos) {
+        if (element.getText().equalsIgnoreCase(pendingOrderDetail)) {
+            return true;
         }
     }
 
-    public void closePosition() {
-        if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementClickable(crossButtonAos);
-            crossButtonAos.click();
-            abs.waitUtilElementFind(closePositionAos);
-            closePositionAos.click();
-            confirmClosePositionBtnAos.click();
-        }
-    }
+    return false;
+}
 
-    public void closePositionInDetails() {
-        if (driver instanceof AndroidDriver) {
-            closePositionBtnInDetailsAos.click();
-            closePositionBtnWithLotsAos.click();
-            confirmClosePositionBtnAos.click();
-        }
+public void cancelOrder() {
+    if (driver instanceof AndroidDriver) {
+        crossButtonAos.click();
+        abs.waitUtilElementFind(cancelOrderButtonAos);
+        cancelOrderButtonAos.click();
     }
+}
 
-    public List<String> stopOrderConfirmationPageValues() {
-        List<String> values = new ArrayList<>();
+public void closePosition() {
+    if (driver instanceof AndroidDriver) {
+        abs.waitUtilElementClickable(crossButtonAos);
+        crossButtonAos.click();
+        abs.waitUtilElementFind(closePositionAos);
+        closePositionAos.click();
+        confirmClosePositionBtnAos.click();
+    }
+}
+
+public void closePositionInDetails() {
+    if (driver instanceof AndroidDriver) {
+        closePositionBtnInDetailsAos.click();
+        closePositionBtnWithLotsAos.click();
+        confirmClosePositionBtnAos.click();
+    }
+}
+
+public List<String> stopOrderConfirmationPageValues() {
+    List<String> values = new ArrayList<>();
+    values.add("Stop Loss Price");
+    values.add("Take Profit Price");
+    values.add("Direction");
+    values.add("Volume");
+    values.add("Validity");
+    return values;
+}
+
+public List<String> marketOrderConfirmationPageValues() {
+    List<String> values = new ArrayList<>();
+    if (!(stopLossPrice == null)) {
         values.add("Stop Loss Price");
+    }
+    if (!(takeProfitPrice == null)) {
         values.add("Take Profit Price");
-        values.add("Direction");
-        values.add("Volume");
-        values.add("Validity");
-        return values;
     }
+    values.add("Direction");
+    values.add("Volume");
+    return values;
+}
 
-    public List<String> marketOrderConfirmationPageValues() {
-        List<String> values = new ArrayList<>();
-        if (!(stopLossPrice == null)) {
-            values.add("Stop Loss Price");
+public String getDialogueTextAos() {
+    if (driver instanceof AndroidDriver) {
+        abs.waitUtilElementFind(dialogueTextAos);
+        return dialogueTextAos.getText();
+    }
+    return "";
+}
+
+public void cancelPendingOrderInDetail() throws InterruptedException {
+    tapsButton("Cancel Order");
+    Thread.sleep(500);
+    tapsButtonOnConfirm("Cancel Order");
+}
+
+public boolean getPendingOrder() {
+    if (driver instanceof AndroidDriver) {
+        if (rowsOnPendingOrdersTabAos == null || rowsOnPendingOrdersTabAos.isEmpty()) {
+            return false;
         }
-        if (!(takeProfitPrice == null)) {
-            values.add("Take Profit Price");
+        return rowsOnPendingOrdersTabAos.get(0).isDisplayed();
+    }
+    return false;
+}
+
+public boolean getPosition() {
+    if (driver instanceof AndroidDriver) {
+        if (rowsOnPositionTabAos == null || rowsOnPositionTabAos.isEmpty()) {
+            return false;
         }
-        values.add("Direction");
-        values.add("Volume");
-        return values;
+        return rowsOnPositionTabAos.get(0).isDisplayed();
     }
+    return false;
+}
 
-    public String getDialogueTextAos() {
-        if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(dialogueTextAos);
-            return dialogueTextAos.getText();
-        }
-        return "";
-    }
+public void setLotSize(String symbolLotSize) {
+    lotSize = symbolLotSize;
+}
 
-    public void cancelPendingOrderInDetail() throws InterruptedException {
-        tapsButton("Cancel Order");
-        Thread.sleep(500);
-        tapsButtonOnConfirm("Cancel Order");
+public void tapBack() {
+    if (driver instanceof AndroidDriver) {
+        backBtnAos.click();
     }
-
-    public boolean getPendingOrder() {
-        if (driver instanceof AndroidDriver) {
-            if (rowsOnPendingOrdersTabAos == null || rowsOnPendingOrdersTabAos.isEmpty()) {
-                return false;
-            }
-            return rowsOnPendingOrdersTabAos.get(0).isDisplayed();
-        }
-        return false;
-    }
-
-    public boolean getPosition() {
-        if (driver instanceof AndroidDriver) {
-            if (rowsOnPositionTabAos == null || rowsOnPositionTabAos.isEmpty()) {
-                return false;
-            }
-            return rowsOnPositionTabAos.get(0).isDisplayed();
-        }
-        return false;
-    }
-
-    public void setLotSize(String symbolLotSize) {
-        lotSize = symbolLotSize;
-    }
-
-    public void tapBack() {
-        if (driver instanceof AndroidDriver) {
-            backBtnAos.click();
-        }
-    }
+}
 }

@@ -16,6 +16,8 @@ public class AppPOManager {
     private final AppTradeView appTradeView;
     private final AppInstrumentDetailsPage appInstrumentDetailsPage;
     private final AppEditPositionPage appEditPositionPage;
+    private final AppClosePositionPage appClosePositionPage;
+    private final AppModifyOrderPage appModifyOrderPage;
 
     public AppPOManager(AppiumDriver driver) {
         this.appLoginPage = new AppLoginPage(driver);
@@ -30,6 +32,8 @@ public class AppPOManager {
         this.appTradeView = new AppTradeView(driver);
         this.appInstrumentDetailsPage = new AppInstrumentDetailsPage(driver);
         this.appEditPositionPage = new AppEditPositionPage(driver);
+        this.appClosePositionPage = new AppClosePositionPage(driver);
+        this.appModifyOrderPage = new AppModifyOrderPage(driver);
     }
 
     public AppLoginPage getAppLoginPage() {
@@ -78,6 +82,14 @@ public class AppPOManager {
 
     public AppEditPositionPage getAppEditPositionPage() {
         return appEditPositionPage;
+    }
+
+    public AppClosePositionPage getAppClosePositionPage() {
+        return appClosePositionPage;
+    }
+
+    public AppModifyOrderPage getAppModifyOrderPage() {
+        return appModifyOrderPage;
     }
 
 }
