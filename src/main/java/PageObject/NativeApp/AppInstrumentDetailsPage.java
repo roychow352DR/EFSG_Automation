@@ -212,6 +212,7 @@ public class AppInstrumentDetailsPage {
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), lotSize);
                 }
                 case "Price" -> {
+                    abs.waitUtilElementFind(editTextFieldAos.get(1));
                     editTextFieldAos.get(1).clear();
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType));
                 }
@@ -366,10 +367,13 @@ public class AppInstrumentDetailsPage {
     }
 
     public void selectOrderType(String orderType) throws InterruptedException {
+
         if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementClickable(orderTypeDropdownBtn);
             orderTypeDropdownBtn.click();
-            Thread.sleep(2000);
-            driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + orderType + "\"]/parent::android.view.ViewGroup")).click();
+            WebElement orderTypeBtn = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + orderType + "\"]/parent::android.view.ViewGroup"));
+            abs.waitUtilElementClickable(orderTypeBtn);
+            orderTypeBtn.click();
         }
     }
 

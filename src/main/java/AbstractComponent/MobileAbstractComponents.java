@@ -146,7 +146,22 @@ public class MobileAbstractComponents {
 
         for (int attempt = 1; attempt <= 3; attempt++) {
             try {
-                WebElement element = wait.until(ExpectedConditions.elementToBeClickable(ele));
+                wait.until(ExpectedConditions.elementToBeClickable(ele));
+                return;
+            } catch (StaleElementReferenceException e) {
+                System.out.println("Attempt " + attempt + ": stale element, retrying...");
+            }
+        }
+
+        throw new StaleElementReferenceException("Element remained stale after 3 attempts: " + ele);
+    }
+
+    public void waitUtilElementVisible(WebElement ele) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                WebElement element = wait.until(ExpectedConditions.visibilityOf(ele));
                 element.click();
                 return;
             } catch (StaleElementReferenceException e) {
@@ -197,8 +212,8 @@ public class MobileAbstractComponents {
         int height = size.getHeight();
 
         int startX = width / 2;
-        int startY = (int) (height * 0.8);
-        int endY = (int) (height * 0.2);
+        int startY = (int) (height * 0.85);
+        int endY = (int) (height * 0.1);
 
         PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
         Sequence swipe = new Sequence(finger, 1);
@@ -213,10 +228,30 @@ public class MobileAbstractComponents {
         driver.perform(Collections.singletonList(swipe));
     }
 
+    public void swipeUpUntilEnd(AppiumDriver driver) {
+        final int MAX_SWIPES = 2; // safety limit
+
+        String previousPageSource = "";
+        int swipes = 0;
+
+        while (swipes < MAX_SWIPES) {
+            String currentPageSource = driver.getPageSource();
+
+            // If page source didn't change, we've probably reached the end
+            if (currentPageSource.equals(previousPageSource)) {
+                break;
+            }
+
+            previousPageSource = currentPageSource;
+            swipeUp(driver);
+            swipes++;
+        }
+    }
+
     public void swipeUntilElementVisible(AppiumDriver driver, WebElement element, int maxSwipes) {
         for (int i = 0; i < maxSwipes; i++) {
             try {
-                if (element.isDisplayed()) {
+                if (element.isDisplayed() && element.isEnabled()) {
                     return;
                 }
             } catch (Exception e) {

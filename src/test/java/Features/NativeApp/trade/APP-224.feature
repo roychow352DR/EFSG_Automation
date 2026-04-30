@@ -10,7 +10,7 @@ Feature: Native App trade
       And the user fills in the text field "Lot Size" with value "0.5" on the instrument details page
       And the user taps button "BUY" on the instrument details page
       And the user taps button "BUY" on the confirmation pop up
-      And the user taps "detail" cta button on the position tab of app trade view
+      And the user taps "detail" cta button on the app trade view
       Then the user sees market order values are displayed correctly with the user input value on the position details page
 
 
