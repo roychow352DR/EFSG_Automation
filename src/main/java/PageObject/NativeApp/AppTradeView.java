@@ -24,6 +24,8 @@ public class AppTradeView {
     public static String selectedDirection;
     public static String lotSize;
     public static String executedPrice;
+    public static String openPositionOpenPrice;
+    public static String openOrderTargetPrice;
     public static String validity;
     public static String editPrice;
 
@@ -295,7 +297,6 @@ public class AppTradeView {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -336,106 +337,122 @@ public class AppTradeView {
 //        }
 //    }
 
-public boolean getPendingOrdersDetail(String pendingOrderDetail) {
-    for (WebElement element : rowsOnPendingOrdersTabAos) {
-        if (element.getText().equalsIgnoreCase(pendingOrderDetail)) {
-            return true;
+    public boolean getPendingOrdersDetail(String pendingOrderDetail) {
+        for (WebElement element : rowsOnPendingOrdersTabAos) {
+            if (element.getText().equalsIgnoreCase(pendingOrderDetail)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void cancelOrder() {
+        if (driver instanceof AndroidDriver) {
+            crossButtonAos.click();
+            if (!AppSettingPage.isTradeConfirmNeeded) {
+                abs.waitUtilElementFind(cancelOrderButtonAos);
+                cancelOrderButtonAos.click();
+            }
         }
     }
 
-    return false;
-}
-
-public void cancelOrder() {
-    if (driver instanceof AndroidDriver) {
-        crossButtonAos.click();
-        abs.waitUtilElementFind(cancelOrderButtonAos);
-        cancelOrderButtonAos.click();
+    public void closePosition() {
+        if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementClickable(crossButtonAos);
+            crossButtonAos.click();
+            abs.waitUtilElementFind(closePositionAos);
+            closePositionAos.click();
+            if (!AppSettingPage.isTradeConfirmNeeded) {
+                confirmClosePositionBtnAos.click();
+            }
+        }
     }
-}
 
-public void closePosition() {
-    if (driver instanceof AndroidDriver) {
-        abs.waitUtilElementClickable(crossButtonAos);
-        crossButtonAos.click();
-        abs.waitUtilElementFind(closePositionAos);
-        closePositionAos.click();
-        confirmClosePositionBtnAos.click();
+    public void closePositionInDetails() {
+        if (driver instanceof AndroidDriver) {
+            closePositionBtnInDetailsAos.click();
+            closePositionBtnWithLotsAos.click();
+            confirmClosePositionBtnAos.click();
+        }
     }
-}
 
-public void closePositionInDetails() {
-    if (driver instanceof AndroidDriver) {
-        closePositionBtnInDetailsAos.click();
-        closePositionBtnWithLotsAos.click();
-        confirmClosePositionBtnAos.click();
-    }
-}
-
-public List<String> stopOrderConfirmationPageValues() {
-    List<String> values = new ArrayList<>();
-    values.add("Stop Loss Price");
-    values.add("Take Profit Price");
-    values.add("Direction");
-    values.add("Volume");
-    values.add("Validity");
-    return values;
-}
-
-public List<String> marketOrderConfirmationPageValues() {
-    List<String> values = new ArrayList<>();
-    if (!(stopLossPrice == null)) {
+    public List<String> stopOrderConfirmationPageValues() {
+        List<String> values = new ArrayList<>();
         values.add("Stop Loss Price");
-    }
-    if (!(takeProfitPrice == null)) {
         values.add("Take Profit Price");
+        values.add("Direction");
+        values.add("Volume");
+        values.add("Validity");
+        return values;
     }
-    values.add("Direction");
-    values.add("Volume");
-    return values;
-}
 
-public String getDialogueTextAos() {
-    if (driver instanceof AndroidDriver) {
-        abs.waitUtilElementFind(dialogueTextAos);
-        return dialogueTextAos.getText();
-    }
-    return "";
-}
-
-public void cancelPendingOrderInDetail() throws InterruptedException {
-    tapsButton("Cancel Order");
-    Thread.sleep(500);
-    tapsButtonOnConfirm("Cancel Order");
-}
-
-public boolean getPendingOrder() {
-    if (driver instanceof AndroidDriver) {
-        if (rowsOnPendingOrdersTabAos == null || rowsOnPendingOrdersTabAos.isEmpty()) {
-            return false;
+    public List<String> marketOrderConfirmationPageValues() {
+        List<String> values = new ArrayList<>();
+        if (!(stopLossPrice == null)) {
+            values.add("Stop Loss Price");
         }
-        return rowsOnPendingOrdersTabAos.get(0).isDisplayed();
-    }
-    return false;
-}
-
-public boolean getPosition() {
-    if (driver instanceof AndroidDriver) {
-        if (rowsOnPositionTabAos == null || rowsOnPositionTabAos.isEmpty()) {
-            return false;
+        if (!(takeProfitPrice == null)) {
+            values.add("Take Profit Price");
         }
-        return rowsOnPositionTabAos.get(0).isDisplayed();
+        values.add("Direction");
+        values.add("Volume");
+        return values;
     }
-    return false;
-}
 
-public void setLotSize(String symbolLotSize) {
-    lotSize = symbolLotSize;
-}
-
-public void tapBack() {
-    if (driver instanceof AndroidDriver) {
-        backBtnAos.click();
+    public String getDialogueTextAos() {
+        if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementFind(dialogueTextAos);
+            return dialogueTextAos.getText();
+        }
+        return "";
     }
-}
+
+    public void cancelPendingOrderInDetail() throws InterruptedException {
+        tapsButton("Cancel Order");
+        Thread.sleep(500);
+        tapsButtonOnConfirm("Cancel Order");
+    }
+
+    public boolean getPendingOrder() {
+        if (driver instanceof AndroidDriver) {
+            if (rowsOnPendingOrdersTabAos == null || rowsOnPendingOrdersTabAos.isEmpty()) {
+                return false;
+            }
+            return rowsOnPendingOrdersTabAos.getFirst().isDisplayed();
+        }
+        return false;
+    }
+
+    public boolean getPosition() {
+        if (driver instanceof AndroidDriver) {
+            if (rowsOnPositionTabAos == null || rowsOnPositionTabAos.isEmpty()) {
+                return false;
+            }
+            return rowsOnPositionTabAos.getFirst().isDisplayed();
+        }
+        return false;
+    }
+
+    public void setLotSize(String symbolLotSize) {
+        lotSize = symbolLotSize;
+    }
+
+    public void tapBack() {
+        if (driver instanceof AndroidDriver) {
+            backBtnAos.click();
+        }
+    }
+
+    public void getOpenPositionOpenPrice() {
+        WebElement openPrice = driver.findElements(By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[2]" +
+                "/parent::android.view.ViewGroup/android.widget.TextView")).get(2);
+        openPositionOpenPrice = openPrice.getText();
+    }
+
+    public void getPendingOrderTargetPrice() {
+        WebElement targetPrice = driver.findElements(By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]" +
+                "/parent::android.view.ViewGroup/android.widget.TextView")).get(4);
+        openOrderTargetPrice = targetPrice.getText();
+    }
 }
