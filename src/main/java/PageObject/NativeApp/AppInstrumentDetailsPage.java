@@ -3,12 +3,13 @@ package PageObject.NativeApp;
 import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
-import io.cucumber.java.en_scouse.An;
+import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class AppInstrumentDetailsPage {
 
     public AppInstrumentDetailsPage(AppiumDriver driver) {
         this.driver = driver;
-        PageFactory.initElements(driver, this);
+        PageFactory.initElements(new AppiumFieldDecorator(driver, Duration.ofSeconds(10)), this);
         this.abs = new MobileAbstractComponents(driver);
     }
 
@@ -85,6 +86,18 @@ public class AppInstrumentDetailsPage {
 
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[14]/android.view.ViewGroup")
     WebElement takeProfitClearBtnAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[10]")
+    WebElement checkboxAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[2]")
+    WebElement crossButtonAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[12]")
+    WebElement closeMarketConfirmationBtnAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[14]")
+    WebElement closeLimitConfirmationBtnAos;
 
 
     public boolean getTextMessage(String messageContent) {
@@ -144,7 +157,7 @@ public class AppInstrumentDetailsPage {
         return formattedPrice;
     }
 
-    public String getStopOrderPrice(String direction, String stopOrderType) {
+    public String getStopOrderPrice(String direction, String stopOrderType, String decimal) {
         String price = "";
         WebElement text;
         selectedDirection = direction;
@@ -171,7 +184,10 @@ public class AppInstrumentDetailsPage {
                 }
             }
         }
-        stopOrderPrice = price;
+        stopOrderPrice = abs.normalizePriceToDecimals(price, decimal);
+        if (AppSettingPage.isTradeConfirmNeeded) {
+            executedPrice = stopOrderPrice;
+        }
         return price;
     }
 
@@ -214,7 +230,7 @@ public class AppInstrumentDetailsPage {
                 case "Price" -> {
                     abs.waitUtilElementFind(editTextFieldAos.get(1));
                     editTextFieldAos.get(1).clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType));
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType, decimal));
                 }
             }
         }
@@ -267,8 +283,9 @@ public class AppInstrumentDetailsPage {
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), lotSize);
                 }
                 case "Price" -> {
+                    abs.waitUtilElementFind(editTextFieldAos.get(1));
                     editTextFieldAos.get(1).clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType));
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType, decimal));
                 }
             }
         }
@@ -288,7 +305,7 @@ public class AppInstrumentDetailsPage {
                 case "Lot Size" -> editTextFieldAos.getFirst().sendKeys("0.45");
                 case "Price" -> {
                     editTextFieldAos.get(1).clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType));
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType, decimal));
                 }
                 case "Stop" -> {
                     String editStopPrice = getEditPrice(direction, decimal);
@@ -303,7 +320,7 @@ public class AppInstrumentDetailsPage {
         if (driver instanceof AndroidDriver) {
             if (buttonName.contains("Cancel Order")) {
                 WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
-                abs.waitUtilElementFind(button);
+                abs.waitUtilElementClickable(button);
                 button.click();
             } else {
                 driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
@@ -316,7 +333,14 @@ public class AppInstrumentDetailsPage {
             if (buttonName.contains("Position") || buttonName.contains("Modify") || buttonName.contains("Cancel Order")) {
                 WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
                 // abs.waitUtilElementFind(button);
+                abs.waitUtilElementClickable(button);
                 button.click();
+            } else if (buttonName.equalsIgnoreCase("Don't Show Again")) {
+                checkboxAos.click();
+            } else if (buttonName.equalsIgnoreCase("Cross")) {
+                crossButtonAos.click();
+            } else if (buttonName.equalsIgnoreCase("x")) {
+                closeConfirmation();
             } else {
                 driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
             }
@@ -359,6 +383,8 @@ public class AppInstrumentDetailsPage {
             if (text.get(i).getText().equalsIgnoreCase(value)) {
                 if (value.equalsIgnoreCase("Volume")) {
                     return text.get(i + 1).getText().split("Lots")[0].trim();
+                } else if (value.equalsIgnoreCase("Estimated Margin")) {
+                    return text.get(i + 1).getText().split("USD")[1].trim().replace(",", "");
                 }
                 return text.get(i + 1).getText();
             }
@@ -367,7 +393,6 @@ public class AppInstrumentDetailsPage {
     }
 
     public void selectOrderType(String orderType) throws InterruptedException {
-
         if (driver instanceof AndroidDriver) {
             abs.waitUtilElementClickable(orderTypeDropdownBtn);
             orderTypeDropdownBtn.click();
@@ -416,6 +441,8 @@ public class AppInstrumentDetailsPage {
         }
         values.add("Direction");
         values.add("Volume");
+        values.add("Product");
+        values.add("Estimated Margin");
         return values;
     }
 
@@ -443,7 +470,8 @@ public class AppInstrumentDetailsPage {
             case "Volume", "Lots" -> lotSize;
             case "Stop Order Price" -> stopOrderPrice;
             case "Validity" -> validity;
-            case "Est. Margin" -> estMargin;
+            case "Est. Margin", "Estimated Margin" -> estMargin;
+            case "Product" -> AppMarketsPage.tradeSymbol;
             default -> null;
         };
     }
@@ -496,5 +524,36 @@ public class AppInstrumentDetailsPage {
                 case "Take Profit" -> takeProfitClearBtnAos.click();
             }
         }
+    }
+
+    public boolean getCheckboxStatus(String checkboxLabel) {
+        if (driver instanceof AndroidDriver) {
+            return switch (checkboxLabel) {
+                case "Don't Show Again" -> checkboxAos.isSelected();
+                default -> throw new IllegalStateException("Unexpected value: " + checkboxLabel);
+            };
+        }
+        return false;
+    }
+
+    public void tapCross() {
+        if (driver instanceof AndroidDriver) {
+            crossButtonAos.click();
+        }
+    }
+
+    public void closeConfirmation() {
+        if (driver instanceof AndroidDriver) {
+            if (AppInstrumentDetailsPage.stopOrderType.isEmpty()) {
+                abs.waitUtilElementClickable(closeMarketConfirmationBtnAos);
+                closeMarketConfirmationBtnAos.click();
+            }
+            abs.waitUtilElementClickable(closeLimitConfirmationBtnAos);
+            closeLimitConfirmationBtnAos.click();
+        }
+    }
+
+    public boolean getTpslToggleStatus() {
+        return stopLossSwitchAos.isDisplayed();
     }
 }
