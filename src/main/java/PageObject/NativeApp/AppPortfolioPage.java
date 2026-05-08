@@ -56,6 +56,9 @@ public class AppPortfolioPage {
             "Orders")
     WebElement pendingOrderTabAos;
 
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]")
+    WebElement arrowBtnAos;
+
 
     @AndroidFindBy(accessibility = "History")
     WebElement historyTabAos;
@@ -122,5 +125,32 @@ public class AppPortfolioPage {
         }
 
         return false;
+    }
+
+    public void tapTab(String tabName) {
+        if (driver instanceof AndroidDriver) {
+            WebElement tab = switch (tabName) {
+                case "Open Positions" -> positionTabAos;
+                case "Pending Orders" -> pendingOrderTabAos;
+                case "History" -> historyTabAos;
+                default -> null;
+            };
+
+            if (tab != null) {
+                abs.waitUtilElementFind(tab);
+                tab.click();
+            }
+        }
+    }
+
+    public void tapButtonOnRow(String buttonName) {
+        if (driver instanceof AndroidDriver) {
+            switch (buttonName) {
+                case "arrow" -> {
+                    abs.waitUtilElementFind(arrowBtnAos);
+                    arrowBtnAos.click();
+                }
+            }
+        }
     }
 }

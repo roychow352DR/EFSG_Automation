@@ -50,5 +50,11 @@ public class AppMePage {
         return driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + username + "\"]"));
     }
 
+    public void tapWidget(String label){
+        WebElement widget = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + label + "\"]"));
+        abs.waitUtilElementClickable(widget);
+        widget.click();
+    }
+
 
 }

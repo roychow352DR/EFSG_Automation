@@ -7,7 +7,6 @@ import io.cucumber.java.en.And;
 import StepDefinitions.NativeApp.login.loginSteps;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.java.sl.In;
 import org.testng.Assert;
 import utils.BaseTest;
 
@@ -37,7 +36,7 @@ public class tradeSteps extends BaseTest {
 
     @And("the user fills in the text field {string} with direction {string} on the instrument details page")
     public void the_user_fills_in_the_text_field_on_the_app_trade_view(String textFieldName, String direction) throws InterruptedException {
-        //Thread.sleep(8000);
+        Thread.sleep(2000);
         appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), 25);
     }
 
@@ -70,15 +69,28 @@ public class tradeSteps extends BaseTest {
 
     }
 
+    @Then("the user sees an open position is disappeared on the position tab of app trade view")
+    public void the_user_sees_an_open_position_is_disappeared_on_the_position_tab_of_app_trade_view() throws InterruptedException {
+        Thread.sleep(2000);
+        Assert.assertFalse(appPoManager.getAppTradeView().getPosition());
+        Assert.assertFalse(appPoManager.getAppTradeView().getPositionDetail(AppTradeView.openPositionOpenPrice));
+    }
+
     @And("the user taps button {string} on the confirmation pop up")
     public void the_user_taps_button_on_the_confirmation_pop_up(String buttonName) throws InterruptedException {
-        Thread.sleep(1000);
+        Thread.sleep(500);
         appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
         appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(buttonName);
     }
 
     @And("the user taps {string} cta button on the app trade view")
     public void the_user_taps_cta_button_on_the_app_trade_view(String buttonName) {
+        if (TradeRecord.isOpenPosition){
+            appPoManager.getAppTradeView().getOpenPositionOpenPrice();
+        }
+        else{
+            appPoManager.getAppTradeView().getPendingOrderTargetPrice();
+        }
         appPoManager.getAppTradeView().tapCtaButton(buttonName);
     }
 
@@ -129,6 +141,7 @@ public class tradeSteps extends BaseTest {
             Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getDetailValue(value),
                     appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
         }
+        appPoManager.getAppInstrumentDetailsPage().closeConfirmation();
     }
 
     @Then("the user sees the message {string} is displayed at the dialogue")
@@ -165,8 +178,10 @@ public class tradeSteps extends BaseTest {
     }
 
     @Then("the user sees the pending order is disappeared on the pending order list")
-    public void the_user_sees_the_pending_order_is_disappeared_on_the_pending_order_list() {
+    public void the_user_sees_the_pending_order_is_disappeared_on_the_pending_order_list() throws InterruptedException {
+        Thread.sleep(500);
         Assert.assertFalse(appPoManager.getAppTradeView().getPendingOrder());
+        Assert.assertFalse(appPoManager.getAppTradeView().getPendingOrdersDetail(AppTradeView.openOrderTargetPrice));
     }
 
     @And("the user places a pending order with direction {string} and order type {string} on the instrument details page")
@@ -447,6 +462,37 @@ public class tradeSteps extends BaseTest {
         Assert.assertTrue(appPoManager.getAppModifyOrderPage().getTextMessage(errorMsg));
         appPoManager.getAppModifyOrderPage().tapBack();
         appPoManager.getAppTradeView().cancelOrder();
+    }
+
+    @When("the user selects tab {string} on the portfolio page")
+    public void the_user_selects_tab_on_the_portfolio_page(String tabName) {
+        appPoManager.getAppPortfolioPage().tapTab(tabName);
+    }
+
+    @And("the user taps {string} button of the record row on the portfolio page")
+    public void the_user_taps_button_of_the_record_row_on_the_portfolio_page(String buttonName) {
+        appPoManager.getAppPortfolioPage().tapButtonOnRow(buttonName);
+    }
+
+    @Then("the user sees {string} checkbox is unchecked on the confirmation pop up")
+    public void the_user_sees_checkbox_is_unchecked_on_the_confirmation_pop_up(String checkboxLabel) {
+        Assert.assertFalse(appPoManager.getAppInstrumentDetailsPage().getCheckboxStatus(checkboxLabel));
+        appPoManager.getAppInstrumentDetailsPage().tapCross();
+    }
+
+    @And("the user toggles off trade confirmation on the app setting page")
+    public void the_user_toggles_off_trade_confirmation_on_the_app_setting_page() {
+        tradeRecord.tradeSettingToggleOff();
+    }
+
+    @And("the user toggles on trade confirmation on the app setting page")
+    public void the_user_toggles_on_trade_confirmation_on_the_app_setting_page() {
+        tradeRecord.tradeSettingToggleOn();
+    }
+
+    @Then("the user back to new order creation page")
+    public void the_user_back_to_new_order_creation_page() {
+        Assert.assertTrue(appPoManager.getAppInstrumentDetailsPage().getTpslToggleStatus());
     }
 
 }
