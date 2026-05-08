@@ -3,6 +3,7 @@ package StepDefinitions.NativeApp.common;
 import PageObject.NativeApp.AppPOManager;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
+import org.testng.Assert;
 import utils.BaseTest;
 import StepDefinitions.NativeApp.login.loginSteps;
 
@@ -30,5 +31,12 @@ public class appCommonSteps extends BaseTest {
     public void the_user_taps_button_on_the_app_markets_page(String btnName) throws InterruptedException {
         appPoManager.getAppMarketsPage().tapButtonOnMarketsPage(btnName);
         Thread.sleep(5000);
+    }
+
+    @Then("the user sees header {string} on the page")
+    public void the_user_sees_header_on_the_page(String header) {
+        if (header.equalsIgnoreCase("Position Details")) {
+            Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getHeader(), header);
+        }
     }
 }

@@ -2,6 +2,7 @@ package Data;
 
 import PageObject.NativeApp.AppMarketsPage;
 import PageObject.NativeApp.AppPOManager;
+import PageObject.NativeApp.AppSettingPage;
 
 import java.io.IOException;
 
@@ -11,6 +12,7 @@ public class TradeRecord {
 
     private AppPOManager appPoManager;
     public final String LOT_SIZE = "1";
+    public static boolean isOpenPosition = false;
 
     public TradeRecord(AppPOManager appPOManager) {
         this.appPoManager = appPOManager;
@@ -47,6 +49,7 @@ public class TradeRecord {
     }
 
     public void createOpenPosition(String direction) throws IOException, InterruptedException {
+        isOpenPosition = true;
         tapSymbol();
         selectDirection(direction);
         fillLotSize();
@@ -79,11 +82,11 @@ public class TradeRecord {
     }
 
     public void confirmPlaceOrder(String direction) throws InterruptedException {
-        Thread.sleep(200);
         appPoManager.getAppInstrumentDetailsPage().tapsButton(direction);
-        Thread.sleep(500);
-        appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
-        appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(direction);
+        if (!AppSettingPage.isTradeConfirmNeeded) {
+            appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
+            appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(direction);
+        }
     }
 
     public void fillStopLossPrice(String direction,TradeSymbolConfig tradeSymbolConfig){
@@ -100,5 +103,17 @@ public class TradeRecord {
 
     public void scrollPageDown(){
         appPoManager.getAppInstrumentDetailsPage().scrollDown();
+    }
+
+    public void tradeSettingToggleOff(){
+        appPoManager.getAppMePage().tapWidget("Setting");
+        appPoManager.getAppSettingPage().tradeSettingsToggleOff();
+        appPoManager.getAppSettingPage().tabBack();
+    }
+
+    public void tradeSettingToggleOn(){
+        appPoManager.getAppMePage().tapWidget("Setting");
+        appPoManager.getAppSettingPage().tradeSettingsToggleOn();
+        appPoManager.getAppSettingPage().tabBack();
     }
 }
