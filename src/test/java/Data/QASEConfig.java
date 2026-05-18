@@ -27,13 +27,11 @@ public class QASEConfig extends GlobalConfig {
     public Map<String, String> getQaseConfig() throws IOException, InterruptedException {
         Map<String,String> qaseConfig = new HashMap<>();
         path = getQasePropertyPath(product);
-       // qaseApiClient = new QaseApiClient(getProperty(path,"qase.api.token"),getProperty(path,"qase.project.code"));
         qaseApiClientOptimized = new QaseApiClientOptimized(getProperty(path, "qase.api.token"), getProperty(path, "qase.project.code"));
         qaseConfig.put("qasePropertyPath",path);
         qaseConfig.put("apiToken",getProperty(path,"qase.api.token"));
         qaseConfig.put("projectCode",getProperty(path,"qase.project.code"));
         qaseConfig.put("testPlanId",getTestPlanId(getProperty(path, "testtype"),path,productEntity));
-       // qaseConfig.put("runTitle",qaseApiClient.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "testType"), path,productEntity)), getProperty(path,"qase.project.code")));
         qaseConfig.put("runTitle",qaseApiClientOptimized.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "testtype"), path,productEntity))));
         return qaseConfig;
 
