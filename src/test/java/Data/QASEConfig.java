@@ -27,29 +27,12 @@ public class QASEConfig extends GlobalConfig {
     public Map<String, String> getQaseConfig() throws IOException, InterruptedException {
         Map<String, String> qaseConfig = new HashMap<>();
 
-        path = getQasePropertyPath(product);
-        System.out.println("QASE path = " + path);
-        System.out.println("QASE product = " + product);
-        System.out.println("QASE productEntity = " + productEntity);
+        path = requireNonBlank(getQasePropertyPath(product), "qasePropertyPath");
 
-        String apiToken = getProperty(path, "qase.api.token");
-        String projectCode = getProperty(path, "qase.project.code");
-        String testType = getProperty(path, "testtype");
-        String testPlanId = getTestPlanId(testType, path, productEntity);
-
-        System.out.println("QASE apiToken exists = " + (apiToken != null && !apiToken.isBlank()));
-        System.out.println("QASE projectCode = [" + projectCode + "]");
-        System.out.println("QASE testType = [" + testType + "]");
-        System.out.println("QASE testPlanId = [" + testPlanId + "]");
-
-        if (testPlanId == null || testPlanId.trim().isEmpty()) {
-            throw new IllegalArgumentException(
-                    "QASE testPlanId is null/empty. path=" + path +
-                            ", product=" + product +
-                            ", productEntity=" + productEntity +
-                            ", testType=[" + testType + "]"
-            );
-        }
+        String apiToken = requireNonBlank(getProperty(path, "qase.api.token"), "qase.api.token");
+        String projectCode = requireNonBlank(getProperty(path, "qase.project.code"), "qase.project.code");
+        String testType = requireNonBlank(getProperty(path, "testtype"), "testtype");
+        String testPlanId = requireNonBlank(getTestPlanId(testType, path, productEntity), "testPlanId");
 
         qaseApiClientOptimized = new QaseApiClientOptimized(apiToken, projectCode);
 
@@ -57,9 +40,16 @@ public class QASEConfig extends GlobalConfig {
         qaseConfig.put("apiToken", apiToken);
         qaseConfig.put("projectCode", projectCode);
         qaseConfig.put("testPlanId", testPlanId);
-        qaseConfig.put("runTitle", qaseApiClientOptimized.getTestPlanTitle(Integer.parseInt(testPlanId.trim())));
+        qaseConfig.put("runTitle", qaseApiClientOptimized.getTestPlanTitle(Integer.parseInt(testPlanId)));
 
         return qaseConfig;
+    }
+
+    private String requireNonBlank(String value, String fieldName) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException(fieldName + " is missing or empty");
+        }
+        return value.trim();
     }
 
     public static String getQasePropertyPath(String product)
