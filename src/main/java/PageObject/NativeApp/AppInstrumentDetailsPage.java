@@ -19,7 +19,7 @@ public class AppInstrumentDetailsPage {
     private final MobileAbstractComponents abs;
     public static String stopLossPrice;
     public static String stopOrderPrice;
-    public static String stopOrderType;
+    public static String stopOrderType = "";
     public static String takeProfitPrice;
     public static String selectedDirection;
     public static String lotSize;
@@ -257,7 +257,7 @@ public class AppInstrumentDetailsPage {
                                 enterPrice);
                         //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
                     }
-                    stopLossPrice = enterPrice;
+                    stopLossPrice = abs.normalizePriceToDecimals(enterPrice,decimal);
                 }
                 case "Take Profit" -> {
                     if (direction.equalsIgnoreCase("BUY")) {
@@ -276,7 +276,7 @@ public class AppInstrumentDetailsPage {
                                 enterPrice);
                         // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
                     }
-                    takeProfitPrice = enterPrice;
+                    takeProfitPrice = abs.normalizePriceToDecimals(enterPrice,decimal);
                 }
                 case "Lot Size" -> {
                     editTextFieldAos.getFirst().clear();
@@ -323,7 +323,9 @@ public class AppInstrumentDetailsPage {
                 abs.waitUtilElementClickable(button);
                 button.click();
             } else {
-                driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
+                WebElement button = driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup"));
+                abs.waitUtilElementClickable(button);
+                button.click();
             }
         }
     }
@@ -346,7 +348,6 @@ public class AppInstrumentDetailsPage {
             }
         }
     }
-
 
     public String getInputFieldValue(String inputFieldName) {
         // return driver.findElement(By.className("android.widget.EditText")).getText();
@@ -548,8 +549,10 @@ public class AppInstrumentDetailsPage {
                 abs.waitUtilElementClickable(closeMarketConfirmationBtnAos);
                 closeMarketConfirmationBtnAos.click();
             }
-            abs.waitUtilElementClickable(closeLimitConfirmationBtnAos);
-            closeLimitConfirmationBtnAos.click();
+            else {
+                abs.waitUtilElementClickable(closeLimitConfirmationBtnAos);
+                closeLimitConfirmationBtnAos.click();
+            }
         }
     }
 

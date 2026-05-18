@@ -3,7 +3,6 @@ package PageObject.NativeApp;
 import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
-import io.cucumber.java.en.And;
 import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
@@ -85,6 +84,9 @@ public class AppTradeView {
             "/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup/android.view.ViewGroup" +
             "/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[1]")
     WebElement backBtnAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[15]")
+    WebElement closeDialogueBtnAos;
 
 
     public void selectDirection(String direction) {
@@ -454,5 +456,12 @@ public class AppTradeView {
         WebElement targetPrice = driver.findElements(By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]" +
                 "/parent::android.view.ViewGroup/android.widget.TextView")).get(4);
         openOrderTargetPrice = targetPrice.getText();
+    }
+
+    public void closeDialogue(){
+        if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementFind(closeDialogueBtnAos);
+            closeDialogueBtnAos.click();
+        }
     }
 }

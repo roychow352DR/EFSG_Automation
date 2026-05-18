@@ -12,6 +12,7 @@ public class TradeRecord {
 
     private AppPOManager appPoManager;
     public final String LOT_SIZE = "1";
+    public String VALIDITY = "Today";
     public static boolean isOpenPosition = false;
 
     public TradeRecord(AppPOManager appPOManager) {
@@ -41,6 +42,7 @@ public class TradeRecord {
         fillLotSize();
         selectStopLimitOption(orderType);
         fillStopLimitPrice(direction, tradeSymbolConfig);
+        selectValidity();
         switchStopLossOn();
         scrollPageDown();
         fillStopLossPrice(direction, tradeSymbolConfig);
@@ -83,7 +85,8 @@ public class TradeRecord {
 
     public void confirmPlaceOrder(String direction) throws InterruptedException {
         appPoManager.getAppInstrumentDetailsPage().tapsButton(direction);
-        if (!AppSettingPage.isTradeConfirmNeeded) {
+        Thread.sleep(500);
+        if (AppSettingPage.isTradeConfirmNeeded) {
             appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
             appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(direction);
         }
@@ -115,5 +118,9 @@ public class TradeRecord {
         appPoManager.getAppMePage().tapWidget("Setting");
         appPoManager.getAppSettingPage().tradeSettingsToggleOn();
         appPoManager.getAppSettingPage().tabBack();
+    }
+
+    public void selectValidity(){
+        appPoManager.getAppInstrumentDetailsPage().selectValidity(VALIDITY);
     }
 }

@@ -33,6 +33,9 @@ public class AppClosePositionPage {
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup[3]")
     WebElement allBtnAos;
 
+    @FindBy(xpath = "(//android.widget.TextView[@text=\"Close Position\"])[1]")
+    WebElement headerAos;
+
 
     public String getEditFieldVal(){
         if (driver instanceof AndroidDriver) {
@@ -59,5 +62,13 @@ public class AppClosePositionPage {
                     break;
             }
         }
+    }
+
+    public boolean getHeader(){
+        if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementFind(headerAos);
+            return headerAos.isDisplayed();
+        }
+        return false;
     }
 }
