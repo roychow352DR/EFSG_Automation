@@ -34,9 +34,26 @@ public class appCommonSteps extends BaseTest {
     }
 
     @Then("the user sees header {string} on the page")
-    public void the_user_sees_header_on_the_page(String header) {
-        if (header.equalsIgnoreCase("Position Details")) {
-            Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getHeader(), header);
+    public void the_user_sees_header_on_the_page(String expectedHeader) {
+        String actualHeaderTitle = "";
+        switch (expectedHeader) {
+            case "Position Details" -> actualHeaderTitle = appPoManager.getAppPositionDetailsPage().getHeader();
+            case "Pending Order Details" -> actualHeaderTitle = appPoManager.getAppPendingOrderDetailsPage().getHeader();
         }
+        Assert.assertEquals(actualHeaderTitle, expectedHeader);
+    }
+
+    @Then("the user is redirected to the {string} on the page")
+    public void the_user_is_redirected_to_the_page(String expectedHeader) throws InterruptedException {
+        String actualHeaderTitle = "";
+        switch (expectedHeader) {
+            case "Position Details" -> actualHeaderTitle = appPoManager.getAppPositionDetailsPage().getHeader();
+            case "Pending Order Details" -> {
+                actualHeaderTitle = appPoManager.getAppPendingOrderDetailsPage().getHeader();
+                appPoManager.getAppTradeView().cancelPendingOrderInDetail();
+            }
+        }
+        Assert.assertEquals(actualHeaderTitle, expectedHeader);
+
     }
 }
