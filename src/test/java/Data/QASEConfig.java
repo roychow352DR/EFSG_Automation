@@ -25,16 +25,41 @@ public class QASEConfig extends GlobalConfig {
 
 
     public Map<String, String> getQaseConfig() throws IOException, InterruptedException {
-        Map<String,String> qaseConfig = new HashMap<>();
-        path = getQasePropertyPath(product);
-        qaseApiClientOptimized = new QaseApiClientOptimized(getProperty(path, "qase.api.token"), getProperty(path, "qase.project.code"));
-        qaseConfig.put("qasePropertyPath",path);
-        qaseConfig.put("apiToken",getProperty(path,"qase.api.token"));
-        qaseConfig.put("projectCode",getProperty(path,"qase.project.code"));
-        qaseConfig.put("testPlanId",getTestPlanId(getProperty(path, "testtype"),path,productEntity));
-        qaseConfig.put("runTitle",qaseApiClientOptimized.getTestPlanTitle(Integer.parseInt(getTestPlanId(getProperty(path, "testtype"), path,productEntity))));
-        return qaseConfig;
+        Map<String, String> qaseConfig = new HashMap<>();
 
+        path = getQasePropertyPath(product);
+        System.out.println("QASE path = " + path);
+        System.out.println("QASE product = " + product);
+        System.out.println("QASE productEntity = " + productEntity);
+
+        String apiToken = getProperty(path, "qase.api.token");
+        String projectCode = getProperty(path, "qase.project.code");
+        String testType = getProperty(path, "testtype");
+        String testPlanId = getTestPlanId(testType, path, productEntity);
+
+        System.out.println("QASE apiToken exists = " + (apiToken != null && !apiToken.isBlank()));
+        System.out.println("QASE projectCode = [" + projectCode + "]");
+        System.out.println("QASE testType = [" + testType + "]");
+        System.out.println("QASE testPlanId = [" + testPlanId + "]");
+
+        if (testPlanId == null || testPlanId.trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "QASE testPlanId is null/empty. path=" + path +
+                            ", product=" + product +
+                            ", productEntity=" + productEntity +
+                            ", testType=[" + testType + "]"
+            );
+        }
+
+        qaseApiClientOptimized = new QaseApiClientOptimized(apiToken, projectCode);
+
+        qaseConfig.put("qasePropertyPath", path);
+        qaseConfig.put("apiToken", apiToken);
+        qaseConfig.put("projectCode", projectCode);
+        qaseConfig.put("testPlanId", testPlanId);
+        qaseConfig.put("runTitle", qaseApiClientOptimized.getTestPlanTitle(Integer.parseInt(testPlanId.trim())));
+
+        return qaseConfig;
     }
 
     public static String getQasePropertyPath(String product)
