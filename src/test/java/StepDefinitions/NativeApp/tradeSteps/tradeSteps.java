@@ -83,8 +83,16 @@ public class tradeSteps extends BaseTest {
         appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(buttonName);
     }
 
+    @And("the user taps button {string} on the confirmation pop up of cancel pending order")
+    public void the_user_taps_button_on_the_confirmation_pop_up_of_cancel_pending_order(String buttonName) throws InterruptedException {
+        Thread.sleep(500);
+        appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
+        appPoManager.getAppTradeView().closeDialogue();
+    }
+
     @And("the user taps {string} cta button on the app trade view")
-    public void the_user_taps_cta_button_on_the_app_trade_view(String buttonName) {
+    public void the_user_taps_cta_button_on_the_app_trade_view(String buttonName) throws InterruptedException {
+        Thread.sleep(500);
         if (TradeRecord.isOpenPosition){
             appPoManager.getAppTradeView().getOpenPositionOpenPrice();
         }
@@ -130,8 +138,19 @@ public class tradeSteps extends BaseTest {
         Thread.sleep(2000);
         for (String value : appPoManager.getAppTradeView().stopOrderConfirmationPageValues()) {
             Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value),
-                    appPoManager.getAppTradeView().getValidationValue(value));
+                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
         }
+    }
+
+    @Then("the user sees stop order values are displayed correctly with the user input value on the cancel order confirmation pop up")
+    public void the_user_sees_stop_order_values_are_displayed_correctly_with_the_user_input_value_on_the_cancel_order_confirmation_pop_up() throws InterruptedException {
+        Thread.sleep(2000);
+        for (String value : appPoManager.getAppTradeView().stopOrderConfirmationPageValues()) {
+            Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value),
+                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
+        }
+        appPoManager.getAppTradeView().closeDialogue();
+        appPoManager.getAppTradeView().cancelOrder();
     }
 
     @Then("the user sees market order values are displayed correctly with the user input value on the confirmation pop up")
@@ -493,6 +512,13 @@ public class tradeSteps extends BaseTest {
     @Then("the user back to new order creation page")
     public void the_user_back_to_new_order_creation_page() {
         Assert.assertTrue(appPoManager.getAppInstrumentDetailsPage().getTpslToggleStatus());
+    }
+
+    @Then("the user sees close position page")
+    public void the_user_sees_close_position_page() {
+        Assert.assertTrue(appPoManager.getAppClosePositionPage().getHeader());
+        appPoManager.getAppTradeView().tapBack();
+        appPoManager.getAppTradeView().closePosition();
     }
 
 }
