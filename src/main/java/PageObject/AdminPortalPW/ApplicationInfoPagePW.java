@@ -53,7 +53,7 @@ public class ApplicationInfoPagePW {
 
     public void fillApplicationInfo(boolean isExistedEmail, boolean isExistedPhoneNumber, boolean isCrossEntity) throws IOException {
         selectEntity(isCrossEntity);
-        if (abs.userinfoList().get("entity").contains("EBL") && !isCrossEntity) {
+        if (abs.userinfoList().get("entity").contains("EBL") || abs.userinfoList().get("entity").contains("EGM") && !isCrossEntity) {
             fillRandomUsername();
         }
         fillEmail(isExistedEmail);
