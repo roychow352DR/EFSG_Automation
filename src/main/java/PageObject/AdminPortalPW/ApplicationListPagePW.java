@@ -4,6 +4,7 @@ import AbstractComponent.AbstractComponentsPW;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
+import utils.BaseTest;
 
 import java.io.IOException;
 
@@ -69,9 +70,15 @@ public class ApplicationListPagePW {
     }
 
     public Locator getApplicationStatus(String email,Locator firstRow) {;
+        Locator applicationStatus;
         abs.waitForLocatorVisible(firstRow);
         abs.getItemsByText(email, emailRow, nextPageBtn, entity, entityRow);
-        Locator applicationStatus = row.filter(new Locator.FilterOptions().setHasText(email)).locator(".css-4soh8v").nth(1);
+        if (BaseTest.productEnv.equalsIgnoreCase("egmuat")){
+            applicationStatus = row.filter(new Locator.FilterOptions().setHasText(email)).locator(".css-4soh8v").nth(2);
+        }
+        else {
+            applicationStatus = row.filter(new Locator.FilterOptions().setHasText(email)).locator(".css-4soh8v").nth(1);
+        }
         abs.waitForLocatorVisible(applicationStatus);
         return applicationStatus;
     }

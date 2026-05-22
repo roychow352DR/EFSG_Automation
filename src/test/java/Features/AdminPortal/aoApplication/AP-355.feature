@@ -1,7 +1,7 @@
 Feature: AO Application List
 
-  @Regression @L3IndividualCreation @AdminPortal @Smoke @AO @XPro @L2IndividualCreation
-  Scenario: XPro - Create Individual Account with status in Pending Verification
+  @Regression @L3IndividualCreation @AdminPortal @Smoke @AO @XPro @L2IndividualCreation @EGM
+  Scenario: XPro/EGM - Create Individual Account with status in Pending Verification
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up
