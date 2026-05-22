@@ -84,6 +84,13 @@ public class QASEConfig extends GlobalConfig {
                 default -> "";
             };
         }
+        else if (entity.equalsIgnoreCase("EGM")) {
+            return switch (testType) {
+                case "Regression" -> getProperty(path, "qase.egm.regression.testPlanId");
+                case "Smoke" -> getProperty(path, "qase.smoke.testPlanId");
+                default -> "";
+            };
+        }
 
         return testType;
     }

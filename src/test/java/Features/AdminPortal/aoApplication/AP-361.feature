@@ -1,10 +1,10 @@
 Feature: AO Application List
 
 
-  @Regression @L3IndividualCreation @AdminPortal @Smoke @AO @XPro
-  Scenario: XPro - Account status in Pending Deposit after second approval
+  @Regression @L3IndividualCreation @AdminPortal @Smoke @AO @XPro @EGM
+  Scenario: XPro/EGM - Account status in Approved after second approval
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
-    When the user clicks detail button of "Pending Approval" record on the application page
+    When the user clicks the detail button for the application record with status "Pending Approval", created by "qaauto", and client type "LEVEL_3_INDIVIDUAL" on the application list page
     And the user clicks "Next to Personal Information" button on the application information page
     And the user clicks "Next to Contact Information" button on the personal information page
     And the user clicks "Approve" button on the contact information page
