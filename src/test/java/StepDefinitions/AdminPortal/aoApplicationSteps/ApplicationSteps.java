@@ -519,6 +519,7 @@ public class ApplicationSteps extends BaseTest {
         page.waitForLoadState(LoadState.NETWORKIDLE);
        // String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
         String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
+        System.out.println(email);
         Assert.assertNotNull(email);
         aopoManager.getApplicationListPage().clickClientRecordDetailBtn(email);
         applicantIndividualEmail = email;

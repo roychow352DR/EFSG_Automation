@@ -12,5 +12,3 @@ Feature: Native App trade
       And the user taps button "x" on the confirmation pop up of cancel pending order
       And the user taps "detail" cta button on the app trade view
       Then the user is redirected to the "Pending Order Details" on the page
-
-
