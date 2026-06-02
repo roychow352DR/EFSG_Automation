@@ -53,6 +53,12 @@ public class AppEditPositionPage {
     @FindBy(className = "android.widget.TextView")
     List<WebElement> textMessages;
 
+    @FindBy(xpath = "(//android.widget.TextView[@text=\"Edit Position\"])[1]")
+    WebElement headerAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[13]")
+    WebElement closeBtnAos;
+
 
     public String getInputFieldValue(String inputFieldName) {
         if (driver instanceof AndroidDriver) {
@@ -189,5 +195,23 @@ public class AppEditPositionPage {
         return false;
     }
 
+    public boolean getHeader() {
+        if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementFind(headerAos);
+            return headerAos.isDisplayed();
+        }
+        return false;
+    }
+
+    public void tapButtonOnDialogue(String btnName) {
+        if (driver instanceof AndroidDriver) {
+            switch (btnName) {
+                case "x" -> {
+                    abs.waitUtilElementClickable(closeBtnAos);
+                    closeBtnAos.click();
+                }
+            }
+        }
+    }
 
 }

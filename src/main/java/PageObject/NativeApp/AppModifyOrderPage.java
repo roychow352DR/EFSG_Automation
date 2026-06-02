@@ -36,6 +36,12 @@ public class AppModifyOrderPage {
             "/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[1]")
     WebElement backBtnAos;
 
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[15]")
+    WebElement closeBtnAos;
+
+    @FindBy(xpath = "(//android.widget.TextView[@text=\"Modify Order\"])[1]")
+    WebElement headerAos;
+
 
     public String getEditPrice(String direction, String decimal, String priceType, int value) {
         String price = "";
@@ -54,8 +60,10 @@ public class AppModifyOrderPage {
                 }
             } else {
                 switch (direction) {
-                    case "BUY" -> price = Float.toString(Float.parseFloat(editTextFieldAos.getLast().getText()) + value);
-                    case "SELL" -> price = Float.toString(Float.parseFloat(editTextFieldAos.getLast().getText()) - value);
+                    case "BUY" ->
+                            price = Float.toString(Float.parseFloat(editTextFieldAos.getLast().getText()) + value);
+                    case "SELL" ->
+                            price = Float.toString(Float.parseFloat(editTextFieldAos.getLast().getText()) - value);
                 }
             }
         }
@@ -77,8 +85,8 @@ public class AppModifyOrderPage {
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), editStopLimitPrice);
                 }
                 case "Take Profit" -> {
-                   // WebElement takeProfitField = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,'Take Profit')]"));
-                  //  abs.swipeUntilElementVisible(driver,takeProfitField,5);
+                    // WebElement takeProfitField = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,'Take Profit')]"));
+                    //  abs.swipeUntilElementVisible(driver,takeProfitField,5);
                     String editTakeProfitPrice = getEditPrice(direction, decimal, priceType, value);
                     editTextFieldAos.getLast().clear();
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getLast(), editTakeProfitPrice);
@@ -114,6 +122,24 @@ public class AppModifyOrderPage {
         if (driver instanceof AndroidDriver) {
             backBtnAos.click();
         }
+    }
+
+    public void tapButtonOnDialogue(String btnName) {
+        if (driver instanceof AndroidDriver) {
+            switch (btnName) {
+                case "x" -> {
+                    abs.waitUtilElementClickable(closeBtnAos);
+                    closeBtnAos.click();
+                }
+            }
+        }
+    }
+    public boolean getHeader(){
+        if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementFind(headerAos);
+            return headerAos.isDisplayed();
+        }
+        return false;
     }
 
 }

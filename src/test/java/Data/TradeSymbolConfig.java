@@ -2,6 +2,8 @@ package Data;
 
 public class TradeSymbolConfig {
 
+    public static boolean isInitialMarginZero = false;
+
     public String getDecimalPlace(String symbol) {
         return switch (symbol) {
             case "XAUUSD" -> "2";
@@ -33,16 +35,30 @@ public class TradeSymbolConfig {
     }
 
     public Integer getInitialMargin(String symbol) {
-        return switch (symbol) {
-            case "XAUUSD" -> 3000;
-            case "XAGUSD" -> 10000;
-            case "RKGCNH" -> 1300;
-            case "HKGHKD" -> 4000;
-            default -> 0;
-        };
+        if (isInitialMarginZero) return 0;
+        else {
+            return switch (symbol) {
+                case "XAUUSD" -> 3000;
+                case "XAGUSD" -> 10000;
+                case "RKGCNH" -> 1300;
+                case "HKGHKD" -> 4000;
+                default -> 0;
+            };
+        }
     }
 
     public String getStepSize() {
         return "0.1";
     }
+
+    public Integer getContractSize(String symbol){
+        return switch (symbol) {
+            case "XAUUSD" -> 100;
+            case "XAGUSD" -> 5000;
+            case "RKGCNH" -> 1000;
+            case "HKGHKD" -> 100;
+            default -> 0;
+        };
+    }
+
 }
