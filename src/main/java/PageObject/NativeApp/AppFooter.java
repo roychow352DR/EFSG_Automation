@@ -35,7 +35,10 @@ public class AppFooter {
             switch (buttonName) {
                 case "Me" -> meFooterBtnAos.click();
                 case "Home" -> homeFooterBtnAos.click();
-                case "Markets" -> marketFooterBtnAos.click();
+                case "Markets" -> {
+                    abs.waitUtilElementClickable(marketFooterBtnAos);
+                    marketFooterBtnAos.click();
+                }
                 case "Portfolio" -> portfolioFooterBtnAos.click();
                 default -> System.out.println("Button not found");
             }

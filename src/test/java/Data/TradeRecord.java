@@ -11,7 +11,7 @@ import static utils.BaseTest.getProperty;
 public class TradeRecord {
 
     private AppPOManager appPoManager;
-    public final String LOT_SIZE = "1";
+    public final String LOT_SIZE = "0.5";
     public String VALIDITY = "Today";
     public static boolean isOpenPosition = false;
 
@@ -58,8 +58,20 @@ public class TradeRecord {
         confirmPlaceOrder(direction);
     }
 
+    public void createOpenPosition(String direction,String symbol) throws IOException, InterruptedException {
+        isOpenPosition = true;
+        tapSymbol(symbol);
+        selectDirection(direction);
+        fillLotSize();
+        confirmPlaceOrder(direction);
+    }
+
     public void tapSymbol() throws IOException {
         appPoManager.getAppMarketsPage().tapSymbol(getDefaultSymbol());
+    }
+
+    public void tapSymbol(String symbol) throws IOException {
+        appPoManager.getAppMarketsPage().tapSymbol(symbol);
     }
 
     public void selectDirection(String direction) {

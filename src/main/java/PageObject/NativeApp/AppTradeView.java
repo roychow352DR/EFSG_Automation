@@ -8,7 +8,9 @@ import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -352,7 +354,7 @@ public class AppTradeView {
     public void cancelOrder() {
         if (driver instanceof AndroidDriver) {
             crossButtonAos.click();
-            if (!AppSettingPage.isTradeConfirmNeeded) {
+            if (AppSettingPage.isTradeConfirmNeeded) {
                 abs.waitUtilElementFind(cancelOrderButtonAos);
                 cancelOrderButtonAos.click();
             }
@@ -365,7 +367,7 @@ public class AppTradeView {
             crossButtonAos.click();
             abs.waitUtilElementFind(closePositionAos);
             closePositionAos.click();
-            if (!AppSettingPage.isTradeConfirmNeeded) {
+            if (AppSettingPage.isTradeConfirmNeeded) {
                 confirmClosePositionBtnAos.click();
             }
         }
@@ -447,18 +449,33 @@ public class AppTradeView {
     }
 
     public void getOpenPositionOpenPrice() {
-        WebElement openPrice = driver.findElements(By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[2]" +
-                "/parent::android.view.ViewGroup/android.widget.TextView")).get(2);
-        openPositionOpenPrice = openPrice.getText();
+        By openPriceLocator = By.xpath(
+                "(//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]" +
+                        "/android.view.ViewGroup/android.view.ViewGroup[2]/parent::android.view.ViewGroup" +
+                        "/android.widget.TextView)[3]"
+        );
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.ignoring(StaleElementReferenceException.class);
+        openPositionOpenPrice = wait.until(driver -> {
+            WebElement element = driver.findElement(openPriceLocator);
+            String text = element.getText();
+            return !text.trim().isEmpty() ? text : null;
+        });
     }
 
     public void getPendingOrderTargetPrice() {
-        WebElement targetPrice = driver.findElements(By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]" +
-                "/parent::android.view.ViewGroup/android.widget.TextView")).get(4);
-        openOrderTargetPrice = targetPrice.getText();
+        By targetPriceLocator = By.xpath("(//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]" +
+                "/parent::android.view.ViewGroup/android.widget.TextView)[4]");
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.ignoring(StaleElementReferenceException.class);
+        openOrderTargetPrice = wait.until(driver -> {
+            WebElement element = driver.findElement(targetPriceLocator);
+            String text = element.getText();
+            return !text.trim().isEmpty() ? text : null;
+        });
     }
 
-    public void closeDialogue(){
+    public void closeDialogue() {
         if (driver instanceof AndroidDriver) {
             abs.waitUtilElementFind(closeDialogueBtnAos);
             closeDialogueBtnAos.click();
