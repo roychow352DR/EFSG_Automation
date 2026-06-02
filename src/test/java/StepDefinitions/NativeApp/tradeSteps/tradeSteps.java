@@ -42,7 +42,7 @@ public class tradeSteps extends BaseTest {
 
     @And("the user taps button {string} on the instrument details page")
     public void the_user_taps_button_buy_on_the_app_trade_view(String buttonName) throws InterruptedException {
-        // Thread.sleep(200);
+        Thread.sleep(2000);
         appPoManager.getAppInstrumentDetailsPage().tapsButton(buttonName);
     }
 
@@ -92,7 +92,7 @@ public class tradeSteps extends BaseTest {
 
     @And("the user taps {string} cta button on the app trade view")
     public void the_user_taps_cta_button_on_the_app_trade_view(String buttonName) throws InterruptedException {
-        Thread.sleep(500);
+        Thread.sleep(1000);
         if (TradeRecord.isOpenPosition){
             appPoManager.getAppTradeView().getOpenPositionOpenPrice();
         }
@@ -211,6 +211,11 @@ public class tradeSteps extends BaseTest {
     @And("the user creates a {string} position on the instrument details page")
     public void the_user_creates_a_position_on_the_app_trade_view(String direction) throws IOException, InterruptedException {
         tradeRecord.createOpenPosition(direction);
+    }
+
+    @And("the user creates a {string} position of symbol {string} on the instrument details page")
+    public void the_user_creates_a_position_of_symbol_on_the_app_trade_view(String direction,String symbol) throws IOException, InterruptedException {
+        tradeRecord.createOpenPosition(direction,symbol);
     }
 
     @Then("the user sees the open position is disappeared on the position list")
@@ -519,6 +524,72 @@ public class tradeSteps extends BaseTest {
         Assert.assertTrue(appPoManager.getAppClosePositionPage().getHeader());
         appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
+    }
+
+    @Then("the user sees edit position page")
+    public void the_user_sees_edit_position_page() throws InterruptedException {
+        Thread.sleep(500);
+        Assert.assertTrue(appPoManager.getAppEditPositionPage().getHeader());
+        appPoManager.getAppTradeView().tapBack();
+        appPoManager.getAppTradeView().closePosition();
+    }
+
+    @And("the user taps button {string} on the confirmation pop up of edit position page")
+    public void the_user_taps_button_on_the_confirmation_pop_up_of_edit_position_page(String btnName) throws InterruptedException {
+        appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
+        appPoManager.getAppEditPositionPage().tapButtonOnDialogue(btnName);
+    }
+
+    @And("the user taps button {string} on the confirmation pop up of modify order page")
+    public void the_user_taps_button_on_the_confirmation_pop_up_of_modify_order_page(String btnName) {
+        appPoManager.getAppModifyOrderPage().tapButtonOnDialogue(btnName);
+    }
+
+    @Then("the user sees {string} page")
+    public void the_user_sees_page(String pageName) {
+        switch (pageName) {
+            case "Edit Position" -> {
+                Assert.assertTrue(appPoManager.getAppEditPositionPage().getHeader());
+                appPoManager.getAppTradeView().tapBack();
+                appPoManager.getAppTradeView().closePosition();
+            }
+            case "Close Position" -> {
+                Assert.assertTrue(appPoManager.getAppClosePositionPage().getHeader());
+                appPoManager.getAppTradeView().tapBack();
+                appPoManager.getAppTradeView().closePosition();
+            }
+            case "Modify Order" -> {
+                Assert.assertTrue(appPoManager.getAppModifyOrderPage().getHeader());
+                appPoManager.getAppModifyOrderPage().tapBack();
+                appPoManager.getAppTradeView().cancelOrder();
+            }
+        }
+    }
+
+    @When("the user taps symbol {string} on the app markets page")
+    public void the_user_taps_symbol_on_the_app_markets_page(String symbol) {
+        appPoManager.getAppMarketsPage().tapSymbol(symbol);
+    }
+
+    @Then("the user sees correct value {string} on the confirmation pop up of close position page")
+    public void the_user_sees_correct_value_on_the_confirmation_pop_up_of_close_position_page(String label) throws InterruptedException {
+       Thread.sleep(100);
+       Assert.assertEquals(appPoManager.getAppClosePositionPage().getConfirmationValue(label),
+               appPoManager.getAppClosePositionPage().getFloatingPnL(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
+        appPoManager.getAppTradeView().closePositionInDetails();
+    }
+
+    @And("the initial margin is set to zero")
+    public void the_initial_margin_is_set_to_zero() {
+        TradeSymbolConfig.isInitialMarginZero = true;
+    }
+
+    @Then("the user sees correct value {string} on the position details page")
+    public void the_user_sees_correct_value_on_the_position_details_page(String valueName) throws InterruptedException {
+        Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDetailValue(valueName),
+                appPoManager.getAppPositionDetailsPage().getContractValue(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
+        appPoManager.getAppTradeView().closePositionInDetails();
+
     }
 
 }
