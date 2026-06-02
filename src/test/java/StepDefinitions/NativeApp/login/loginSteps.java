@@ -1,6 +1,7 @@
 package StepDefinitions.NativeApp.login;
 
 import Data.AppCredential;
+import Data.TradeSymbolConfig;
 import PageObject.NativeApp.*;
 import io.appium.java_client.AppiumDriver;
 import io.cucumber.java.en.And;

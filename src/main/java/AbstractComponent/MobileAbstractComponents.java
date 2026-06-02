@@ -128,7 +128,7 @@ public class MobileAbstractComponents {
     public void waitUtilAllElementFind(List<WebElement> ele) {
         WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(60));
 
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        for (int attempt = 1; attempt <= 5; attempt++) {
             try {
                 w.until(ExpectedConditions.invisibilityOfAllElements(ele));
                 return;
@@ -159,7 +159,7 @@ public class MobileAbstractComponents {
     public void waitUtilElementVisible(WebElement ele) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        for (int attempt = 1; attempt <= 10; attempt++) {
             try {
                 WebElement element = wait.until(ExpectedConditions.visibilityOf(ele));
                 element.click();
@@ -169,7 +169,7 @@ public class MobileAbstractComponents {
             }
         }
 
-        throw new StaleElementReferenceException("Element remained stale after 3 attempts: " + ele);
+        throw new StaleElementReferenceException("Element remained stale after 10 attempts: " + ele);
     }
 
     /**
@@ -468,6 +468,13 @@ public class MobileAbstractComponents {
             }
         }
         return null;
+    }
+
+    public String getQuoteCurrency(String symbol) {
+        if (symbol == null || symbol.length() < 3) {
+            throw new IllegalArgumentException("Invalid symbol: " + symbol);
+        }
+        return symbol.substring(symbol.length() - 3);
     }
 
 }
