@@ -77,7 +77,7 @@ public class ApplicationListPagePW {
             applicationStatus = row.filter(new Locator.FilterOptions().setHasText(email)).locator(".css-4soh8v").nth(2);
         }
         else {
-            applicationStatus = row.filter(new Locator.FilterOptions().setHasText(email)).locator(".css-4soh8v").nth(1);
+            applicationStatus = row.filter(new Locator.FilterOptions().setHasText(email)).locator(".css-4soh8v").nth(2);
         }
         abs.waitForLocatorVisible(applicationStatus);
         return applicationStatus;
@@ -91,7 +91,7 @@ public class ApplicationListPagePW {
 
     public String getStatusEmail(String applicationStatus) throws IOException {
         abs.getItemsByText(applicationStatus, status, nextPageBtn, entity, entityRow);
-        email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(1).textContent();
+        email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(2).textContent();
         return email;
     }
 
