@@ -3,6 +3,7 @@ package StepDefinitions.NativeApp.tradeSteps;
 import Data.TradeRecord;
 import Data.TradeSymbolConfig;
 import PageObject.NativeApp.*;
+import io.cucumber.java.bs.A;
 import io.cucumber.java.en.And;
 import StepDefinitions.NativeApp.login.loginSteps;
 import io.cucumber.java.en.Then;
@@ -586,10 +587,14 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees correct value {string} on the position details page")
     public void the_user_sees_correct_value_on_the_position_details_page(String valueName) throws InterruptedException {
-        Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDetailValue(valueName),
-                appPoManager.getAppPositionDetailsPage().getContractValue(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
+        if (valueName.equalsIgnoreCase("Contract Value")) {
+            Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDetailValue(valueName),
+                    appPoManager.getAppPositionDetailsPage().getContractValue(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
+        }
+        else if (valueName.equalsIgnoreCase("Initial Margin")) {
+            Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDefaultInitialMargin(),
+                    String.format("%.2f",Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
+        }
         appPoManager.getAppTradeView().closePositionInDetails();
-
     }
-
 }
