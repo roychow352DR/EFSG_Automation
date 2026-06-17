@@ -35,6 +35,16 @@ public class TradeRecord {
         confirmPlaceOrder(direction);
     }
 
+    public void placePendingOrder(String direction, String orderType, TradeSymbolConfig tradeSymbolConfig,String symbol) throws InterruptedException, IOException {
+        tapSymbol(symbol);
+        selectDirection(direction);
+        selectOrderType("Limit / Stop Order");
+        fillLotSize();
+        selectStopLimitOption(orderType);
+        fillStopLimitPrice(direction, tradeSymbolConfig);
+        confirmPlaceOrder(direction);
+    }
+
     public void placeTPSLPendingOrder(String direction, String orderType, TradeSymbolConfig tradeSymbolConfig) throws InterruptedException, IOException {
         tapSymbol();
         selectDirection(direction);

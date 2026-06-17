@@ -128,6 +128,10 @@ public class QASEConfig extends GlobalConfig {
         return qaseApiClientOptimized.getCaseStepAction(caseId, position);
     }
 
+    public boolean replaceCaseStepsIfDifferent(int caseId, List<String> featureSteps) throws IOException, InterruptedException {
+        return qaseApiClientOptimized.replaceCaseStepsIfDifferent(caseId, featureSteps);
+    }
+
 
 
 

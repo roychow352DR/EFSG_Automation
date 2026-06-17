@@ -1,6 +1,7 @@
 package Data;
 
 import PageObject.AdminPortalPW.AOPOManager;
+import utils.BaseTest;
 import utils.SetCondition;
 
 import java.io.IOException;
@@ -49,6 +50,28 @@ public class AoAccountCreation {
         aopoManager.getEmployeeFinInfoPage().fillEmployeeFinInfo();
         aopoManager.getTradingExpPage().fillTradingExp();
         aopoManager.getTradingExpPage().clickButtonByText("Submit");
+    }
+
+    public void createL2AccountIndividual(String firstname,String lastname) throws IOException {
+        aopoManager.getApplicationListPage().createIndividual();
+        aopoManager.getApplicationInfoPage().fillApplicationInfo(SetCondition.isExistedEmail(),
+                SetCondition.isExistedPhoneNumber(),
+                SetCondition.isCrossEntity());
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(firstname,lastname,SetCondition.isBelow18(),
+                SetCondition.isExpired(),
+                SetCondition.isExpiredBeforeCurrent(),
+                SetCondition.isEdd(),
+                isThirdParty());
+        if (BaseTest.productEntity.equalsIgnoreCase("EIEHK") || BaseTest.productEntity.equalsIgnoreCase("EBL_MT5")) {
+            aopoManager.getContactInfoPage().fillContactInfo();
+            aopoManager.getEmployeeFinInfoPage().fillEmployeeFinInfo();
+            aopoManager.getTradingExpPage().fillTradingExp();
+            aopoManager.getTradingExpPage().clickButtonByText("Submit");
+        }
+        else {
+            aopoManager.getContactInfoPage().fillContactInfoWithoutNext();
+            aopoManager.getContactInfoPage().clickButtonByText("Submit");
+        }
     }
 
     public void aoFirstApproval() {
