@@ -214,9 +214,9 @@ public class AbstractComponentsPW {
 
     public String getApiEndpointDomain(String env) {
         return switch (env) {
-            case "bauuat", "egmuat" -> "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
+            case "bauuat", "egmuat" -> "https://bau-uat-aocm-api.empfs.net/bau-uat/core-service/";
             case "mt5sit" -> "https://2f1lmm1qqi.execute-api.ap-southeast-1.amazonaws.com/sit/core-service/";
-            case "mt5uat" -> "https://bau-uat-aocm-api.empfs.net/bau-uat/core-service/";
+            case "mt5uat" -> "https://zmtezs56l2.execute-api.ap-southeast-1.amazonaws.com/uat/core-service/";
             default -> "";
         };
     }
