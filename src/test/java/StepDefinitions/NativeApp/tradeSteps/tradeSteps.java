@@ -597,4 +597,22 @@ public class tradeSteps extends BaseTest {
         }
         appPoManager.getAppTradeView().closePositionInDetails();
     }
+
+    @And("the user places a pending order with direction {string} and order type {string} symbol {string} on the instrument details page")
+    public void the_user_places_a_pending_order_with_direction_and_order_type_symbol_on_the_instrument_details_page(String direction,String orderType,String symbol) throws IOException, InterruptedException {
+        tradeRecord.placePendingOrder(direction, orderType, tradeSymbolConfig, symbol);
+    }
+
+    @Then("the user sees correct value {string} on the pending order details page")
+    public void the_user_sees_correct_value_on_the_pending_order_details_page(String valueName) throws InterruptedException {
+        if (valueName.equalsIgnoreCase("Contract Value")) {
+            Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue(valueName),
+                    appPoManager.getAppPendingOrderDetailsPage().getContractValue(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
+        }
+        else if (valueName.equalsIgnoreCase("Initial Margin")) {
+            Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDefaultInitialMargin(),
+                    String.format("%.2f",Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
+        }
+        appPoManager.getAppTradeView().cancelPendingOrderInDetail();
+    }
 }

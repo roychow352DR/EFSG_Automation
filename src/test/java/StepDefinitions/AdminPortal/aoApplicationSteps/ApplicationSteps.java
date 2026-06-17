@@ -378,6 +378,23 @@ public class ApplicationSteps extends BaseTest {
 
     }
 
+    @And("the record in status {string} with firstname {string} and lastname {string} is created in the application list")
+    public void the_record_in_status_is_created_with_firstname_and_lastname_is_created_in_the_application_list(String status,String firstname,String lastname) throws IOException, InterruptedException {
+        if (status.equalsIgnoreCase("Draft")) {
+            accountAction.createL2DraftIndividual();
+        }
+        else if (status.equalsIgnoreCase("Rejected")) {
+            accountAction.createL2RejectedIndividual();
+        }
+        else if (status.equalsIgnoreCase("Pending Verification")) {
+            accountAction.createL2AccountIndividual(firstname,lastname);
+        }
+        else if (status.equalsIgnoreCase("Pending Deposit")) {
+            accountAction.createL3AccountIndividual();
+        }
+
+    }
+
     @And("the user fills textField {string} retrieved from api endpoint on the application information page")
     public void the_user_fills_textField_retrieved_from_api_endpoint_on_the_application_information_page(String textFieldName) {
         if (textFieldName.equalsIgnoreCase("username")) {
@@ -519,7 +536,7 @@ public class ApplicationSteps extends BaseTest {
         page.waitForLoadState(LoadState.NETWORKIDLE);
        // String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
         String email = coreService.getAoClient(retrieveLocalStorageVal(), "email", "statusLabel", status, createdBy, clientType);
-        System.out.println(email);
+        System.out.println("Test Data: " + email);
         Assert.assertNotNull(email);
         aopoManager.getApplicationListPage().clickClientRecordDetailBtn(email);
         applicantIndividualEmail = email;

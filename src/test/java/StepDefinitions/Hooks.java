@@ -2,8 +2,6 @@ package StepDefinitions;
 
 import Data.QASEConfig;
 import Data.GlobalConfig;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.options.LoadState;
 import io.appium.java_client.InteractsWithApps;
 import io.cucumber.java.*;
 import utils.BaseTest;
@@ -16,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.net.URI;
 
 public class Hooks extends BaseTest {
 
@@ -37,6 +36,8 @@ public class Hooks extends BaseTest {
     public static QASEConfig qaseConfig;
     public static String product;
     public static Path videoPath;
+    private List<String> scenarioFeatureSteps = new ArrayList<>();
+    private boolean scenarioHasFailedStep;
 
     public static String productEntity;
 
@@ -81,6 +82,8 @@ public class Hooks extends BaseTest {
         caseId = qaseConfig.getCaseId(scenario);
         steps.clear();
         position = 1;
+        scenarioFeatureSteps = getFeatureScenarioSteps(scenario);
+        scenarioHasFailedStep = false;
 
     }
 
@@ -175,8 +178,11 @@ public class Hooks extends BaseTest {
     public void recordStepResult(Scenario scenario) {
         if (position >= 1) {
             try {
-                String stepAction = qaseConfig.getCaseStepAction(projectCode, Integer.parseInt(caseId), position);
+                String stepAction = getStepActionForPosition(position);
                 boolean isPassed = !scenario.isFailed();
+                if (!isPassed) {
+                    scenarioHasFailedStep = true;
+                }
 
                 if (!isPassed) {
                     //  captureScreenshot(stepAction);
@@ -190,6 +196,14 @@ public class Hooks extends BaseTest {
 
         }
         position++;
+    }
+
+    private String getStepActionForPosition(int stepPosition) throws IOException, InterruptedException {
+        int index = stepPosition - 1;
+        if (index >= 0 && index < scenarioFeatureSteps.size()) {
+            return scenarioFeatureSteps.get(index);
+        }
+        return qaseConfig.getCaseStepAction(projectCode, Integer.parseInt(caseId), stepPosition);
     }
 
     /**
@@ -246,8 +260,92 @@ public class Hooks extends BaseTest {
             resetToHome();
             cleanupPWSession();
         }
+        syncCaseStepsWithFeatureFile(scenario);
         reportTestResult(scenario, videoPath);
         cleanupMediaFiles();
+    }
+
+    /**
+     * Compares feature-file steps against Qase case steps and replaces Qase steps when mismatched.
+     */
+    private void syncCaseStepsWithFeatureFile(Scenario scenario) {
+        if (caseId == null || caseId.isEmpty()) {
+            return;
+        }
+        if (scenarioHasFailedStep || scenario.isFailed()) {
+            return;
+        }
+        try {
+            List<String> featureSteps = scenarioFeatureSteps.isEmpty()
+                    ? getFeatureScenarioSteps(scenario)
+                    : scenarioFeatureSteps;
+            if (featureSteps.isEmpty()) {
+                return;
+            }
+            qaseConfig.replaceCaseStepsIfDifferent(Integer.parseInt(caseId), featureSteps);
+        } catch (Exception e) {
+            System.err.println("Failed to sync Qase case steps from feature file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Extracts executable Given/When/Then-style steps from the current scenario in the feature file.
+     */
+    private List<String> getFeatureScenarioSteps(Scenario scenario) throws IOException {
+        Path featurePath = resolveFeaturePath(scenario.getUri());
+        List<String> lines = Files.readAllLines(featurePath);
+        List<String> parsedSteps = new ArrayList<>();
+        String targetScenarioName = scenario.getName().trim();
+        boolean insideTargetScenario = false;
+
+        for (String rawLine : lines) {
+            String line = rawLine.trim();
+            if (line.isEmpty() || line.startsWith("#") || line.startsWith("@")) {
+                continue;
+            }
+
+            if (line.startsWith("Scenario:") || line.startsWith("Scenario Outline:")) {
+                String currentScenarioName = line.substring(line.indexOf(':') + 1).trim();
+                if (insideTargetScenario && !currentScenarioName.equals(targetScenarioName)) {
+                    break;
+                }
+                insideTargetScenario = currentScenarioName.equals(targetScenarioName);
+                continue;
+            }
+
+            if (!insideTargetScenario) {
+                continue;
+            }
+
+            if (line.startsWith("Examples:")) {
+                break;
+            }
+
+            if (line.startsWith("Given ")
+                    || line.startsWith("When ")
+                    || line.startsWith("Then ")
+                    || line.startsWith("And ")
+                    || line.startsWith("But ")
+                    || line.startsWith("* ")) {
+                parsedSteps.add(line);
+            }
+        }
+        return parsedSteps;
+    }
+
+    private Path resolveFeaturePath(URI featureUri) {
+        try {
+            return Path.of(featureUri);
+        } catch (Exception ignored) {
+            String relativePath = featureUri.getPath();
+            if (relativePath == null || relativePath.isEmpty()) {
+                throw new IllegalArgumentException("Unable to resolve feature file path from URI: " + featureUri);
+            }
+            if (relativePath.startsWith("/")) {
+                relativePath = relativePath.substring(1);
+            }
+            return Path.of(System.getProperty("user.dir"), relativePath);
+        }
     }
 
     /**

@@ -63,6 +63,18 @@ public class PersonalInfoPagePW {
         clickNext();
     }
 
+    public void fillPersonalInfo(String firstname,String lastname,boolean isBelow18, boolean isExpired, boolean isExpiredBeforeCurrent, boolean isEdd, boolean isThirdParty) throws IOException {
+        fillName(firstname,lastname);
+        selectGender();
+        selectCountry(isEdd);
+        fillDob(isBelow18, isThirdParty);
+        selectNationality();
+        selectIdType();
+        fillRandomId();
+        selectExpiryDate(isExpired, isExpiredBeforeCurrent);
+        clickNext();
+    }
+
     public void fillMandatory(boolean isBelow18, boolean isExpired, boolean isExpiredBeforeCurrent, boolean isEdd, boolean isThirdParty) throws IOException {
         fillName();
         selectGender();
@@ -77,6 +89,11 @@ public class PersonalInfoPagePW {
     public void fillName() throws IOException {
         lastNameField.fill(abs.userinfoList().get("lastName"));
         firstNameField.fill(abs.userinfoList().get("firstName"));
+    }
+
+    public void fillName(String firstname,String lastname) throws IOException {
+        lastNameField.fill(firstname);
+        firstNameField.fill(lastname);
     }
 
     public void selectGender() throws IOException {

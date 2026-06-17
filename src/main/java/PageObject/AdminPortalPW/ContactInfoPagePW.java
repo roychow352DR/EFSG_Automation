@@ -31,6 +31,10 @@ public class ContactInfoPagePW {
         clickNext();
     }
 
+    public void fillContactInfoWithoutNext() throws IOException {
+        fillAddress();
+    }
+
     public void fillMandatory() throws IOException {
         fillAddress();
     }

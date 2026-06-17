@@ -19,9 +19,12 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.Comparator;
 
 /**
  * Optimized Qase API client with consistent HTTP usage, try-with-resources, and
@@ -56,9 +59,15 @@ public class QaseApiClientOptimized {
      */
     public String getCaseId(Scenario scenario, String projectCode) {
         String uri = scenario.getUri().toString();
-        String[] caseId = uri.substring(uri.lastIndexOf("/") + 1).split(".feature");
-        String[] actualCaseId = caseId[0].split(projectCode + "-");
-        return actualCaseId[1];
+        String fileName = uri.substring(uri.lastIndexOf("/") + 1);
+        String featureName = fileName.endsWith(".feature")
+                ? fileName.substring(0, fileName.length() - ".feature".length())
+                : fileName;
+        String prefix = projectCode + "-";
+        if (!featureName.startsWith(prefix)) {
+            throw new IllegalArgumentException("Feature file name does not follow '<projectCode>-<caseId>.feature': " + fileName);
+        }
+        return featureName.substring(prefix.length());
     }
 
     /**
@@ -261,6 +270,99 @@ public class QaseApiClientOptimized {
     }
 
     /**
+     * Retrieves all step actions from a Qase test case in order.
+     *
+     * @param caseId case identifier
+     * @return ordered list of step actions
+     * @throws IOException on network or parsing errors
+     * @throws InterruptedException when the HTTP call is interrupted
+     */
+    public List<String> getCaseStepActions(int caseId) throws IOException, InterruptedException {
+        String endpoint = BASE_URL + "case/" + projectCode + "/" + caseId;
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header("Token", apiToken)
+                .GET()
+                .build();
+        String response = send(request);
+
+        JsonNode root = objectMapper.readTree(response);
+        JsonNode stepsNode = root.path("result").path("steps");
+        List<String> stepActions = new ArrayList<>();
+        if (stepsNode.isArray()) {
+            List<JsonNode> sortedSteps = new ArrayList<>();
+            stepsNode.forEach(sortedSteps::add);
+            sortedSteps.sort(Comparator.comparingInt(step -> step.path("position").asInt(0)));
+            for (JsonNode step : sortedSteps) {
+                stepActions.add(step.path("action").asText("").trim());
+            }
+        }
+        return stepActions;
+    }
+
+    /**
+     * Updates case steps in Qase when feature steps differ from existing steps.
+     *
+     * @param caseId       case identifier
+     * @param featureSteps steps parsed from feature file
+     * @return true when update call was sent, false when no change is needed
+     * @throws IOException on serialization or network failures
+     * @throws InterruptedException when the HTTP call is interrupted
+     */
+    public boolean replaceCaseStepsIfDifferent(int caseId, List<String> featureSteps) throws IOException, InterruptedException {
+        List<String> normalizedFeatureSteps = new ArrayList<>();
+        for (String step : featureSteps) {
+            normalizedFeatureSteps.add(step == null ? "" : step.trim());
+        }
+
+        List<String> currentSteps = getCaseStepActions(caseId);
+        if (Objects.equals(currentSteps, normalizedFeatureSteps)) {
+            return false;
+        }
+
+        List<Map<String, Object>> qaseSteps = new ArrayList<>();
+        int position = 1;
+        for (String step : normalizedFeatureSteps) {
+            Map<String, Object> stepBody = new HashMap<>();
+            stepBody.put("action", step);
+            stepBody.put("expected_result", "");
+            stepBody.put("data", "");
+            stepBody.put("position", position++);
+            qaseSteps.add(stepBody);
+        }
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("title", getCaseTitle(caseId));
+        payload.put("steps_type", "classic");
+        payload.put("steps", qaseSteps);
+        String jsonPayload = objectMapper.writeValueAsString(payload);
+
+        String endpoint = BASE_URL + "case/" + projectCode + "/" + caseId;
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header("accept", "application/json")
+                .header("content-type", "application/json")
+                .header("Token", apiToken)
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(jsonPayload, StandardCharsets.UTF_8))
+                .build();
+
+        send(request);
+        return true;
+    }
+
+    private String getCaseTitle(int caseId) throws IOException, InterruptedException {
+        String endpoint = BASE_URL + "case/" + projectCode + "/" + caseId;
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header("Token", apiToken)
+                .GET()
+                .build();
+        String response = send(request);
+        JsonNode root = objectMapper.readTree(response);
+        return root.path("result").path("title").asText("");
+    }
+
+    /**
      * Parses a response JSON and retrieves a top-level field under "result".
      *
      * @param response      raw JSON string
@@ -278,6 +380,10 @@ public class QaseApiClientOptimized {
      */
     private String send(HttpRequest request) throws IOException, InterruptedException {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException("Qase API request failed (" + response.statusCode() + ") for "
+                    + request.method() + " " + request.uri() + " with response: " + response.body());
+        }
         return response.body();
     }
 
