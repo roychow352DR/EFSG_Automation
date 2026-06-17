@@ -185,9 +185,9 @@ public class BaseTest {
         if (product.equalsIgnoreCase("adminPortal")) {
             return switch (env) {
                 case "bausit" -> "https://d13ckj22o5rgah.cloudfront.net/login";
-                case "bauuat" -> "https://uat-aocm-ap.empfs.net/login";
+                case "bauuat" -> "https://bau-uat-aocm-ap.empfs.net/login";
                 case "mt5sit" -> "https://d3lyp6p86bdjbb.cloudfront.net/login";
-                case "mt5uat" -> "https://bau-uat-aocm-ap.empfs.net/login";
+                case "mt5uat" -> "https://uat-aocm-ap.empfs.net/login";
                 case "egmuat" -> "https://uat-aocm-ap.empfs.net/login";
                 default -> throw new IllegalArgumentException("Invalid environment: " + env);
             };
