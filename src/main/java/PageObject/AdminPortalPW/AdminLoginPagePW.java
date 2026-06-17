@@ -1,5 +1,6 @@
 package PageObject.AdminPortalPW;
 
+import AbstractComponent.AbstractComponentsPW;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
@@ -12,9 +13,12 @@ public class AdminLoginPagePW {
     public final Locator loginButton;
     public final Locator invalidErrorText;
     public final Locator suspendErrorText;
+    private final AbstractComponentsPW abs;
+
     public AdminLoginPagePW(Page page)
     {
         this.page = page;
+        this.abs = new AbstractComponentsPW(page);
         this.userNameField = page.locator(".css-1x5jdmq");
         this.passwordField = page.locator(".css-1uvydh2");
         this.loginButton = page.locator(".css-1m4mrb3-root-contained-root-contained");
@@ -44,6 +48,7 @@ public class AdminLoginPagePW {
             return invalidErrorText;
         }
         else if (errorText.contains("suspended")){
+            abs.waitForLocatorVisible(suspendErrorText);
             return suspendErrorText;
         }
         return null;

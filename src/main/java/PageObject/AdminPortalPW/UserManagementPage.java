@@ -91,8 +91,9 @@ public class UserManagementPage {
     public void setSelectedRole(String roleVal) throws IOException {
         int index = switch (abs.userinfoList().get("entity")) {
             case "EBL_MT5" -> 0;
-            case "EIEHK" -> 1;
-            case "XPro" -> 2;
+            case "EGM" -> 1;
+            case "EIEHK" -> 2;
+            case "XPro" -> 3;
             default -> 0;
         };
         entityRoleDropdown.nth(index).click();

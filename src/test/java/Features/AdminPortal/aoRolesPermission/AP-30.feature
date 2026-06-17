@@ -6,7 +6,7 @@ Feature: AO Roles and Permission
     And the user clicks "Admin Area" on the ao admin portal menu
     And the user clicks "Role & Permission" on the ao admin portal menu
     And the user clicks detail button of roles "qaautofullaccess" on the role and permission page
-    And the user uncheck checkbox "Read" of the module "Role Setting Detail" on the role and permission page
+    And the user uncheck checkbox "Read" of the module "AO Application List" on the role and permission page
     And the user clicks button "Update" on the ao role and permission page
     When the user logout Admin Portal
     And the user re-logged in to Admin Portal as username "qaautotest" and password "Test1234@"

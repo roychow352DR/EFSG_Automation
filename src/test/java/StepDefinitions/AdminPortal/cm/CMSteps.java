@@ -1,10 +1,11 @@
 package StepDefinitions.AdminPortal.cm;
 
+import Data.CmAccountStatus;
+import PageObject.AdminPortalPW.AOPOManager;
 import com.microsoft.playwright.options.LoadState;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import okio.JvmSystemFileSystem;
 import org.testng.Assert;
 import utils.BaseTest;
 import utils.SetCondition;
@@ -14,8 +15,14 @@ import java.io.IOException;
 import static StepDefinitions.AdminPortal.aoApplicationSteps.ApplicationSteps.accountAction;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
-
 public class CMSteps extends BaseTest {
+
+    private final CmAccountStatus cmAccountStatus;
+
+    public CMSteps() throws IOException {
+        aopoManager = new AOPOManager(page);
+        this.cmAccountStatus = new CmAccountStatus(aopoManager);
+    }
 
     @Then("the user sees {string} status on customer management page")
     public void the_user_sees_status_on_customer_management_page(String status) {
@@ -288,6 +295,11 @@ public class CMSteps extends BaseTest {
             aopoManager.getCmUserInformationPage().fillUsername();
             setRetrievedData(aopoManager.getCmPersonalInfoPage().getTextFieldValue(textFieldName));
         }
+    }
+
+    @And("the user submits change on customer management page")
+    public void the_user_submits_change_on_customer_management_page() throws InterruptedException {
+        cmAccountStatus.submitChange();
     }
 
 }
