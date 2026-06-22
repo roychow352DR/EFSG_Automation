@@ -247,8 +247,14 @@ public class CoreService {
     public String getCrmDomain(String entity, String env) {
         if (env.equalsIgnoreCase("mt5uat")) {
             return switch (entity) {
-                case "EBL_MT5" -> "https://uat-bcrm.empfs.net/";
-                case "EIEHK" -> "https://uat-mhcrm.empfs.net/";
+                case "EBL_MT5","EGM","EIEHK" -> "https://uat-bcrm.empfs.net/";
+                case "XPro" -> "https://uat-mecrm.emxpro.com/";
+                default -> "";
+            };
+        }
+        if (env.equalsIgnoreCase("bauuat")) {
+            return switch (entity) {
+                case "EBL_MT5","EGM","EIEHK" -> "https://bau-uat-aocm-api.empfs.net/bau-uat/";
                 case "XPro" -> "https://uat-mecrm.emxpro.com/";
                 default -> "";
             };
@@ -267,10 +273,9 @@ public class CoreService {
     }
 
     public String getTradeGroupInfoBasedOnEntity(String extractVal, String token, String entity) {
-        String endpoint = getCrmDomain(entity, env) + "admin-portal/api/user/referral-code/trading-group";
+        String endpoint = getCrmDomain(entity, env) + "core-service/v2/account-opening/individual/referral-trading-info";
         Map<String, String> headers = new HashMap<>();
-        headers.put("Key", "YXBpZ2F0ZXdheTpwYXNzd29yZA==");
-        String payload = "{\"code\":\"" + abs.setIBCode(entity) + "\"}";
+        String payload = "{\"code\":\"" + abs.setIBCode(entity) + "\",\"entity\":\"" + entity + "\"}";
         try (ApiClient apiClient = new ApiClient()) {
             APIResponse response = ensureSuccess(apiClient.post(endpoint, token, payload, headers), endpoint);
             return parseJson(response.text(), extractVal);
