@@ -47,7 +47,8 @@ public class AbstractComponentsPW {
         info.put("dateOfBirthYearBelow18", Integer.toString(localDate.getYear() - 15));
         info.put("dateOfBirthYearThirdParty", Integer.toString(localDate.getYear() - 80));
         info.put("currentYear", Integer.toString(localDate.getYear()));
-        info.put("id", randomString(6));
+        info.put("id", "qaId");
+        //info.put("id", randomString(6));
         info.put("passwordNo", randomString(6));
         info.put("addressLine1", "Mong Kok");
         info.put("city", "Kowloon");
