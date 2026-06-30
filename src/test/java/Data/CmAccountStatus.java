@@ -24,7 +24,7 @@ public class CmAccountStatus {
             aopoManager.getApplicationInfoPage().clickButtonByText("Next To Personal Information");
             aopoManager.getPersonalInfoPage().clickButtonByText("Next To Contact Information");
         }
-        aopoManager.getTradingExpPage().clickButtonByText("Submit");
+        aopoManager.getTradingExpPage().clickButtonByText("Update & Confirm");
         aopoManager.getTradingExpPage().clickButtonByText("Confirm");
     }
 }

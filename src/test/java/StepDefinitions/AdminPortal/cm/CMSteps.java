@@ -35,6 +35,8 @@ public class CMSteps extends BaseTest {
         page.waitForTimeout(3000);
     }
 
+
+
     @And("the user clicks {string} button on the CM application information page")
     public void the_user_clicks_button_on_the_CM_application_information_page(String buttonName) throws InterruptedException {
         page.waitForLoadState(LoadState.NETWORKIDLE);
@@ -300,6 +302,16 @@ public class CMSteps extends BaseTest {
     @And("the user submits change on customer management page")
     public void the_user_submits_change_on_customer_management_page() throws InterruptedException {
         cmAccountStatus.submitChange();
+    }
+
+    @Then("the user sees title {string} is displayed at the create company account page")
+    public void the_user_sees_title_displayed_at_the_create_company_account_page(String title) {
+        assertThat(aopoManager.getCompanyAccountPagePW().getPageTitle()).containsText(title);
+    }
+
+    @Then("the user sees status {string} is displayed at the create company account page")
+    public void the_user_sees_status_is_displayed_at_the_create_company_account_page(String status) {
+        assertThat(aopoManager.getCompanyAccountPagePW().getAccountStatusLabel()).hasText(status);
     }
 
 }

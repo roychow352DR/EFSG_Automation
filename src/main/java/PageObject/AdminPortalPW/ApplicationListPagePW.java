@@ -114,8 +114,7 @@ public class ApplicationListPagePW {
 
     public boolean filteredVal(String col, String filterVal) {
         if (col.equalsIgnoreCase("Email")) {
-
-            return abs.getFilteredVal(filterVal, row, page.locator(".css-ff6t81").nth(1));
+            return abs.getFilteredVal(filterVal, row, page.locator(".css-ff6t81").nth(2));
         }
         return false;
     }
