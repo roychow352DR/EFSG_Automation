@@ -488,7 +488,7 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_sees_text_field_displayed_expected_value_as_trade_group_info_obtain_from_eCRM_on_the_application_information_page(String textFieldName, String tradeGroupInfo) throws IOException {
         page.waitForTimeout(2000);
         Assert.assertEquals(aopoManager.getApplicationInfoPage().getTextField(textFieldName).inputValue(),
-                coreService.getTradeGroupInfo(tradeGroupInfo, retrieveLocalStorageVal()));
+                coreService.getDefaultTradeGroupInfo(tradeGroupInfo, retrieveLocalStorageVal(),productEntity));
     }
 
     @Then("the user sees text field {string} displayed expected value as entity trade group info {string} obtain from eCRM on the application information page")

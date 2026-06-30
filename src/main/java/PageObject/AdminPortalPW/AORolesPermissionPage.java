@@ -131,8 +131,9 @@ public class AORolesPermissionPage {
     public int getIndex() throws IOException {
         return switch (abs.userinfoList().get("entity")) {
             case "XPro" -> 0;
-            case "EIEHK" -> 1;
-            case "EBL_MT5" -> 2;
+            case "EGM" -> 1;
+            case "EIEHK" -> 2;
+            case "EBL_MT5" -> 3;
             default -> 0;
         };
     }
@@ -144,7 +145,7 @@ public class AORolesPermissionPage {
 
     public Locator getRoleOnList() throws IOException {
         abs.waitForLocatorVisible(rolesCol.first());
-        return rolesCol.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("roleName")));
+        return rows.filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("roleName"))).filter(new Locator.FilterOptions().setHasText(abs.userinfoList().get("entity")));
     }
 
     public void checkEntityBox() throws IOException {

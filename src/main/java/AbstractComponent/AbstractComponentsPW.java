@@ -27,6 +27,7 @@ public class AbstractComponentsPW {
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
         info.put("email", "qaauto" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
+       // info.put("email","qaeblcmauto@yopmail.com");
         info.put("companyEmail", "qaautocompany" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
         info.put("existedEmail", "uatapproved@yopmail.com");
         info.put("phoneNumber", Integer.toString(randomPhoneNo));
@@ -287,7 +288,7 @@ public class AbstractComponentsPW {
         int counts = row.count();
             for (int i = 0; i < counts; i++) {
                 String rowText = row.nth(i).locator(col).textContent();
-                if (rowText.contains(filterVal)) {
+                if (rowText.equalsIgnoreCase(filterVal)) {
                     return true;
                 }
             }

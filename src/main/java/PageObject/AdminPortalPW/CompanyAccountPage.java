@@ -73,6 +73,8 @@ public class CompanyAccountPage {
     public final Locator labels;
     public final Locator errorMsg;
     public final Locator toastMsg;
+    public final Locator pageTitle;
+    public final Locator accountStatusLabel;
 
     public static String applicantCompanyEmail;
 
@@ -141,6 +143,8 @@ public class CompanyAccountPage {
         labels = page.locator(".css-gg4vpm");
         errorMsg = page.locator(".css-1wercf4");
         toastMsg = page.locator(".Toastify__toast-body div").nth(1);
+        pageTitle = page.locator(".css-nhb8h9 li:nth-child(3)");
+        accountStatusLabel = page.locator(".css-11t1bpd-root");
 
     }
 
@@ -334,6 +338,16 @@ public class CompanyAccountPage {
     public Locator getToastMsg() {
         abs.waitForLocatorVisible(toastMsg);
         return toastMsg;
+    }
+
+    public Locator getPageTitle() {
+        abs.waitForLocatorVisible(pageTitle);
+        return pageTitle;
+    }
+
+    public Locator getAccountStatusLabel() {
+        abs.waitForLocatorVisible(accountStatusLabel);
+        return accountStatusLabel;
     }
 
 }
