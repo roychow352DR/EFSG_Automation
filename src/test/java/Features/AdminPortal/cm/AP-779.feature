@@ -2,7 +2,7 @@ Feature: Customer Management
 
   @Regression @AdminPortal @CM @EBL_MT5 @EIEHK @XPro
   Scenario: User sees mobile number change applied to CM database
-    Given the user logged in to Admin Portal as username "aoadmin02" and password "P@ssw0rd!"
+    Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the ao admin portal menu
     When the user clicks detail button of specific entity record on the customer management page
     And the user clicks "Next To Personal Information" button on the CM application information page
