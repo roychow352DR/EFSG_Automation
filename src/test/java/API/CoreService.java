@@ -262,12 +262,12 @@ public class CoreService {
         return "";
     }
 
-    public String getTradeGroupInfo(String extractVal, String token) {
-        String endpoint = getCrmDomain(entity, env) + "admin-portal/api/user/referral-code/trading-group";
+    public String getDefaultTradeGroupInfo(String extractVal, String token, String entity) {
+        String endpoint = getCrmDomain(entity, env) + "core-service/v2/account-opening/individual/referral-trading-info";
         Map<String, String> headers = new HashMap<>();
-        headers.put("Key", "YXBpZ2F0ZXdheTpwYXNzd29yZA==");
+        String payload = "{\"code\":\"\",\"entity\":\""+entity+"\"}";
         try (ApiClient apiClient = new ApiClient()) {
-            APIResponse response = ensureSuccess(apiClient.post(endpoint, token, "{\"code\":\"\"}", headers), endpoint);
+            APIResponse response = ensureSuccess(apiClient.post(endpoint, token, payload, headers), endpoint);
             return parseJson(response.text(), extractVal);
         }
     }
