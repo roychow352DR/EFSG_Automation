@@ -4,7 +4,6 @@ import AbstractComponent.AbstractComponentsPW;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
-import okio.JvmSystemFileSystem;
 
 import java.io.IOException;
 
@@ -115,7 +114,7 @@ public class CustomerManagementPage {
 
     public boolean filteredVal(String col, String filterVal) {
         if (col.equalsIgnoreCase("Email")) {
-            return abs.getFilteredVal(filterVal, rows, page.locator(".css-10morg3"));
+            return abs.getExactMatchedFilteredVal(filterVal, rows, page.locator(".css-10morg3"));
         }
         return false;
     }
