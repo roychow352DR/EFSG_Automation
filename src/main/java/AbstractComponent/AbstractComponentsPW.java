@@ -27,7 +27,7 @@ public class AbstractComponentsPW {
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
         info.put("email", "qaauto" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
-       // info.put("email","qaeblcmauto@yopmail.com");
+      //  info.put("email","qaeblcmauto@yopmail.com");
         info.put("companyEmail", "qaautocompany" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
         info.put("existedEmail", "uatapproved@yopmail.com");
         info.put("phoneNumber", Integer.toString(randomPhoneNo));
@@ -284,7 +284,7 @@ public class AbstractComponentsPW {
             default -> "";
         };
     }
-    public boolean getFilteredVal(String filterVal,Locator row,Locator col) {
+    public boolean getExactMatchedFilteredVal(String filterVal, Locator row, Locator col) {
         int counts = row.count();
             for (int i = 0; i < counts; i++) {
                 String rowText = row.nth(i).locator(col).textContent();
@@ -294,5 +294,18 @@ public class AbstractComponentsPW {
             }
         return false;
     }
+
+    public boolean getPartialMatchedFilteredVal(String filterVal, Locator row, Locator col) {
+        int counts = row.count();
+        for (int i = 0; i < counts; i++) {
+            String rowText = row.nth(i).locator(col).textContent();
+            if (rowText.contains(filterVal)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
 
 }
