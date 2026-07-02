@@ -118,7 +118,7 @@ public class UserManagementPage {
         boolean nextBtnIsEnable = nextPageBtn.isEnabled();
         boolean pageRecordsMatched = true;
         while (nextBtnIsEnable && pageRecordsMatched) {
-            pageRecordsMatched = abs.getFilteredVal(entity, rows, page.locator(".css-er7ssv").nth(0));
+            pageRecordsMatched = abs.getPartialMatchedFilteredVal(entity, rows, page.locator(".css-er7ssv").nth(0));
             nextPageBtn.click();
             nextBtnIsEnable = nextPageBtn.isEnabled();
         }

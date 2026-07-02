@@ -2,6 +2,7 @@ package StepDefinitions.AdminPortal.cm;
 
 import Data.CmAccountStatus;
 import PageObject.AdminPortalPW.AOPOManager;
+import PageObject.AdminPortalPW.ApplicationListPagePW;
 import com.microsoft.playwright.options.LoadState;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
@@ -26,7 +27,8 @@ public class CMSteps extends BaseTest {
 
     @Then("the user sees {string} status on customer management page")
     public void the_user_sees_status_on_customer_management_page(String status) {
-        assertThat(aopoManager.getCustomerManagementPage().getStatusRow(status, aopoManager.getApplicationListPage().email)).hasText(status);
+        page.waitForTimeout(2000);
+        assertThat(aopoManager.getCustomerManagementPage().getStatusRow(status, ApplicationListPagePW.email)).hasText(status);
     }
 
     @When("the user clicks detail button of {string} record with {string} client type on the customer management page")

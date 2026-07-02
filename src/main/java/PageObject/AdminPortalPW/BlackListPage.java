@@ -143,7 +143,7 @@ public class BlackListPage {
         boolean nextBtnIsEnable = nextPageBtn.isEnabled();
         boolean pageRecordsMatched = true;
         while (nextBtnIsEnable && pageRecordsMatched) {
-            pageRecordsMatched = abs.getFilteredVal(entity, row, page.locator(".css-ff6t81").nth(0));
+            pageRecordsMatched = abs.getExactMatchedFilteredVal(entity, row, page.locator(".css-ff6t81").nth(0));
             nextPageBtn.click();
             nextBtnIsEnable = nextPageBtn.isEnabled();
         }

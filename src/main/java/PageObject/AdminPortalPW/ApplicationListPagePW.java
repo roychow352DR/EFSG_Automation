@@ -18,7 +18,7 @@ public class ApplicationListPagePW {
     public final Locator row;
     public final Locator statusCol;
     private final AbstractComponentsPW abs;
-    public String email;
+    public static String email;
     public String entity;
     public final Locator nextPageBtn;
     public final Locator status;
@@ -114,7 +114,7 @@ public class ApplicationListPagePW {
 
     public boolean filteredVal(String col, String filterVal) {
         if (col.equalsIgnoreCase("Email")) {
-            return abs.getFilteredVal(filterVal, row, page.locator(".css-ff6t81").nth(2));
+            return abs.getExactMatchedFilteredVal(filterVal, row, page.locator(".css-ff6t81").nth(2));
         }
         return false;
     }
@@ -135,7 +135,7 @@ public class ApplicationListPagePW {
         boolean nextBtnIsEnable = nextPageBtn.isEnabled();
         boolean pageRecordsMatched = true;
         while (nextBtnIsEnable && pageRecordsMatched) {
-            pageRecordsMatched = abs.getFilteredVal(entity, row, page.locator(".css-ff6t81").nth(0));
+            pageRecordsMatched = abs.getExactMatchedFilteredVal(entity, row, page.locator(".css-ff6t81").nth(0));
             nextPageBtn.click();
             nextBtnIsEnable = nextPageBtn.isEnabled();
         }
