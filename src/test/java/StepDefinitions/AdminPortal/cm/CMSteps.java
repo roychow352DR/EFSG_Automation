@@ -13,7 +13,7 @@ import utils.SetCondition;
 
 import java.io.IOException;
 
-import static StepDefinitions.AdminPortal.aoApplicationSteps.ApplicationSteps.accountAction;
+import static StepDefinitions.AdminPortal.aoApplicationSteps.ApplicationSteps.accountCreation;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 public class CMSteps extends BaseTest {
@@ -150,12 +150,12 @@ public class CMSteps extends BaseTest {
 
     @And("the user performs first approval on cm page for the account type {string}")
     public void the_user_performs_first_approval_on_cm_page_for_the_account_type(String accountType) throws InterruptedException {
-        accountAction.cmFirstApproval(accountType);
+        accountCreation.cmFirstApproval(accountType);
     }
 
     @And("the user performs second approval on cm page for the account type {string}")
     public void the_user_performs_second_approval_on_cm_page(String accountType) throws InterruptedException {
-        accountAction.cmSecondApproval(accountType);
+        accountCreation.cmSecondApproval(accountType);
     }
 
     @Then("the user sees text field {string} value is updated on the CM personal information page")

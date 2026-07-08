@@ -16,7 +16,8 @@ public class RolesPermissionSteps extends BaseTest {
 
     @And("the user retrieves number of assigned admin user of the role {string} on the ao roles and permission page")
     public void the_user_retrieves_number_of_assigned_admin_user_of_the_role_on_the_roles_and_permission_page(String roleName) throws IOException {
-        String numberOfCount = aopoManager.getAoRolesPermissionPage().getEntityRoleNum(roleName);
+        String numberOfCount = aopoManager.getAoRolesPermissionPage().getEntityRoleNum(roleName).isEmpty()?
+                 "0" : aopoManager.getAoRolesPermissionPage().getEntityRoleNum(roleName);
         Assert.assertNotNull(numberOfCount);
         setRetrievedData(numberOfCount);
     }

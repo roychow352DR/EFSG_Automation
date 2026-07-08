@@ -1,7 +1,7 @@
 Feature: AO Application List
 
 
-  @Regression @Smoke @L3CompanyCreation @AdminPortal @Smoke @AO @EBL_MT5 @EIEHK
+  @Regression @Smoke @L3CompanyCreation @AdminPortal @Smoke @AO @EBL_MT5 @EIEHK @EGM
   Scenario: Company Account status in Pending Approval after first approval
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     When the user clicks the detail button for the application record with status "Pending Verification", created by "qaauto", and client type "LEVEL_3_COMPANY" on the application list page

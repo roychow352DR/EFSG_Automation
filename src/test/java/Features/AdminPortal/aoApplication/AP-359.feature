@@ -1,7 +1,7 @@
 Feature: AO Application List
 
 
-  @Regression @Smoke @AdminPortal @AO @EBL_MT5 @EIEHK
+  @Regression @Smoke @AdminPortal @AO @EBL_MT5 @EIEHK @EGM
   Scenario: Individual Account status in Spec. Approval for Pending Deposit after first approve reason
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     When the user clicks the detail button for the application record with status "Pending Deposit", created by "qaauto", and client type "LEVEL_3_INDIVIDUAL" on the application list page

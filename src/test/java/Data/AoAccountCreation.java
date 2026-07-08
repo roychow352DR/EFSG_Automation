@@ -29,8 +29,10 @@ public class AoAccountCreation {
         aopoManager.getApplicationListPage().clickDetailBtn("Pending Verification");
         aopoManager.getApplicationInfoPage().clickButtonByText("Next To Personal Information");
         aopoManager.getPersonalInfoPage().clickButtonByText("Next To Contact Information");
-        aopoManager.getPersonalInfoPage().clickButtonByText("Next To Employee and Financial Information");
-        aopoManager.getEmployeeFinInfoPage().clickButtonByText("Next To Trading Experience");
+        if (BaseTest.productEntity.equalsIgnoreCase("EIEHK") || BaseTest.productEntity.equalsIgnoreCase("EBL_MT5")) {
+            aopoManager.getPersonalInfoPage().clickButtonByText("Next To Employee and Financial Information");
+            aopoManager.getEmployeeFinInfoPage().clickButtonByText("Next To Trading Experience");
+        }
         aopoManager.getTradingExpPage().clickButtonByText("Reject");
         aopoManager.getTradingExpPage().selectRejectReason("ID/Passport No. match with the EDD/AML list");
         aopoManager.getTradingExpPage().clickButtonByText("Confirm");
@@ -46,10 +48,16 @@ public class AoAccountCreation {
                 SetCondition.isExpiredBeforeCurrent(),
                 SetCondition.isEdd(),
                 isThirdParty());
-        aopoManager.getContactInfoPage().fillContactInfo();
-        aopoManager.getEmployeeFinInfoPage().fillEmployeeFinInfo();
-        aopoManager.getTradingExpPage().fillTradingExp();
-        aopoManager.getTradingExpPage().clickButtonByText("Submit");
+        if (BaseTest.productEntity.equalsIgnoreCase("EIEHK") || BaseTest.productEntity.equalsIgnoreCase("EBL_MT5")) {
+            aopoManager.getContactInfoPage().fillContactInfo();
+            aopoManager.getEmployeeFinInfoPage().fillEmployeeFinInfo();
+            aopoManager.getTradingExpPage().fillTradingExp();
+            aopoManager.getTradingExpPage().clickButtonByText("Submit");
+        }
+        else {
+            aopoManager.getContactInfoPage().fillContactInfoWithoutNext();
+            aopoManager.getContactInfoPage().clickButtonByText("Submit");
+        }
     }
 
     public void createL2AccountIndividual(String firstname,String lastname) throws IOException {
@@ -141,6 +149,24 @@ public class AoAccountCreation {
             aopoManager.getCmUserInformationPage().clickBtnByText("Next To Contact Information");
             aopoManager.getCmTradingExpPage().clickButtonByText("Approve");
             aopoManager.getCmTradingExpPage().clickButtonByText("Confirm");
+        }
+    }
+
+    public void submitAOFromPersonalInformation() throws IOException {
+        aopoManager.getPersonalInfoPage().fillPersonalInfo(SetCondition.isBelow18(),
+                SetCondition.isExpired(),
+                SetCondition.isExpiredBeforeCurrent(),
+                SetCondition.isEdd(),
+                isThirdParty());
+        if (BaseTest.productEntity.equalsIgnoreCase("EIEHK") || BaseTest.productEntity.equalsIgnoreCase("EBL_MT5")) {
+            aopoManager.getContactInfoPage().fillContactInfo();
+            aopoManager.getEmployeeFinInfoPage().fillEmployeeFinInfo();
+            aopoManager.getTradingExpPage().fillTradingExp();
+            aopoManager.getTradingExpPage().clickButtonByText("Submit");
+        }
+        else {
+            aopoManager.getContactInfoPage().fillContactInfoWithoutNext();
+            aopoManager.getContactInfoPage().clickButtonByText("Submit");
         }
     }
 

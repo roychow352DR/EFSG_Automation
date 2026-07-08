@@ -31,12 +31,12 @@ public class ApplicationSteps extends BaseTest {
     public TradingExperiencePage tradingExperiencePage;
     public CoreService coreService;
     public SQLDatabase sqlDb ;
-    public static AoAccountCreation accountAction;
+    public static AoAccountCreation accountCreation;
 
     public void objectInit() throws IOException {
         aopoManager = new AOPOManager(page);
         sqlDb = new SQLDatabase();
-        accountAction = new AoAccountCreation(aopoManager);
+        accountCreation = new AoAccountCreation(aopoManager);
         coreService = new CoreService(page, productEnv);
     }
 
@@ -364,16 +364,16 @@ public class ApplicationSteps extends BaseTest {
     @And("the record in status {string} is created in the application list")
     public void the_record_in_status_is_created_in_the_application_list(String status) throws IOException, InterruptedException {
         if (status.equalsIgnoreCase("Draft")) {
-            accountAction.createL2DraftIndividual();
+            accountCreation.createL2DraftIndividual();
         }
         else if (status.equalsIgnoreCase("Rejected")) {
-            accountAction.createL2RejectedIndividual();
+            accountCreation.createL2RejectedIndividual();
         }
         else if (status.equalsIgnoreCase("Pending Verification")) {
-            accountAction.createL2AccountIndividual();
+            accountCreation.createL2AccountIndividual();
         }
         else if (status.equalsIgnoreCase("Pending Deposit")) {
-            accountAction.createL3AccountIndividual();
+            accountCreation.createL3AccountIndividual();
         }
 
     }
@@ -381,16 +381,16 @@ public class ApplicationSteps extends BaseTest {
     @And("the record in status {string} with firstname {string} and lastname {string} is created in the application list")
     public void the_record_in_status_is_created_with_firstname_and_lastname_is_created_in_the_application_list(String status,String firstname,String lastname) throws IOException, InterruptedException {
         if (status.equalsIgnoreCase("Draft")) {
-            accountAction.createL2DraftIndividual();
+            accountCreation.createL2DraftIndividual();
         }
         else if (status.equalsIgnoreCase("Rejected")) {
-            accountAction.createL2RejectedIndividual();
+            accountCreation.createL2RejectedIndividual();
         }
         else if (status.equalsIgnoreCase("Pending Verification")) {
-            accountAction.createL2AccountIndividual(firstname,lastname);
+            accountCreation.createL2AccountIndividual(firstname,lastname);
         }
         else if (status.equalsIgnoreCase("Pending Deposit")) {
-            accountAction.createL3AccountIndividual();
+            accountCreation.createL3AccountIndividual();
         }
 
     }
@@ -649,6 +649,11 @@ public class ApplicationSteps extends BaseTest {
     public void the_user_sees_label_is_displayed_on_company_account_detail_page(String statusLabel) {
         page.waitForLoadState(LoadState.NETWORKIDLE);
         assertThat(aopoManager.getCompanyAccountPagePW().getAccountStatus()).hasText(statusLabel);
+    }
+
+    @And("the user submit ao application from personal information page")
+    public void the_user_submit_ao_application_from_personal_information_page() throws IOException {
+        accountCreation.submitAOFromPersonalInformation();
     }
 
 }

@@ -1,7 +1,7 @@
 Feature: AO Application List
 
   @Regression @AdminPortal @AO @Blacklist @EBL_MT5 @EIEHK @XPro
-  Scenario: Individual - Individual - User sees blacklist label on AO Application Detail if ID no. matched with AO Blacklist
+  Scenario: Individual - User sees blacklist label on AO Application Detail if ID no. matched with AO Blacklist
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page
     And the user selects "Individual" radio button on the create account pop up

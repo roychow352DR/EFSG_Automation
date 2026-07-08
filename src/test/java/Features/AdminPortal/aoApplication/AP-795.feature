@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @Smoke @AO @Username @EBL_MT5
+  @Regression @AdminPortal @Smoke @AO @Username @EBL_MT5 @EGM
   Scenario: Individual - Username in Rejected status is reusable for applicant creation
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the record in status "Rejected" is created in the application list
@@ -11,9 +11,5 @@ Feature: AO Application List
     And the user fills mandatory information on application information page
     And the user fills textField "username" retrieved from api endpoint on the application information page
     And the user clicks "Next to Personal Information" button on the application information page
-    And the user fills personal information page
-    And the user fills contact information page
-    And the user fills employee & financial information page
-    And the user fills trading experience page
-    And the user clicks "Submit" button on the trading experience page
+    And the user submit ao application from personal information page
     Then the user sees a record in "Pending Verification" status is created on the application list

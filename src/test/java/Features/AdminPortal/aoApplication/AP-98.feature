@@ -1,6 +1,6 @@
 Feature: Application List
 
-  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK
+  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @EGM
     Scenario: Ready only admin user cannot submit the changes of application record
       Given the user logged in to Admin Portal as username "qaautoreadonly" and password "P@ssw0rd!"
       When the user clicks the detail button for the application record with status "Pending Verification", created by "qaauto", and client type "LEVEL_3_INDIVIDUAL" on the application list page

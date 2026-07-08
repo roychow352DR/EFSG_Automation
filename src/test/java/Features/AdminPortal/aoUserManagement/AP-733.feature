@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @UserManagement @Username @EBL_MT5
+  @Regression @AdminPortal @UserManagement @Username @EBL_MT5 @EGM
   Scenario: User can filtered by Entity on the user management page
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Admin Area" on the ao admin portal menu

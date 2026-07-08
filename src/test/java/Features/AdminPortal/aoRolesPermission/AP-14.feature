@@ -1,6 +1,6 @@
 Feature: AO Roles and Permission
 
-  @Regression @AdminPortal @Roles&Permission @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @Roles&Permission @EBL_MT5 @EIEHK @XPro @EGM
   Scenario: No Read access admin user sees Detail button is disabled on role and permission page
     Given the user logged in to Admin Portal as username "qaautonoread" and password "Test1234@"
     When the user clicks "Admin Area" on the ao admin portal menu
