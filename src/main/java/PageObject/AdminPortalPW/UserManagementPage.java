@@ -22,6 +22,7 @@ public class UserManagementPage {
     public final Locator entityRoleDropdown;
     public final Locator inputField;
     public final Locator roleField;
+    public final Locator closeButton;
 
 
     public UserManagementPage(Page page) {
@@ -37,6 +38,7 @@ public class UserManagementPage {
         this.entityRoleDropdown = page.locator("#mui-component-select-entity_role");
         this.inputField = page.locator("input");
         this.roleField = page.locator(".css-4462pi");
+        this.closeButton = page.locator(".css-1yxmbwk");
 
     }
 
@@ -123,5 +125,10 @@ public class UserManagementPage {
             nextBtnIsEnable = nextPageBtn.isEnabled();
         }
         return pageRecordsMatched;
+    }
+
+    public void clickCloseBtn() {
+        abs.waitForLocatorVisible(closeButton);
+        closeButton.click();
     }
 }

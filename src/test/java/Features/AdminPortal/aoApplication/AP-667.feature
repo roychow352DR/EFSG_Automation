@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @Username @EBL_MT5
+  @Regression @AdminPortal @AO @Username @EBL_MT5 @EGM
   Scenario: User can filtered application record by username
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     When the user clicks "Filter" button on the application page

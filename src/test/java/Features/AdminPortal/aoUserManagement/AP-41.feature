@@ -1,6 +1,6 @@
 Feature: AO User Management
 
-  @Regression @AdminPortal @UserManagement @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @UserManagement @EBL_MT5 @EIEHK @XPro @EGM
     Scenario: Admin Role can be updated successfully
       Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
       And the user clicks "Admin Area" on the ao admin portal menu

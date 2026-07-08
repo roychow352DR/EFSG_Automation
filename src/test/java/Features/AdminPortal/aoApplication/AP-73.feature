@@ -1,7 +1,7 @@
 Feature: AO Application List
 
 
-  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro @EGM
   Scenario: Prompt error if expiry date later than current date within 6 months
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the "Expired date" condition is satisfied

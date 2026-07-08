@@ -1,6 +1,6 @@
 Feature: AO Roles and Permission
 
-  @Regression @AdminPortal @Roles&Permission @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @Roles&Permission @EBL_MT5 @EIEHK @XPro @EGM
   Scenario:  User cannot delete the role once at least 1 user assign to the role
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Admin Area" on the ao admin portal menu

@@ -1,6 +1,6 @@
 Feature: AO Blacklist
 
-  @Regression @AdminPortal @Blacklist @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @Blacklist @EBL_MT5 @EIEHK @XPro @EGM
   Scenario: User add blacklist record successfully
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "AO Blacklist" on the ao admin portal menu
