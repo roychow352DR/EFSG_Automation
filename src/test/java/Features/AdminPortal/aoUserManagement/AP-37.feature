@@ -1,6 +1,6 @@
 Feature: AO User Management
 
-  @Regression @AdminPortal @UserManagement @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @UserManagement @EBL_MT5 @EIEHK @XPro @EGM
     Scenario: Ready only admin user sees Detail button on the user management page
       Given the user logged in to Admin Portal as username "qaautoreadonly" and password "P@ssw0rd!"
       When the user clicks "Admin Area" on the ao admin portal menu

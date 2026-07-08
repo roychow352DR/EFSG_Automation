@@ -1,15 +1,7 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @Smoke @AO @Username @EBL_MT5
+  @Regression @AdminPortal @Smoke @AO @Username @EBL_MT5 @EGM
   Scenario: Create Individual Account with status in Pending Verification with valid username inputs - Alphanumeric characters
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
-    And the user clicks "Create Account" button on the application page
-    And the user selects "Individual" radio button on the create account pop up
-    And the user clicks "submit" button on the create account pop up
-    And the user fills application information page
-    And the user fills personal information page
-    And the user fills contact information page
-    And the user fills employee & financial information page
-    And the user fills trading experience page
-    When the user clicks "Submit" button on the trading experience page
+    And the record in status "Pending Verification" is created in the application list
     Then the user sees a record in "Pending Verification" status is created on the application list

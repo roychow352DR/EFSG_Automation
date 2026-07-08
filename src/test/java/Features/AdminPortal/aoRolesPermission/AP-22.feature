@@ -1,6 +1,6 @@
 Feature: AO Roles and Permission
 
-  @Regression @AdminPortal @Roles&Permission @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @Roles&Permission @EBL_MT5 @EIEHK @XPro @EGM
   Scenario: User can create single entity role
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Admin Area" on the ao admin portal menu

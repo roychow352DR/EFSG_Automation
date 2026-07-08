@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @Username @EBL_MT5
+  @Regression @AdminPortal @AO @Username @EBL_MT5 @EGM
   Scenario: User can search application record by username
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     When the user fills value "autol2" on the application search field

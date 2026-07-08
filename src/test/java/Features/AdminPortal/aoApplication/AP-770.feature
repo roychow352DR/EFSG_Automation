@@ -1,6 +1,5 @@
 Feature: AO Application List
 
-
   @Regression @AdminPortal @AO @EBL_MT5 @EIEHK
   Scenario: Pending Deposit record is inserted to the CM database upon L3 account creation
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"

@@ -49,6 +49,7 @@ public class UserManagementSteps extends BaseTest {
         } else {
             Assert.assertFalse(aopoManager.getUserManagementPage().getEntityState());
         }
+        aopoManager.getUserManagementPage().clickCloseBtn();
     }
 
     @And("the user changes entity role on the user management page")
@@ -61,6 +62,7 @@ public class UserManagementSteps extends BaseTest {
     public void the_user_sees_value_of_text_field_is_updated_on_the_user_management_page(String textFieldName) throws IOException {
         page.waitForTimeout(1000);
         Assert.assertEquals(aopoManager.getUserManagementPage().getTextFieldVal(textFieldName), getRetrievedData());
+        aopoManager.getUserManagementPage().clickCloseBtn();
     }
 
     @Then("the user sees button {string} is hidden on the user management page")

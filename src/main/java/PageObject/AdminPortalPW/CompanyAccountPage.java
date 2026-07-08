@@ -151,7 +151,7 @@ public class CompanyAccountPage {
     // Utility Methods
     public void fillMandatory(boolean isExistedEmail, boolean isExistedPhoneNumber, boolean isBelow18) throws IOException {
         selectEntity();
-        if (abs.userinfoList().get("entity").contains("EBL")) {
+        if (abs.userinfoList().get("entity").contains("EBL") || abs.userinfoList().get("entity").contains("EGM") ) {
             fillRandomUsername();
             selectSettlement();
         }
