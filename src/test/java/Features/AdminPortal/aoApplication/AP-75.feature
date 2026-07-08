@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro @EGM
   Scenario: Cannot create Individual account with unchecked US Citizen checkbox
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page

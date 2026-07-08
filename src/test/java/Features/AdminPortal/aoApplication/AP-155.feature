@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro @Smoke
+  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro @Smoke @EGM
   Scenario: The Upper IB name is override after the user enters valid IB code
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Create Account" button on the application page

@@ -48,7 +48,7 @@ public class AbstractComponentsPW {
         info.put("dateOfBirthYearBelow18", Integer.toString(localDate.getYear() - 15));
         info.put("dateOfBirthYearThirdParty", Integer.toString(localDate.getYear() - 80));
         info.put("currentYear", Integer.toString(localDate.getYear()));
-       // info.put("id", "qaId");
+      //  info.put("id", "qaId");
         info.put("id", randomString(6));
         info.put("passwordNo", randomString(6));
         info.put("addressLine1", "Mong Kok");
@@ -65,6 +65,7 @@ public class AbstractComponentsPW {
         info.put("expiryDay", Integer.toString(localDate.get(ChronoField.DAY_OF_MONTH)));
         info.put("validExpiryYear", Integer.toString(localDate.getYear() + 2));
         info.put("username", randomString(10));
+       // info.put("username","QaAutoL3");
         info.put("companyLegal", BaseTest.productEntity + " Legal" + System.currentTimeMillis());
         info.put("roleName","QaAutoRoleTest");
         info.put("settlementCurrency","USD");

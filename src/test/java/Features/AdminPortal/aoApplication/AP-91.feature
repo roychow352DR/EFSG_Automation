@@ -1,6 +1,6 @@
 Feature: AO Application List
 
-  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro @Blacklist
+  @Regression @AdminPortal @AO @EBL_MT5 @EIEHK @XPro @Blacklist @EGM
   Scenario: Individual - User cannot see blacklist label on AO Application Detail for single user in XPRO entity
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the "Cross Entity" condition is satisfied

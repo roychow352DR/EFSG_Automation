@@ -1,6 +1,6 @@
 Feature: AO Username
 
-  @Regression @AdminPortal @AO @Username @EBL_MT5
+  @Regression @AdminPortal @AO @Username @EBL_MT5 @EGM
   Scenario: Username text field is not editable in Rejected status
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     When the user clicks detail button of "Rejected" record on the application page
