@@ -19,6 +19,7 @@ public class CmTradingExpPage {
     public final Locator settlementCurrencyDropdown;
     public final Locator textField;
     public final Locator dialogue;
+    public final Locator closeBtn;
 
     public CmTradingExpPage(Page page) {
         this.page = page;
@@ -32,6 +33,7 @@ public class CmTradingExpPage {
         this.settlementCurrencyDropdown = page.locator("#mui-component-select-settlementCurrency");
         this.textField = page.locator("input");
         this.dialogue = page.locator(".Toastify__toast-body");
+        this.closeBtn = page.locator(".css-1yxmbwk");
     }
 
     public void fillTradingExp() throws IOException {
@@ -91,5 +93,10 @@ public class CmTradingExpPage {
     public Locator getDialogue() {
         abs.waitForLocatorVisible(dialogue);
         return dialogue;
+    }
+
+    public void clickCloseBtn(){
+        abs.waitForLocatorVisible(closeBtn);
+        closeBtn.click();
     }
 }

@@ -1,7 +1,7 @@
 Feature: Customer Management
 
 
-  @Regression @AdminPortal @CM @EBL_MT5 @EIEHK
+  @Regression @AdminPortal @CM @EBL_MT5 @EIEHK @EGM
   Scenario: User sees error dialogue upon submit changes on the cm trading experience page if Passport No. in use exceeded limit
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user created up to 4 account with existing ID "qaAutoPassport"

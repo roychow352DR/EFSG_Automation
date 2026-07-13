@@ -1,6 +1,6 @@
 Feature: Customer Management
 
-  @Regression @AdminPortal @CM @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @CM @EBL_MT5 @EIEHK @XPro @EGM
   Scenario: User sees an error message upon uncheck declare US Citizen button
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     And the user clicks "Customer Management" on the ao admin portal menu

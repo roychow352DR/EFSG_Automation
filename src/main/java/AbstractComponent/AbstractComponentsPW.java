@@ -27,7 +27,7 @@ public class AbstractComponentsPW {
         int randomPhoneNo = (int) (Math.random() * 10000001);
         Map<String, String> info = new HashMap<String, String>();
         info.put("email", "qaauto" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
-      //  info.put("email","qaeblcmauto@yopmail.com");
+      //  info.put("email","qaautol3@yopmail.com");
         info.put("companyEmail", "qaautocompany" + "_" + BaseTest.productEntity + "_" + randomEmailSeed + "@yopmail.com");
         info.put("existedEmail", "uatapproved@yopmail.com");
         info.put("phoneNumber", Integer.toString(randomPhoneNo));
@@ -48,7 +48,7 @@ public class AbstractComponentsPW {
         info.put("dateOfBirthYearBelow18", Integer.toString(localDate.getYear() - 15));
         info.put("dateOfBirthYearThirdParty", Integer.toString(localDate.getYear() - 80));
         info.put("currentYear", Integer.toString(localDate.getYear()));
-      //  info.put("id", "qaId");
+      //  info.put("id", "qaLimitId");
         info.put("id", randomString(6));
         info.put("passwordNo", randomString(6));
         info.put("addressLine1", "Mong Kok");

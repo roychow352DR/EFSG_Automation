@@ -91,7 +91,8 @@ public class ApplicationListPagePW {
 
     public String getStatusEmail(String applicationStatus) throws IOException {
         abs.getItemsByText(applicationStatus, status, nextPageBtn, entity, entityRow);
-        email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).first().locator(".css-ff6t81").nth(2).textContent();
+        email = row.filter(new Locator.FilterOptions().setHasText(applicationStatus)).filter(new Locator.FilterOptions().setHasText(entity))
+                .first().locator(".css-ff6t81").nth(2).textContent();
         return email;
     }
 
