@@ -1,6 +1,6 @@
 Feature: Customer Management
 
-  @Regression @AdminPortal @CM @Backend @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @CM @Backend @EBL_MT5 @EIEHK @XPro @EGM
   Scenario: status equals to 1 in cm.trade database table for cm status in Activated account
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the ao admin portal menu

@@ -1,6 +1,6 @@
 Feature: Customer Management
 
-  @Regression @Smoke @AdminPortal @CM @EBL_MT5 @EIEHK @XPro
+  @Regression @Smoke @AdminPortal @CM @EBL_MT5 @EIEHK @XPro @EGM
   Scenario: CM status is Activated for the Approved record in AO
     Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
     When the user sees a record in "Approved" status on the application list

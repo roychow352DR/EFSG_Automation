@@ -38,7 +38,6 @@ public class CMSteps extends BaseTest {
     }
 
 
-
     @And("the user clicks {string} button on the CM application information page")
     public void the_user_clicks_button_on_the_CM_application_information_page(String buttonName) throws InterruptedException {
         page.waitForLoadState(LoadState.NETWORKIDLE);
@@ -121,6 +120,7 @@ public class CMSteps extends BaseTest {
     @Then("the user sees an error dialogue with wordings {string} on the trading experience page")
     public void the_user_sees_an_error_dialogue_with_wordings_on_the_trading_experience_page(String errorText) {
         assertThat(aopoManager.getCmTradingExpPage().getDialogueText()).hasText(errorText);
+        aopoManager.getCmTradingExpPage().clickCloseBtn();
     }
 
     @And("the user uncheck {string} checkbox on the CM personal information page")
@@ -166,7 +166,7 @@ public class CMSteps extends BaseTest {
     @And("the user fills value {string} in the text field {string} on the CM personal information page")
     public void the_user_fills_value_in_the_text_field_on_the_CM_personal_information_page(String value, String textFieldName) throws IOException {
         aopoManager.getCmPersonalInfoPage().fillInputFieldByName(value, textFieldName);
-        aopoManager.getCmPersonalInfoPage().selectExpiryDate(SetCondition.isExpired(),SetCondition.isExpiredBeforeCurrent());
+        aopoManager.getCmPersonalInfoPage().selectExpiryDate(SetCondition.isExpired(), SetCondition.isExpiredBeforeCurrent());
     }
 
     @Then("the user lands on next tab {string} of customer management edit page")
@@ -253,7 +253,7 @@ public class CMSteps extends BaseTest {
     }
 
     @Then("the customer management list displays {string} in the {string} column as a filtered result")
-    public void the_customer_management_list_displays_in_the_column_as_a_filtered_result(String result, String column) {
+    public void the_customer_management_list_displays_in_the_column_as_a_filtered_result(String result, String column) throws IOException {
         page.waitForLoadState(LoadState.NETWORKIDLE);
         Assert.assertTrue((aopoManager.getCustomerManagementPage().filteredVal(column, result)));
     }
@@ -316,4 +316,33 @@ public class CMSteps extends BaseTest {
         assertThat(aopoManager.getCompanyAccountPagePW().getAccountStatusLabel()).hasText(status);
     }
 
+    @And("the user performs first approval on customer management page")
+    public void the_user_performs_first_approval_on_customer_management_page() throws InterruptedException {
+        cmAccountStatus.cmFirstApproval();
+    }
+
+    @And("the user rejects the submission on customer management page")
+    public void the_user_rejects_the_submission_on_customer_management_page() throws InterruptedException {
+        cmAccountStatus.cmReject();
+    }
+
+    @And("the user performs second approval on customer management page")
+    public void the_user_performs_second_approval_on_customer_management_page() throws InterruptedException {
+        cmAccountStatus.cmSecondApproval();
+    }
+
+    @And("the user submits personal information change on customer management page")
+    public void the_user_submits_personal_information_change_on_customer_management_page() throws InterruptedException {
+        cmAccountStatus.submitPersonalInfoChange();
+    }
+
+    @And("the user performs second approval from personal info page on customer management page")
+    public void the_user_performs_second_approval_from_personal_info_page_on_customer_management_page() throws InterruptedException {
+        cmAccountStatus.cmSecondApprovalFromPersonalInfo();
+    }
+
+    @And("the user performs first approval from personal info page on customer management page")
+    public void the_user_performs_first_approval_from_personal_info_page_on_customer_management_page() throws InterruptedException {
+        cmAccountStatus.cmSecondApprovalFromPersonalInfo();
+    }
 }

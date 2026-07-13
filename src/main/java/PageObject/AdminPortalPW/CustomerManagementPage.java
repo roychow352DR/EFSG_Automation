@@ -53,7 +53,7 @@ public class CustomerManagementPage {
 
     public void clickDetailBtn(String cmStatus, String clientTypeText) throws IOException {
         getEmail(cmStatus, cmStatus, status, cmEmail, clientTypeText);
-        rows.filter(new Locator.FilterOptions().setHasText(email)).getByRole(AriaRole.BUTTON,
+        rows.filter(new Locator.FilterOptions().setHasText(email)).filter(new Locator.FilterOptions().setHasText(cmStatus)).getByRole(AriaRole.BUTTON,
                 new Locator.GetByRoleOptions().setName("Detail")).first().click();
     }
 
@@ -112,9 +112,10 @@ public class CustomerManagementPage {
         page.locator("//input[@name='" + inputField + "']").fill(value);
     }
 
-    public boolean filteredVal(String col, String filterVal) {
+    public boolean filteredVal(String col, String filterVal) throws IOException {
         if (col.equalsIgnoreCase("Email")) {
-            return abs.getExactMatchedFilteredVal(filterVal, rows, page.locator(".css-10morg3"));
+            return abs.getExactMatchedFilteredVal(filterVal, rows, cmEmail)
+                    && abs.getExactMatchedFilteredVal(entity,rows,entityRow);
         }
         return false;
     }
