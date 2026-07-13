@@ -103,7 +103,11 @@ public class SQLDatabase {
             throw new IllegalArgumentException("Unexpected query shape");
         }
 
-        String sql = "SELECT " + selectColumn + " FROM cm." + tableName + " WHERE " + filterCol + " = ?";
+        String sql = "SELECT " + selectColumn + " FROM cm." + tableName + " WHERE " + filterCol + " = ?" ;
+        if (tableName.equalsIgnoreCase("person_email")) {
+            sql += " order by created_date desc";
+        }
+
         return queryForSingleValue(sql, value, selectColumn);
     }
 

@@ -23,6 +23,7 @@ public class BackendSteps extends BaseTest {
 
     @Then("{string} is {string} in CM {string} database table where {string} retrieved by {string}")
     public void is_in_CM_database_table(String columnName, String expectedVal, String tableName, String filterCol, String filterVal) throws SQLException {
+        System.out.println(aopoManager.getCustomerManagementPage().email);
         Optional<String> filterValue = sqlDb.getValueBasedOnEmail(filterVal, aopoManager.getCustomerManagementPage().email);
         Optional<String> retrievedValue = sqlDb.retrieveValueFromDb(columnName, tableName, filterCol, filterValue.orElse(null));
         Assert.assertEquals(retrievedValue.orElse(""), expectedVal);

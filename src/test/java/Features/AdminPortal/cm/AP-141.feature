@@ -1,6 +1,6 @@
   Feature: Customer Management
 
-    @Regression @Smoke @AdminPortal @CM @EBL_MT5 @EIEHK
+    @Regression @Smoke @AdminPortal @CM @EBL_MT5 @EIEHK @EGM
     Scenario: CM status in Pending Verification after submit changes
       Given the user logged in to Admin Portal as username "aoadmin01" and password "P@ssw0rd!"
       And the user clicks "Customer Management" on the ao admin portal menu

@@ -1,6 +1,6 @@
 Feature: Customer Management
 
-  @Regression @AdminPortal @CM @EBL_MT5 @EIEHK @XPro
+  @Regression @AdminPortal @CM @EBL_MT5 @EIEHK @XPro @EGM
   Scenario: Prompted error after the invalid referral IB code is entered on CM
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the ao admin portal menu
