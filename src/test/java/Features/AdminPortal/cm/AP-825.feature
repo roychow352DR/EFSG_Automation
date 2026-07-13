@@ -1,6 +1,6 @@
 Feature: Customer Management
 
-  @Regression @AdminPortal @CM @EBL_MT5 @Username
+  @Regression @AdminPortal @CM @EBL_MT5 @Username @EGM
   Scenario: Company - the old username could be used by any other account in AO once the username changed in CM
     Given the user logged in to Admin Portal as username "qaauto" and password "Test1234@"
     And the user clicks "Customer Management" on the ao admin portal menu

@@ -124,8 +124,10 @@ public class AoAccountCreation {
         if (accountType.contains("INDIVIDUAL")) {
             aopoManager.getCmApplicationInfoPage().clickButtonByText("Next To Personal Information");
             aopoManager.getCmPersonalInfoPage().clickButtonByText("Next To Contact Information");
-            aopoManager.getCmContactInfoPage().clickButtonByText("Next To Employee and Financial Information");
-            aopoManager.getCmEmployeeInfoPage().clickButtonByText("Next To Trading Experience");
+            if (BaseTest.productEntity.equalsIgnoreCase("EIEHK") || BaseTest.productEntity.equalsIgnoreCase("EBL_MT5")){
+                aopoManager.getCmContactInfoPage().clickButtonByText("Next To Employee and Financial Information");
+                aopoManager.getCmEmployeeInfoPage().clickButtonByText("Next To Trading Experience");
+            }
             aopoManager.getCmTradingExpPage().clickButtonByText("Verify");
             aopoManager.getCmTradingExpPage().clickButtonByText("Confirm");
         } else if (accountType.contains("COMPANY")) {
@@ -140,8 +142,10 @@ public class AoAccountCreation {
         if (accountType.contains("INDIVIDUAL")) {
             aopoManager.getCmApplicationInfoPage().clickButtonByText("Next To Personal Information");
             aopoManager.getCmPersonalInfoPage().clickButtonByText("Next To Contact Information");
-            aopoManager.getCmContactInfoPage().clickButtonByText("Next To Employee and Financial Information");
-            aopoManager.getCmEmployeeInfoPage().clickButtonByText("Next To Trading Experience");
+            if (BaseTest.productEntity.equalsIgnoreCase("EIEHK") || BaseTest.productEntity.equalsIgnoreCase("EBL_MT5")){
+                aopoManager.getCmContactInfoPage().clickButtonByText("Next To Employee and Financial Information");
+                aopoManager.getCmEmployeeInfoPage().clickButtonByText("Next To Trading Experience");
+            }
             aopoManager.getCmTradingExpPage().clickButtonByText("Approve");
             aopoManager.getCmTradingExpPage().clickButtonByText("Confirm");
         } else if (accountType.contains("COMPANY")) {
