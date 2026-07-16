@@ -80,7 +80,7 @@ public class AppPendingOrderDetailsPage {
             return rawValue.replace("Lots", "").trim();
         }
 
-        if (label.equalsIgnoreCase("Initial Margin")) {
+        if (label.equalsIgnoreCase("Initial Margin") || label.equalsIgnoreCase("Estimated Margin")) {
             String[] parts = rawValue.split("USD");
             return parts.length > 1 ? parts[1].trim().replace(",", "") : rawValue.replace(",", "");
         }
@@ -90,6 +90,8 @@ public class AppPendingOrderDetailsPage {
             String[] parts = rawValue.split(currency);
             return parts.length > 1 ? parts[1].trim().replace(",", "") : rawValue.replace(",", "");
         }
+
+
 
         return rawValue;
     }
@@ -108,5 +110,20 @@ public class AppPendingOrderDetailsPage {
                 .setScale(2);
 
         return contractValue.toPlainString();
+    }
+
+    public String getEstimatedMarin(int initialMargin, int contractSize){
+        BigDecimal lotSize = new BigDecimal(getDetailValue("Volume").trim());
+        BigDecimal margin = BigDecimal.valueOf(initialMargin);
+        BigDecimal contract = BigDecimal.valueOf(contractSize);
+        BigDecimal targetPrice = new BigDecimal(getDetailValue("Target Price").trim());
+
+        if (initialMargin > 0) {
+            return lotSize.multiply(margin).toPlainString();
+        }
+        else {
+            return lotSize.multiply(contract).multiply(margin).multiply(targetPrice).toPlainString();
+        }
+
     }
 }

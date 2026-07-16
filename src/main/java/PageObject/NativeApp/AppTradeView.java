@@ -90,6 +90,9 @@ public class AppTradeView {
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[15]")
     WebElement closeDialogueBtnAos;
 
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.widget.TextView")
+    List<WebElement> openPositionRecordDetailsAos;
+
 
     public void selectDirection(String direction) {
         selectedDirection = direction;
@@ -480,5 +483,16 @@ public class AppTradeView {
             abs.waitUtilElementFind(closeDialogueBtnAos);
             closeDialogueBtnAos.click();
         }
+    }
+
+    public String getOpenPositionTime(){
+        if (driver instanceof AndroidDriver) {
+            return openPositionRecordDetailsAos.get(3).getText();
+        }
+        return null;
+    }
+
+    public boolean isOpenPositionDateValid(){
+        return abs.dateValidator(getOpenPositionTime());
     }
 }
