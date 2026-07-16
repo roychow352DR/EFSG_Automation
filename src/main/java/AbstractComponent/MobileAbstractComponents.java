@@ -1,5 +1,6 @@
 package AbstractComponent;
 
+import PageObject.NativeApp.AppMarketsPage;
 import com.google.common.collect.ImmutableMap;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
@@ -19,6 +20,10 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.BaseTest;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.*;
 
 public class MobileAbstractComponents {
@@ -142,7 +147,7 @@ public class MobileAbstractComponents {
     }
 
     public void waitUtilElementClickable(WebElement ele) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(50));
 
         for (int attempt = 1; attempt <= 3; attempt++) {
             try {
@@ -475,6 +480,76 @@ public class MobileAbstractComponents {
             throw new IllegalArgumentException("Invalid symbol: " + symbol);
         }
         return symbol.substring(symbol.length() - 3);
+    }
+
+    public String getDialogueValue(String label) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.ignoring(StaleElementReferenceException.class);
+
+        try {
+            return wait.until(d -> {
+                List<WebElement> elements = d.findElements(By.className("android.widget.TextView"));
+                List<String> texts = new ArrayList<>();
+
+                for (WebElement element : elements) {
+                    texts.add(element.getText());
+                }
+
+                for (int i = 0; i < texts.size() - 1; i++) {
+                    String currentLabel = texts.get(i);
+
+                    if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
+                        return normalizeDialogueValue(label, texts.get(i + 1));
+                    }
+                }
+
+                return null;
+            });
+        } catch (TimeoutException e) {
+            return null;
+        }
+    }
+
+    public String normalizeDialogueValue(String label, String rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+
+        rawValue = rawValue.trim();
+
+        if (label.equalsIgnoreCase("Volume")) {
+            return rawValue.replace("Lots", "").trim();
+        }
+
+        if (label.equalsIgnoreCase("Initial Margin")) {
+            String[] parts = rawValue.split("USD");
+            return parts.length > 1 ? parts[1].trim().replace(",", "") : rawValue.replace(",", "");
+        }
+
+        if (label.equalsIgnoreCase("Contract Value")) {
+            String currency = getQuoteCurrency(AppMarketsPage.tradeSymbol);
+            String[] parts = rawValue.split(currency);
+            return parts.length > 1 ? parts[1].trim().replace(",", "") : rawValue.replace(",", "");
+        }
+
+        if (label.equalsIgnoreCase("Floating P/L")) {
+            return rawValue.split(" ")[0].trim();
+        }
+
+        return rawValue;
+    }
+
+    public boolean dateValidator(String input) {
+        DateTimeFormatter FORMATTER =
+                DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss")
+                        .withResolverStyle(ResolverStyle.STRICT);
+        if (input == null) return false;
+        try {
+            LocalDateTime.parse(input, FORMATTER);
+            return true;
+        } catch (DateTimeParseException e) {
+            return false;
+        }
     }
 
 }

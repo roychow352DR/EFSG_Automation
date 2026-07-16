@@ -1,6 +1,6 @@
 Feature: Admin Portal login
 
-  @Regression @AdminPortal @EBL_MT5 @EIEHK @XPro @Login
+  @Regression @AdminPortal @EBL_MT5 @EIEHK @XPro @Login @EGM
   Scenario: Login as suspended account
     Given the user lands on Admin Portal login page
     And the user fills in with username "qaautosuspend" and password "Test1234@"

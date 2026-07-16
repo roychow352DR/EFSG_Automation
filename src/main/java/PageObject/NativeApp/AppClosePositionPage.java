@@ -5,13 +5,17 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AppClosePositionPage {
@@ -39,6 +43,9 @@ public class AppClosePositionPage {
 
     @FindBy(xpath = "(//android.widget.TextView[@text=\"Close Position\"])[1]")
     WebElement headerAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[11]")
+    WebElement closeBtnConfirmAos;
 
 
     public String getEditFieldVal(){
@@ -95,8 +102,8 @@ public class AppClosePositionPage {
     }
 
     public String getFloatingPnL(int contractSize){
-        BigDecimal currentPrice = new BigDecimal(getConfirmationValue("Current Price").trim());
-        BigDecimal openPrice = new BigDecimal(getConfirmationValue("Open Price").trim());
+        BigDecimal currentPrice = new BigDecimal(getDetailValue("Current Price").trim());
+        BigDecimal openPrice = new BigDecimal(getDetailValue("Open Price").trim());
         BigDecimal lotSize = new BigDecimal(AppInstrumentDetailsPage.lotSize.trim());
         BigDecimal contract = BigDecimal.valueOf(contractSize);
 
@@ -108,5 +115,67 @@ public class AppClosePositionPage {
 
         return pnl.toPlainString();
 
+    }
+
+    public String normalizeConfirmationValue(String label, String rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+
+        rawValue = rawValue.trim();
+
+        if (label.equalsIgnoreCase("Volume")) {
+            return rawValue.replace("Lots", "").trim();
+        }
+
+        if (label.equalsIgnoreCase("Initial Margin")) {
+            String[] parts = rawValue.split("USD");
+            return parts.length > 1 ? parts[1].trim().replace(",", "") : rawValue.replace(",", "");
+        }
+
+        if (label.equalsIgnoreCase("Contract Value")) {
+            String currency = abs.getQuoteCurrency(AppMarketsPage.tradeSymbol);
+            String[] parts = rawValue.split(currency);
+            return parts.length > 1 ? parts[1].trim().replace(",", "") : rawValue.replace(",", "");
+        }
+
+        if (label.equalsIgnoreCase("Floating P/L")) {
+            return rawValue.split(" ")[0].trim();
+        }
+
+        return rawValue;
+    }
+
+    public String getDetailValue(String label) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.ignoring(StaleElementReferenceException.class);
+
+        try {
+            return wait.until(d -> {
+                List<WebElement> elements = d.findElements(By.className("android.widget.TextView"));
+                List<String> texts = new ArrayList<>();
+
+                for (WebElement element : elements) {
+                    texts.add(element.getText());
+                }
+
+                for (int i = 0; i < texts.size() - 1; i++) {
+                    String currentLabel = texts.get(i);
+
+                    if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
+                        return normalizeConfirmationValue(label, texts.get(i + 1));
+                    }
+                }
+
+                return null;
+            });
+        } catch (TimeoutException e) {
+            return null;
+        }
+    }
+
+    public void confirmPositionClose() {
+        abs.waitUtilElementFind(closeBtnConfirmAos);
+        closeBtnConfirmAos.click();
     }
 }
