@@ -107,7 +107,6 @@ public class TradeRecord {
 
     public void confirmPlaceOrder(String direction) throws InterruptedException {
         appPoManager.getAppInstrumentDetailsPage().tapsButton(direction);
-        Thread.sleep(500);
         if (AppSettingPage.isTradeConfirmNeeded) {
             appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
             appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(direction);

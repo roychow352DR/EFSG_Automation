@@ -119,4 +119,19 @@ public class AppPositionDetailsPage {
         return defaultInitialMargin.toPlainString();
     }
 
+    public String getValidationValue(String label) {
+        return switch (label) {
+            // case "Stop Loss Price", "Stop Loss" -> stopLossPrice;
+            //  case "Take Profit Price", "Take Profit" -> takeProfitPrice;
+            case "Direction" -> AppTradeView.selectedDirection;
+            //  case "Volume", "Lots" -> lotSize;
+            //  case "Stop Order Price" -> stopOrderPrice;
+            //  case "Validity" -> validity;
+            //   case "Est. Margin", "Estimated Margin" -> estMargin;
+            case "Product" -> AppMarketsPage.tradeSymbol;
+            case "Status" -> "Open";
+            default -> null;
+        };
+    }
+
 }

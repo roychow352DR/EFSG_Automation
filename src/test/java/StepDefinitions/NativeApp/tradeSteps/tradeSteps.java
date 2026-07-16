@@ -574,10 +574,10 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees correct value {string} on the confirmation pop up of close position page")
     public void the_user_sees_correct_value_on_the_confirmation_pop_up_of_close_position_page(String label) throws InterruptedException {
-       Thread.sleep(100);
-       Assert.assertEquals(appPoManager.getAppClosePositionPage().getConfirmationValue(label),
+       Thread.sleep(1000);
+       Assert.assertEquals(appPoManager.getAppClosePositionPage().getDetailValue(label),
                appPoManager.getAppClosePositionPage().getFloatingPnL(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
-        appPoManager.getAppTradeView().closePositionInDetails();
+        appPoManager.getAppClosePositionPage().confirmPositionClose();
     }
 
     @And("the initial margin is set to zero")
@@ -594,6 +594,10 @@ public class tradeSteps extends BaseTest {
         else if (valueName.equalsIgnoreCase("Initial Margin")) {
             Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDefaultInitialMargin(),
                     String.format("%.2f",Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
+        }
+        else {
+            Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDetailValue(valueName),
+                    appPoManager.getAppPositionDetailsPage().getValidationValue(valueName));
         }
         appPoManager.getAppTradeView().closePositionInDetails();
     }
@@ -613,6 +617,17 @@ public class tradeSteps extends BaseTest {
             Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDefaultInitialMargin(),
                     String.format("%.2f",Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
         }
+        else if (valueName.equalsIgnoreCase("Estimated Margin")) {
+            Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue(valueName),
+                   String.format("%.2f",Float.parseFloat(appPoManager.getAppPendingOrderDetailsPage().getEstimatedMarin(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol),
+                           tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)))));
+        }
         appPoManager.getAppTradeView().cancelPendingOrderInDetail();
+    }
+
+    @Then("the user sees the open position date is displayed as correct format on the open position tab")
+    public void the_user_sees_the_open_position_date_is_displayed_as_correct_format_on_the_open_position_tab() throws InterruptedException {
+        Assert.assertTrue(appPoManager.getAppTradeView().isOpenPositionDateValid());
+        appPoManager.getAppTradeView().closePosition();
     }
 }
