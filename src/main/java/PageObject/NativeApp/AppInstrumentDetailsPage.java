@@ -379,18 +379,7 @@ public class AppInstrumentDetailsPage {
     }
 
     public String getDetailValue(String value) {
-        List<WebElement> text = driver.findElements(By.className("android.widget.TextView"));
-        for (int i = 0; i < text.size(); i++) {
-            if (text.get(i).getText().equalsIgnoreCase(value)) {
-                if (value.equalsIgnoreCase("Volume")) {
-                    return text.get(i + 1).getText().split("Lots")[0].trim();
-                } else if (value.equalsIgnoreCase("Estimated Margin")) {
-                    return text.get(i + 1).getText().split("USD")[1].trim().replace(",", "");
-                }
-                return text.get(i + 1).getText();
-            }
-        }
-        return null;
+        return abs.getDialogueValue(value);
     }
 
     public void selectOrderType(String orderType) throws InterruptedException {
