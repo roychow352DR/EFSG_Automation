@@ -552,6 +552,14 @@ public class MobileAbstractComponents {
         }
     }
 
+    public String getProductName(String symbol){
+        return switch (symbol) {
+            case "XAUUSD" -> "Gold";
+            case "XAGUSD" -> "Silver";
+            default -> "symbol not found";
+        };
+    }
+
 }
 
 

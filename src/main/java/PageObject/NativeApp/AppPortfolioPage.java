@@ -1,7 +1,6 @@
 package PageObject.NativeApp;
 
 import AbstractComponent.MobileAbstractComponents;
-import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AndroidFindBy;
@@ -59,14 +58,32 @@ public class AppPortfolioPage {
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]")
     WebElement arrowBtnAos;
 
-
     @AndroidFindBy(accessibility = "History")
     WebElement historyTabAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]")
+    WebElement closeBtnAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[2]")
+    WebElement editBtnAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[1]")
+    WebElement cancelBtnAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]")
+    WebElement confirmationDialogueAos;
+
+    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[14]")
+    WebElement confirmBtnAos;
 
     public void tapButtonOnPortfolioPage(String buttonName) {
         if (buttonName.equals("Open a Live Trading Accounts")) {
             abs.waitUtilElementFind(applicationButtonAos);
             applicationButtonAos.click();
+        }
+        else if (buttonName.equalsIgnoreCase("Cancel Order")) {
+            abs.waitUtilElementFind(confirmBtnAos);
+            confirmBtnAos.click();
         }
     }
 
@@ -150,7 +167,26 @@ public class AppPortfolioPage {
                     abs.waitUtilElementFind(arrowBtnAos);
                     arrowBtnAos.click();
                 }
+                case "close" -> {
+                    abs.waitUtilElementFind(closeBtnAos);
+                    closeBtnAos.click();
+                }
+                case "edit" -> {
+                    abs.waitUtilElementFind(editBtnAos);
+                    editBtnAos.click();
+                }
+                case "cancel" -> {
+                    abs.waitUtilElementFind(cancelBtnAos);
+                    cancelBtnAos.click();
+                }
             }
         }
+    }
+
+    public boolean confirmationDialogueIsDisplayed() {
+        if (driver instanceof AndroidDriver) {
+            return confirmationDialogueAos.isDisplayed();
+        }
+        return false;
     }
 }

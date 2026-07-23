@@ -30,6 +30,9 @@ public class AppPositionDetailsPage {
             "/android.view.ViewGroup/android.view.ViewGroup/android.widget.TextView")
     WebElement headerAos;
 
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.widget.TextView")
+    WebElement productAos;
+
     public String getHeader() {
         if (driver instanceof AndroidDriver) {
             abs.waitUtilElementFind(headerAos);
@@ -40,7 +43,7 @@ public class AppPositionDetailsPage {
 
 
     public String getDetailValue(String label) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
         wait.ignoring(StaleElementReferenceException.class);
 
         try {
@@ -56,11 +59,15 @@ public class AppPositionDetailsPage {
                     String currentLabel = texts.get(i);
 
                     if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
-                        return normalizeDetailValue(label, texts.get(i + 1));
+                        if (currentLabel.equalsIgnoreCase("Product")){
+                            return productAos.getText();
+                        }
+                        else {
+                            return normalizeDetailValue(label, texts.get(i + 1));
+                        }
                     }
                 }
-
-                return null;
+                return "";
             });
         } catch (TimeoutException e) {
             return null;
@@ -71,7 +78,6 @@ public class AppPositionDetailsPage {
         if (rawValue == null) {
             return null;
         }
-
         rawValue = rawValue.trim();
 
         if (label.equalsIgnoreCase("Volume")) {
@@ -130,8 +136,12 @@ public class AppPositionDetailsPage {
             //   case "Est. Margin", "Estimated Margin" -> estMargin;
             case "Product" -> AppMarketsPage.tradeSymbol;
             case "Status" -> "Open";
+            case "Product Name" -> abs.getProductName(AppMarketsPage.tradeSymbol);
             default -> null;
         };
     }
 
+    public boolean isOpenPositionDateValid(){
+        return abs.dateValidator(getDetailValue("Open Position Time"));
+    }
 }
