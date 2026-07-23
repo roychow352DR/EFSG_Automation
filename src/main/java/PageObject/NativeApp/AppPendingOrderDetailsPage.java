@@ -33,6 +33,9 @@ public class AppPendingOrderDetailsPage {
             "/android.view.ViewGroup/android.view.ViewGroup/android.widget.TextView")
     WebElement headerAos;
 
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.widget.TextView")
+    WebElement productAos;
+
     public String getHeader(){
         if (driver instanceof AndroidDriver) {
             abs.waitUtilElementFind(headerAos);
@@ -58,10 +61,14 @@ public class AppPendingOrderDetailsPage {
                     String currentLabel = texts.get(i);
 
                     if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
-                        return normalizeDetailValue(label, texts.get(i + 1));
+                        if (currentLabel.equalsIgnoreCase("Product")){
+                            return productAos.getText();
+                        }
+                        else {
+                            return normalizeDetailValue(label, texts.get(i + 1));
+                        }
                     }
                 }
-
                 return null;
             });
         } catch (TimeoutException e) {
@@ -125,5 +132,16 @@ public class AppPendingOrderDetailsPage {
             return lotSize.multiply(contract).multiply(margin).multiply(targetPrice).toPlainString();
         }
 
+    }
+
+    public String getValidationValue(String label) {
+        return switch (label) {
+            case "Direction" -> AppTradeView.selectedDirection;
+            case "Product" -> AppMarketsPage.tradeSymbol;
+            case "Status" -> "Pending";
+            case "Product Name" -> abs.getProductName(AppMarketsPage.tradeSymbol);
+            case "Order Type" -> AppInstrumentDetailsPage.stopOrderType.split(" ")[1];
+            default -> null;
+        };
     }
 }
