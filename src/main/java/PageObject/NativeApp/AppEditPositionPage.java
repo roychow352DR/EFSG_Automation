@@ -203,6 +203,14 @@ public class AppEditPositionPage {
         return false;
     }
 
+    public String getHeaderText() {
+        if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementFind(headerAos);
+            return headerAos.getText();
+        }
+        return null;
+    }
+
     public void tapButtonOnDialogue(String btnName) {
         if (driver instanceof AndroidDriver) {
             switch (btnName) {
