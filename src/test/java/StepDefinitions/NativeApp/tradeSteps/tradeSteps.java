@@ -94,10 +94,9 @@ public class tradeSteps extends BaseTest {
     @And("the user taps {string} cta button on the app trade view")
     public void the_user_taps_cta_button_on_the_app_trade_view(String buttonName) throws InterruptedException {
         Thread.sleep(1000);
-        if (TradeRecord.isOpenPosition){
+        if (TradeRecord.isOpenPosition) {
             appPoManager.getAppTradeView().getOpenPositionOpenPrice();
-        }
-        else{
+        } else {
             appPoManager.getAppTradeView().getPendingOrderTargetPrice();
         }
         appPoManager.getAppTradeView().tapCtaButton(buttonName);
@@ -215,8 +214,8 @@ public class tradeSteps extends BaseTest {
     }
 
     @And("the user creates a {string} position of symbol {string} on the instrument details page")
-    public void the_user_creates_a_position_of_symbol_on_the_app_trade_view(String direction,String symbol) throws IOException, InterruptedException {
-        tradeRecord.createOpenPosition(direction,symbol);
+    public void the_user_creates_a_position_of_symbol_on_the_app_trade_view(String direction, String symbol) throws IOException, InterruptedException {
+        tradeRecord.createOpenPosition(direction, symbol);
     }
 
     @Then("the user sees the open position is disappeared on the position list")
@@ -574,9 +573,9 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees correct value {string} on the confirmation pop up of close position page")
     public void the_user_sees_correct_value_on_the_confirmation_pop_up_of_close_position_page(String label) throws InterruptedException {
-       Thread.sleep(1000);
-       Assert.assertEquals(appPoManager.getAppClosePositionPage().getDetailValue(label),
-               appPoManager.getAppClosePositionPage().getFloatingPnL(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
+        Thread.sleep(1000);
+        Assert.assertEquals(appPoManager.getAppClosePositionPage().getDetailValue(label),
+                appPoManager.getAppClosePositionPage().getFloatingPnL(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
         appPoManager.getAppClosePositionPage().confirmPositionClose();
     }
 
@@ -590,12 +589,10 @@ public class tradeSteps extends BaseTest {
         if (valueName.equalsIgnoreCase("Contract Value")) {
             Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDetailValue(valueName),
                     appPoManager.getAppPositionDetailsPage().getContractValue(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
-        }
-        else if (valueName.equalsIgnoreCase("Initial Margin")) {
+        } else if (valueName.equalsIgnoreCase("Initial Margin")) {
             Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDefaultInitialMargin(),
-                    String.format("%.2f",Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
-        }
-        else {
+                    String.format("%.2f", Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
+        } else {
             Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDetailValue(valueName),
                     appPoManager.getAppPositionDetailsPage().getValidationValue(valueName));
         }
@@ -603,7 +600,7 @@ public class tradeSteps extends BaseTest {
     }
 
     @And("the user places a pending order with direction {string} and order type {string} symbol {string} on the instrument details page")
-    public void the_user_places_a_pending_order_with_direction_and_order_type_symbol_on_the_instrument_details_page(String direction,String orderType,String symbol) throws IOException, InterruptedException {
+    public void the_user_places_a_pending_order_with_direction_and_order_type_symbol_on_the_instrument_details_page(String direction, String orderType, String symbol) throws IOException, InterruptedException {
         tradeRecord.placePendingOrder(direction, orderType, tradeSymbolConfig, symbol);
     }
 
@@ -612,15 +609,16 @@ public class tradeSteps extends BaseTest {
         if (valueName.equalsIgnoreCase("Contract Value")) {
             Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue(valueName),
                     appPoManager.getAppPendingOrderDetailsPage().getContractValue(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
-        }
-        else if (valueName.equalsIgnoreCase("Initial Margin")) {
+        } else if (valueName.equalsIgnoreCase("Initial Margin")) {
             Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDefaultInitialMargin(),
-                    String.format("%.2f",Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
-        }
-        else if (valueName.equalsIgnoreCase("Estimated Margin")) {
+                    String.format("%.2f", Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
+        } else if (valueName.equalsIgnoreCase("Estimated Margin")) {
             Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue(valueName),
-                   String.format("%.2f",Float.parseFloat(appPoManager.getAppPendingOrderDetailsPage().getEstimatedMarin(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol),
-                           tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)))));
+                    String.format("%.2f", Float.parseFloat(appPoManager.getAppPendingOrderDetailsPage().getEstimatedMarin(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol),
+                            tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)))));
+        } else {
+            Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue(valueName),
+                    appPoManager.getAppPendingOrderDetailsPage().getValidationValue(valueName));
         }
         appPoManager.getAppTradeView().cancelPendingOrderInDetail();
     }
@@ -629,5 +627,22 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_the_open_position_date_is_displayed_as_correct_format_on_the_open_position_tab() throws InterruptedException {
         Assert.assertTrue(appPoManager.getAppTradeView().isOpenPositionDateValid());
         appPoManager.getAppTradeView().closePosition();
+    }
+
+    @And("the user taps back button on the app trade view")
+    public void the_user_taps_back_button_on_the_app_trade_view() {
+        appPoManager.getAppTradeView().tapBack();
+    }
+
+    @Then("the user sees confirmation dialogue on the portfolio page")
+    public void the_user_sees_confirmation_dialogue_on_the_portfolio_page() {
+        Assert.assertTrue(appPoManager.getAppPortfolioPage().confirmationDialogueIsDisplayed());
+        appPoManager.getAppPortfolioPage().tapButtonOnPortfolioPage("Cancel Order");
+    }
+
+    @Then("the user sees the open position date is displayed as correct format on the position details page")
+    public void the_user_sees_the_open_position_date_is_displayed_as_correct_format_on_the_position_details_page() throws InterruptedException {
+        Assert.assertTrue(appPoManager.getAppPositionDetailsPage().isOpenPositionDateValid());
+        appPoManager.getAppTradeView().closePositionInDetails();
     }
 }

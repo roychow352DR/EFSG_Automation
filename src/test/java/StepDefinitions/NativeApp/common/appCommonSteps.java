@@ -39,6 +39,8 @@ public class appCommonSteps extends BaseTest {
         switch (expectedHeader) {
             case "Position Details" -> actualHeaderTitle = appPoManager.getAppPositionDetailsPage().getHeader();
             case "Pending Order Details" -> actualHeaderTitle = appPoManager.getAppPendingOrderDetailsPage().getHeader();
+            case "Close Position" -> actualHeaderTitle = appPoManager.getAppClosePositionPage().getHeaderText();
+            case "Edit Position" -> actualHeaderTitle = appPoManager.getAppEditPositionPage().getHeaderText();
         }
         Assert.assertEquals(actualHeaderTitle, expectedHeader);
     }

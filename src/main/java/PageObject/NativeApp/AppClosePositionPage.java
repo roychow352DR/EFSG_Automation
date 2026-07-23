@@ -178,4 +178,9 @@ public class AppClosePositionPage {
         abs.waitUtilElementFind(closeBtnConfirmAos);
         closeBtnConfirmAos.click();
     }
+
+    public String getHeaderText(){
+        abs.waitUtilElementFind(headerAos);
+        return headerAos.getText();
+    }
 }
