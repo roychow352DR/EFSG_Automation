@@ -7,11 +7,14 @@ import io.appium.java_client.pagefactory.AndroidFindBy;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AppPortfolioPage {
@@ -75,6 +78,15 @@ public class AppPortfolioPage {
 
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[14]")
     WebElement confirmBtnAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.widget.TextView[6]")
+    WebElement dateAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[1]")
+    WebElement cancelOrderBtnAos;
+
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[3]")
+    WebElement detailBtnAos;
 
     public void tapButtonOnPortfolioPage(String buttonName) {
         if (buttonName.equals("Open a Live Trading Accounts")) {
@@ -144,7 +156,7 @@ public class AppPortfolioPage {
         return false;
     }
 
-    public void tapTab(String tabName) {
+    public void selectTab(String tabName) {
         if (driver instanceof AndroidDriver) {
             WebElement tab = switch (tabName) {
                 case "Open Positions" -> positionTabAos;
@@ -179,6 +191,10 @@ public class AppPortfolioPage {
                     abs.waitUtilElementFind(cancelBtnAos);
                     cancelBtnAos.click();
                 }
+                case "detail" -> {
+                    abs.waitUtilElementClickable(detailBtnAos);
+                    detailBtnAos.click();
+                }
             }
         }
     }
@@ -188,5 +204,62 @@ public class AppPortfolioPage {
             return confirmationDialogueAos.isDisplayed();
         }
         return false;
+    }
+
+    public String getDate(){
+        if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementVisible(dateAos);
+            return dateAos.getText();
+        }
+        return "";
+    }
+    public boolean isPendingOrderDateValid(){
+        return abs.dateValidator(getDate());
+    }
+
+    public void cancelPendingOrder() {
+        if (driver instanceof AndroidDriver) {
+            tapButtonOnRow("cancel");
+            confirmBtnAos.click();
+        }
+    }
+
+    public boolean isValueDisplayedCorrect(String label) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
+        wait.ignoring(StaleElementReferenceException.class);
+
+        try {
+            return wait.until(d -> {
+                List<WebElement> elements = d.findElements(
+                        By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.widget.TextView"));
+                List<String> texts = new ArrayList<>();
+
+                for (WebElement element : elements) {
+                    texts.add(element.getText());
+                }
+
+                for (int i = 0; i < texts.size() - 1; i++) {
+                    String currentLabel = texts.get(i);
+
+                    if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
+                            return true;
+                    }
+                }
+                return false;
+            });
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    public String getValidationValue(String label) {
+        return switch (label) {
+            case "Direction" -> AppTradeView.selectedDirection;
+            case "Product" -> AppMarketsPage.tradeSymbol;
+            case "Status" -> "Pending";
+            case "Product Name" -> abs.getProductName(AppMarketsPage.tradeSymbol);
+            case "Order Type" -> AppInstrumentDetailsPage.stopOrderType.split(" ")[1];
+            default -> null;
+        };
     }
 }
