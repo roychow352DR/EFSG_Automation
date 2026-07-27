@@ -447,6 +447,7 @@ public class AppTradeView {
 
     public void tapBack() {
         if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementClickable(backBtnAos);
             backBtnAos.click();
         }
     }

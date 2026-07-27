@@ -33,13 +33,22 @@ public class AppFooter {
     public void tapFooterButton(String buttonName) {
         if (driver instanceof AndroidDriver) {
             switch (buttonName) {
-                case "Me" -> meFooterBtnAos.click();
-                case "Home" -> homeFooterBtnAos.click();
+                case "Me" -> {
+                    abs.waitUtilElementClickable(meFooterBtnAos);
+                    meFooterBtnAos.click();
+                }
+                case "Home" -> {
+                    abs.waitUtilElementClickable(homeFooterBtnAos);
+                    homeFooterBtnAos.click();
+                }
                 case "Markets" -> {
                     abs.waitUtilElementClickable(marketFooterBtnAos);
                     marketFooterBtnAos.click();
                 }
-                case "Portfolio" -> portfolioFooterBtnAos.click();
+                case "Portfolio" -> {
+                    abs.waitUtilElementClickable(portfolioFooterBtnAos);
+                    portfolioFooterBtnAos.click();
+                }
                 default -> System.out.println("Button not found");
             }
         }

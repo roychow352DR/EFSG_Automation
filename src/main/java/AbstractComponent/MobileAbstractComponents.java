@@ -556,6 +556,8 @@ public class MobileAbstractComponents {
         return switch (symbol) {
             case "XAUUSD" -> "Gold";
             case "XAGUSD" -> "Silver";
+            case "HKGHKD" -> "Hong Kong Gold";
+            case "RKGCNH" -> "RMB Kilobar Gold";
             default -> "symbol not found";
         };
     }

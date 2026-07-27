@@ -387,7 +387,7 @@ public class AppInstrumentDetailsPage {
             abs.waitUtilElementClickable(orderTypeDropdownBtn);
             orderTypeDropdownBtn.click();
             WebElement orderTypeBtn = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + orderType + "\"]/parent::android.view.ViewGroup"));
-            abs.waitUtilElementClickable(orderTypeBtn);
+            abs.waitUtilElementFind(orderTypeBtn);
             orderTypeBtn.click();
         }
     }
