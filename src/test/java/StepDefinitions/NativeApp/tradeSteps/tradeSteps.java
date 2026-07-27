@@ -3,7 +3,6 @@ package StepDefinitions.NativeApp.tradeSteps;
 import Data.TradeRecord;
 import Data.TradeSymbolConfig;
 import PageObject.NativeApp.*;
-import io.cucumber.java.bs.A;
 import io.cucumber.java.en.And;
 import StepDefinitions.NativeApp.login.loginSteps;
 import io.cucumber.java.en.Then;
@@ -490,7 +489,7 @@ public class tradeSteps extends BaseTest {
 
     @When("the user selects tab {string} on the portfolio page")
     public void the_user_selects_tab_on_the_portfolio_page(String tabName) {
-        appPoManager.getAppPortfolioPage().tapTab(tabName);
+        appPoManager.getAppPortfolioPage().selectTab(tabName);
     }
 
     @And("the user taps {string} button of the record row on the portfolio page")
@@ -644,5 +643,17 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_the_open_position_date_is_displayed_as_correct_format_on_the_position_details_page() throws InterruptedException {
         Assert.assertTrue(appPoManager.getAppPositionDetailsPage().isOpenPositionDateValid());
         appPoManager.getAppTradeView().closePositionInDetails();
+    }
+
+    @Then("the user sees the last update time is displayed as correct format on the portfolio page")
+    public void the_user_sees_the_last_update_time_is_displayed_as_correct_format_on_the_portfolio_page() throws InterruptedException {
+        Assert.assertTrue(appPoManager.getAppPortfolioPage().isPendingOrderDateValid());
+        appPoManager.getAppPortfolioPage().cancelPendingOrder();
+    }
+
+    @Then("the user sees the value {string} is displayed correctly on the portfolio page")
+    public void the_user_sees_the_value_is_displayed_correctly_on_the_portfolio_page(String value) {
+        Assert.assertTrue(appPoManager.getAppPortfolioPage().isValueDisplayedCorrect(appPoManager.getAppPortfolioPage().getValidationValue(value)));
+        appPoManager.getAppPortfolioPage().cancelPendingOrder();
     }
 }
