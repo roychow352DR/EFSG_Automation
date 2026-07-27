@@ -441,14 +441,16 @@ public class MobileDriver {
             throw new IllegalStateException("Options object is null!");
         }
 
-        boolean noReset = Boolean.parseBoolean(System.getProperty("noReset", "false"));
-
         // device emulator name
         //aosOptions.setDeviceName("AndroidDevice");
+
+        boolean noReset = Boolean.parseBoolean(System.getProperty("noReset", "false"));
+        String deviceName = System.getProperty("deviceName", "Android Device");
 
         // Set basic capabilities
         aosOptions.setPlatformName("Android");
         aosOptions.setAutomationName("UiAutomator2");
+        aosOptions.setDeviceName(deviceName);
 
         // Use already installed app
         aosOptions.setAppPackage(androidPackage);
@@ -463,7 +465,7 @@ public class MobileDriver {
         aosOptions.setAutoGrantPermissions(true);
 
         // Configure reset options - use the system property value, not hardcoded
-        aosOptions.setNoReset(true);
+        aosOptions.setNoReset(noReset);
         aosOptions.setFullReset(false);
 
         // Additional capabilities to ensure app launches properly
