@@ -12,7 +12,6 @@ public class appCommonSteps extends BaseTest {
 
     @And("the user taps button {string} on the app footer")
     public void the_user_taps_button_on_the_app_footer(String btnName) throws InterruptedException {
-        Thread.sleep(3000);
         appPoManager.getAppFooter().tapFooterButton(btnName);
     }
 
