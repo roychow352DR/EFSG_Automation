@@ -108,10 +108,6 @@ public class AppPendingOrderDetailsPage {
         BigDecimal lotSize = new BigDecimal(getDetailValue("Volume").trim());
         BigDecimal contract = BigDecimal.valueOf(contractSize);
 
-        System.out.println("open price: " + targetPrice);
-        System.out.println("lot size: " + lotSize);
-        System.out.println("contract: " + contract);
-
         BigDecimal contractValue = targetPrice
                 .multiply(lotSize).multiply(contract)
                 .setScale(2);
