@@ -465,7 +465,7 @@ public class MobileDriver {
         aosOptions.setAutoGrantPermissions(true);
 
         // Configure reset options - use the system property value, not hardcoded
-        aosOptions.setNoReset(noReset);
+        aosOptions.setNoReset(true);
         aosOptions.setFullReset(false);
 
         // Additional capabilities to ensure app launches properly
