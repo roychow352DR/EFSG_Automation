@@ -295,11 +295,27 @@ public class AppInstrumentDetailsPage {
         if (driver instanceof AndroidDriver) {
             switch (textFieldName) {
                 case "Stop Loss" -> {
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, getStopLossPrice(direction, decimal));
+                    if (direction.equalsIgnoreCase("BUY")) {
+                        String editBuyStopLossPrice = Float.toString(Float.parseFloat(getStopLossPrice(direction, decimal)) - 25);
+                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, editBuyStopLossPrice);
+                    }
+                    else {
+                        String editSellStopLossPrice = Float.toString(Float.parseFloat(getStopLossPrice(direction, decimal)) + 25);
+                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, editSellStopLossPrice);
+                    }
+                 //   abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, getStopLossPrice(direction,decimal));
                     // stopLossEditFieldAos.sendKeys(getStopLossPrice(direction));
                 }
                 case "Take Profit" -> {
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, getTakeProfitPrice(direction, decimal));
+                    if (direction.equalsIgnoreCase("BUY")) {
+                        String editBuyTakeProfitPrice = Float.toString(Float.parseFloat(getTakeProfitPrice(direction, decimal)) + 25);
+                        abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, editBuyTakeProfitPrice);
+                    }
+                    else {
+                        String editSellTakeProfitPrice = Float.toString(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - 25);
+                        abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, editSellTakeProfitPrice);
+                    }
+                  //  abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, getTakeProfitPrice(direction, decimal));
                     //   takeProfitEditFieldAos.sendKeys(getTakeProfitPrice(direction));
                 }
                 case "Lot Size" -> editTextFieldAos.getFirst().sendKeys("0.45");
