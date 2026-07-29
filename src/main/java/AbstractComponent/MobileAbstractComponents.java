@@ -498,6 +498,10 @@ public class MobileAbstractComponents {
                 for (int i = 0; i < texts.size() - 1; i++) {
                     String currentLabel = texts.get(i);
 
+                    if (currentLabel != null && currentLabel.equalsIgnoreCase("Status")) {
+                        i+=1;
+                    }
+
                     if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
                         return normalizeDialogueValue(label, texts.get(i + 1));
                     }
@@ -521,7 +525,7 @@ public class MobileAbstractComponents {
             return rawValue.replace("Lots", "").trim();
         }
 
-        if (label.equalsIgnoreCase("Initial Margin")) {
+        if (label.equalsIgnoreCase("Initial Margin") || label.equalsIgnoreCase("Estimated Margin")) {
             String[] parts = rawValue.split("USD");
             return parts.length > 1 ? parts[1].trim().replace(",", "") : rawValue.replace(",", "");
         }
