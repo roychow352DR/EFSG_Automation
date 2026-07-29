@@ -442,7 +442,7 @@ public class MobileDriver {
         }
 
         // device emulator name
-        //aosOptions.setDeviceName("AndroidDevice");
+        aosOptions.setDeviceName("AndroidDevice");
 
         boolean noReset = Boolean.parseBoolean(System.getProperty("noReset", "false"));
         String deviceName = System.getProperty("deviceName", "Android Device");
@@ -450,7 +450,7 @@ public class MobileDriver {
         // Set basic capabilities
         aosOptions.setPlatformName("Android");
         aosOptions.setAutomationName("UiAutomator2");
-        aosOptions.setDeviceName(deviceName);
+       // aosOptions.setDeviceName(deviceName);
 
         // Use already installed app
         aosOptions.setAppPackage(androidPackage);

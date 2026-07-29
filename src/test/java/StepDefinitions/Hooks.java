@@ -4,6 +4,7 @@ import Data.QASEConfig;
 import Data.GlobalConfig;
 import io.appium.java_client.InteractsWithApps;
 import io.cucumber.java.*;
+import org.openqa.selenium.NoSuchSessionException;
 import utils.BaseTest;
 import utils.VideoRecorder;
 
@@ -119,14 +120,31 @@ public class Hooks extends BaseTest {
      * Cleans up the driver instance
      */
     private void cleanupDriver() {
+        if (driver == null) {
+            return;
+        }
+
         try {
-            if (driver != null) {
-                InteractsWithApps appDriver = (InteractsWithApps) driver;
-                appDriver.terminateApp(appConfig.getAndroidPackage());
-                driver.quit();
+            if (driver instanceof InteractsWithApps appDriver) {
+                try {
+                    appDriver.terminateApp(appConfig.getAndroidPackage());
+                } catch (NoSuchSessionException e) {
+                    System.err.println("Session already closed before terminateApp().");
+                } catch (Exception e) {
+                    System.err.println("Failed to terminate app: " + e.getMessage());
+                }
             }
-        } catch (Exception e) {
-            System.err.println("Failed to cleanup driver: " + e.getMessage());
+
+            try {
+                driver.quit();
+            } catch (NoSuchSessionException e) {
+                System.err.println("Session already closed before quit().");
+            } catch (Exception e) {
+                System.err.println("Failed to quit driver: " + e.getMessage());
+            }
+
+        } finally {
+            driver = null;
         }
     }
 

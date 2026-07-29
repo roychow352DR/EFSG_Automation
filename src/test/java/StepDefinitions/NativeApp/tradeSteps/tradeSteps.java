@@ -134,11 +134,11 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees stop order values are displayed correctly with the user input value on the confirmation pop up")
     public void the_user_sees_stop_order_values_are_displayed_correctly_with_the_user_input_value_on_the_confirmation_pop_up() throws InterruptedException {
-        Thread.sleep(2000);
         for (String value : appPoManager.getAppTradeView().stopOrderConfirmationPageValues()) {
             Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value),
                     appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
         }
+        appPoManager.getAppInstrumentDetailsPage().closeConfirmation();
     }
 
     @Then("the user sees stop order values are displayed correctly with the user input value on the cancel order confirmation pop up")
@@ -175,7 +175,6 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees market order values are displayed correctly with the user input value on the position details page")
     public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_position_details_page() throws InterruptedException {
-        Thread.sleep(5000);
         for (String value : appPoManager.getAppTradeView().marketOrderConfirmationPageValues()) {
             Assert.assertEquals(appPoManager.getAppTradeView().getPositionValueWithRetry(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
                     appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
