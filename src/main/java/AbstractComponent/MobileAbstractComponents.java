@@ -321,6 +321,8 @@ public class MobileAbstractComponents {
     }
 
     public void typeWithAndroidKeys(AndroidDriver driver, WebElement element, String text) {
+
+        waitUtilElementClickable(element);
         // Focus the field first
         element.click();
 

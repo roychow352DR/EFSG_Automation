@@ -238,7 +238,7 @@ public class AppTradeView {
 //        List<WebElement> elements = driver.findElements(By.className("android.widget.TextView"));
 //        List<String> texts = new ArrayList<>(elements.size());
 //        abs.waitUtilElementFind(elements.getFirst());
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(50));
         wait.ignoring(StaleElementReferenceException.class);
 
         try {
