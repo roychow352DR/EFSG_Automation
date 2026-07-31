@@ -128,6 +128,11 @@ public class BaseTest {
             } else if (mobilePlatform.getPlatform().equalsIgnoreCase("ANDROID")) {
                 // Initialize Android driver
                 driver = mobileDriver.initializeAndroidDriver(appConfig.getAndroidAppPath(),appConfig.getAndroidPackage());
+//                driver = mobileDriver.initializeAndroidDriver(
+//                        "com.emperorfs.ebltrading",
+//                        "com.emperorfs.ebltrading.MainActivity"
+//                );
+
                 ((CanRecordScreen) driver).startRecordingScreen();
             } else if (mobilePlatform.getPlatform().equalsIgnoreCase("IOS")) {
                 // Initialize iOS driver

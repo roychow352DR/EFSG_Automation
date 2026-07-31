@@ -45,10 +45,10 @@ public class AppInstrumentDetailsPage {
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[14]/android.widget.EditText")
     WebElement marketTakeProfitTextFieldAos;
 
-    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[11]/android.widget.EditText")
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[7]/android.widget.EditText")
     WebElement stopLimitStopLossTextFieldAos;
 
-    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[15]/android.widget.EditText")
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[11]/android.widget.EditText")
     WebElement stopLimitTakeProfitTextFieldAos;
 
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.widget.EditText[1]")
@@ -252,8 +252,8 @@ public class AppInstrumentDetailsPage {
                                 enterPrice);
                         //  marketStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
                     } else {
-                        abs.waitUtilElementFind(stopLimitStopLossTextFieldAos);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLimitStopLossTextFieldAos,
+                        abs.waitUtilElementFind(editTextFieldAos.get(1));
+                        abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1),
                                 enterPrice);
                         //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
                     }
@@ -271,8 +271,8 @@ public class AppInstrumentDetailsPage {
                                 enterPrice);
                         //  marketTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
                     } else {
-                        abs.waitUtilElementFind(stopLimitTakeProfitTextFieldAos);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLimitTakeProfitTextFieldAos,
+                        abs.waitUtilElementFind(editTextFieldAos.getLast());
+                        abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getLast(),
                                 enterPrice);
                         // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
                     }
