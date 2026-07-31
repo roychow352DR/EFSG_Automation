@@ -450,7 +450,7 @@ public class MobileDriver {
         // Set basic capabilities
         aosOptions.setPlatformName("Android");
         aosOptions.setAutomationName("UiAutomator2");
-       // aosOptions.setDeviceName(deviceName);
+        // aosOptions.setDeviceName(deviceName);
 
         // Use already installed app
         aosOptions.setAppPackage(androidPackage);
