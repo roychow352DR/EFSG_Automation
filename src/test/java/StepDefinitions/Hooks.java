@@ -42,7 +42,7 @@ public class Hooks extends BaseTest {
 
     public static String productEntity;
 
-    @BeforeAll
+   @BeforeAll
     public static void createQaseTestRun() throws IOException, InterruptedException {
         initializeConfigurations();
         setupQaseTestRun();

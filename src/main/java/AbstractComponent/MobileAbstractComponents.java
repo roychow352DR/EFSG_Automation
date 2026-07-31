@@ -11,6 +11,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.interactions.Pause;
 import org.openqa.selenium.interactions.PointerInput;
 import org.openqa.selenium.interactions.Sequence;
 import org.openqa.selenium.remote.RemoteWebElement;
@@ -213,12 +214,9 @@ public class MobileAbstractComponents {
 
     public void swipeUp(AppiumDriver driver) {
         Dimension size = driver.manage().window().getSize();
-        int width = size.getWidth();
-        int height = size.getHeight();
-
-        int startX = width / 2;
-        int startY = (int) (height * 0.85);
-        int endY = (int) (height * 0.1);
+        int startX = size.getWidth() / 2;
+        int startY = (int) (size.getHeight() * 0.80);
+        int endY = (int) (size.getHeight() * 0.20);
 
         PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
         Sequence swipe = new Sequence(finger, 1);
@@ -226,7 +224,8 @@ public class MobileAbstractComponents {
         swipe.addAction(finger.createPointerMove(Duration.ZERO,
                 PointerInput.Origin.viewport(), startX, startY));
         swipe.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-        swipe.addAction(finger.createPointerMove(Duration.ofMillis(400),
+        swipe.addAction(new Pause(finger, Duration.ofMillis(150)));
+        swipe.addAction(finger.createPointerMove(Duration.ofMillis(600),
                 PointerInput.Origin.viewport(), startX, endY));
         swipe.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
 

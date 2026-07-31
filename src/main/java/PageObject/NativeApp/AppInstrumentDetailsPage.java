@@ -417,7 +417,8 @@ public class AppInstrumentDetailsPage {
 
     public void scrollDown() {
         SCROLLED = true;
-        abs.swipeUp(driver);
+        //abs.swipeUp(driver);
+        abs.swipeUpUntilEnd(driver);
     }
 
     public void selectValidity(String option) {
