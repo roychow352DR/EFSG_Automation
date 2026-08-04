@@ -238,7 +238,7 @@ public class AppTradeView {
 //        List<WebElement> elements = driver.findElements(By.className("android.widget.TextView"));
 //        List<String> texts = new ArrayList<>(elements.size());
 //        abs.waitUtilElementFind(elements.getFirst());
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(50));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(100));
         wait.ignoring(StaleElementReferenceException.class);
 
         try {
@@ -257,7 +257,7 @@ public class AppTradeView {
                         return abs.normalizeDialogueValue(value, texts.get(i + 1));
                     }
                     if (value.equalsIgnoreCase("Take Profit Price") || value.equalsIgnoreCase("Stop Loss Price")) {
-                    return abs.normalizePriceToDecimals(texts.get(i + 1), symbolDecimal);
+                        return abs.normalizePriceToDecimals(texts.get(i + 1), symbolDecimal);
                 }
 
                 }
