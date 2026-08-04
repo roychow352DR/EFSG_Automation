@@ -57,7 +57,9 @@ public class AppLoginPage {
 
     public void fillCredential(String email, String password) throws InterruptedException {
         if (driver instanceof AndroidDriver) {
+            abs.waitUtilElementClickable(emailFieldAndroid);
             emailFieldAndroid.sendKeys(email);
+            abs.waitUtilElementClickable(passwordFieldAndroid);
             passwordFieldAndroid.sendKeys(password);
         } else {
             // avoid typo

@@ -42,6 +42,14 @@ public class appCommonSteps extends BaseTest {
             case "Edit Position" -> actualHeaderTitle = appPoManager.getAppEditPositionPage().getHeaderText();
         }
         Assert.assertEquals(actualHeaderTitle, expectedHeader);
+
+        if (expectedHeader.equals("Position Details")) {
+            appPoManager.getAppTradeView().closePositionInDetails();
+        }
+       else {
+            appPoManager.getAppTradeView().tapBack();
+            appPoManager.getAppTradeView().closePosition();
+        }
     }
 
     @Then("the user is redirected to the {string} on the page")
