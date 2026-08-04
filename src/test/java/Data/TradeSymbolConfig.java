@@ -48,7 +48,7 @@ public class TradeSymbolConfig {
     }
 
     public String getStepSize() {
-        return "0.1";
+        return "0.05";
     }
 
     public Integer getContractSize(String symbol){

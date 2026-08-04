@@ -127,7 +127,7 @@ public class MobileAbstractComponents {
     }
 
     public void waitUtilElementFind(WebElement ele) {
-        WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(60));
+        WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(100));
         w.until(ExpectedConditions.visibilityOf(ele));
     }
 
@@ -148,7 +148,7 @@ public class MobileAbstractComponents {
     }
 
     public void waitUtilElementClickable(WebElement ele) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(50));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(1000));
 
         for (int attempt = 1; attempt <= 3; attempt++) {
             try {

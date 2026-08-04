@@ -9,7 +9,8 @@ Feature: Native App trade
       When the user taps "close" cta button on the app trade view
       And the user taps button "Close Position" on the instrument details page
       And the user taps button "Close Position" on the confirmation pop up
-      Then the user sees the open position is disappeared on the position list
+      Then the user sees the message "Your position is closed" is displayed at the dialogue
+      And the user sees the open position is disappeared on the position list
 
 
 

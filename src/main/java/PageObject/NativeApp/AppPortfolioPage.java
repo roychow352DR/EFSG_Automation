@@ -180,7 +180,7 @@ public class AppPortfolioPage {
                     arrowBtnAos.click();
                 }
                 case "close" -> {
-                    abs.waitUtilElementFind(closeBtnAos);
+                    abs.waitUtilElementClickable(closeBtnAos);
                     closeBtnAos.click();
                 }
                 case "edit" -> {
