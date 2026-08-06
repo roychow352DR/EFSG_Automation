@@ -1,6 +1,7 @@
 package PageObject.NativeApp;
 
 import AbstractComponent.MobileAbstractComponents;
+import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
@@ -9,6 +10,7 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
@@ -68,7 +70,7 @@ public class AppTradeView {
     WebElement confirmClosePositionBtnAos;
 
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.widget.TextView")
-    WebElement dialogueTextAos;
+    List<WebElement> dialogueTextAos;
 
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup")
     WebElement editPositionButtonAos;
@@ -258,7 +260,7 @@ public class AppTradeView {
                     }
                     if (value.equalsIgnoreCase("Take Profit Price") || value.equalsIgnoreCase("Stop Loss Price")) {
                         return abs.normalizePriceToDecimals(texts.get(i + 1), symbolDecimal);
-                }
+                    }
 
                 }
 
@@ -438,11 +440,14 @@ public class AppTradeView {
     }
 
     public String getDialogueTextAos() {
+        String dialogText = "";
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(dialogueTextAos);
-            return dialogueTextAos.getText();
+            dialogText = abs.captureTransientText(
+                    () -> dialogueTextAos,
+                    Duration.ofSeconds(5)
+            );
         }
-        return "";
+        return dialogText;
     }
 
     public void cancelPendingOrderInDetail() throws InterruptedException {
@@ -516,14 +521,14 @@ public class AppTradeView {
         }
     }
 
-    public String getOpenPositionTime(){
+    public String getOpenPositionTime() {
         if (driver instanceof AndroidDriver) {
             return openPositionRecordDetailsAos.get(3).getText();
         }
         return null;
     }
 
-    public boolean isOpenPositionDateValid(){
+    public boolean isOpenPositionDateValid() {
         return abs.dateValidator(getOpenPositionTime());
     }
 }

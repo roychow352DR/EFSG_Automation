@@ -163,7 +163,6 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees the message {string} is displayed at the dialogue")
     public void the_user_sees_the_message_is_displayed_at_the_dialogue(String dialogueMsg) throws InterruptedException {
-        Thread.sleep(500);
         Assert.assertEquals(appPoManager.getAppTradeView().getDialogueTextAos(), dialogueMsg);
     }
 
