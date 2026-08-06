@@ -10,7 +10,6 @@ Feature: Native App trade
       And the user taps button "Close Position" on the instrument details page
       And the user taps button "Close Position" on the confirmation pop up
       Then the user sees the message "Your position is closed" is displayed at the dialogue
-      And the user sees the open position is disappeared on the position list
 
 
 

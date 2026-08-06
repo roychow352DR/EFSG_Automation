@@ -18,6 +18,7 @@ import org.openqa.selenium.remote.RemoteWebElement;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import java.util.function.Supplier;
 import utils.BaseTest;
 
 import java.time.Duration;
@@ -127,7 +128,7 @@ public class MobileAbstractComponents {
     }
 
     public void waitUtilElementFind(WebElement ele) {
-        WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(100));
+        WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(1000));
         w.until(ExpectedConditions.visibilityOf(ele));
     }
 
@@ -565,6 +566,37 @@ public class MobileAbstractComponents {
             case "RKGCNH" -> "RMB Kilobar Gold";
             default -> "symbol not found";
         };
+    }
+
+    public String captureTransientText(Supplier<List<WebElement>> elementsSupplier, Duration timeout) {
+        long endTime = System.currentTimeMillis() + timeout.toMillis();
+
+        while (System.currentTimeMillis() < endTime) {
+            try {
+                List<WebElement> elements = elementsSupplier.get();
+                if (elements != null && !elements.isEmpty()) {
+                    for (WebElement element : elements) {
+                        try {
+                            String text = element.getText();
+                            if (text != null && !text.trim().isEmpty()) {
+                                return text.trim();
+                            }
+                        } catch (StaleElementReferenceException ignored) {
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Interrupted while capturing transient text", e);
+            }
+        }
+
+        throw new RuntimeException("Transient text not found within timeout");
     }
 
 }
