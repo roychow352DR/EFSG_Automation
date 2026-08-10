@@ -33,7 +33,7 @@ public class AppSettingPage {
 
     public void tradeSettingsToggleOff() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementClickable(tradeConfirmationToggleAos);
+            abs.waitUntilElementClickable(tradeConfirmationToggleAos);
             if (getToggleStatus()) {
                 tradeConfirmationToggleAos.click();
                 tabButtonByText("Confirm");
@@ -46,7 +46,7 @@ public class AppSettingPage {
 
     public void tradeSettingsToggleOn() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementClickable(tradeConfirmationToggleAos);
+            abs.waitUntilElementClickable(tradeConfirmationToggleAos);
             if (!getToggleStatus()) {
                 tradeConfirmationToggleAos.click();
                 isTradeConfirmNeeded = true;
@@ -60,7 +60,7 @@ public class AppSettingPage {
     public void tabButtonByText(String label) {
         if (driver instanceof AndroidDriver) {
             WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + label + "\"]/parent::android.view.ViewGroup"));
-            abs.waitUtilElementClickable(button);
+            abs.waitUntilElementClickable(button);
             button.click();
             isTradeConfirmNeeded = false;
         }
@@ -68,7 +68,7 @@ public class AppSettingPage {
 
     public void tabBack() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementClickable(backButtonAos);
+            abs.waitUntilElementClickable(backButtonAos);
             backButtonAos.click();
         }
     }

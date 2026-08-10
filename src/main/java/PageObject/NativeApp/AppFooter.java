@@ -34,19 +34,19 @@ public class AppFooter {
         if (driver instanceof AndroidDriver) {
             switch (buttonName) {
                 case "Me" -> {
-                    abs.waitUtilElementClickable(meFooterBtnAos);
+                    abs.waitUntilElementClickable(meFooterBtnAos);
                     meFooterBtnAos.click();
                 }
                 case "Home" -> {
-                    abs.waitUtilElementClickable(homeFooterBtnAos);
+                    abs.waitUntilElementClickable(homeFooterBtnAos);
                     homeFooterBtnAos.click();
                 }
                 case "Markets" -> {
-                    abs.waitUtilElementClickable(marketFooterBtnAos);
+                    abs.waitUntilElementClickable(marketFooterBtnAos);
                     marketFooterBtnAos.click();
                 }
                 case "Portfolio" -> {
-                    abs.waitUtilElementClickable(portfolioFooterBtnAos);
+                    abs.waitUntilElementClickable(portfolioFooterBtnAos);
                     portfolioFooterBtnAos.click();
                 }
                 default -> System.out.println("Button not found");

@@ -90,11 +90,11 @@ public class AppPortfolioPage {
 
     public void tapButtonOnPortfolioPage(String buttonName) {
         if (buttonName.equals("Open a Live Trading Accounts")) {
-            abs.waitUtilElementFind(applicationButtonAos);
+            abs.waitUntilElementFind(applicationButtonAos);
             applicationButtonAos.click();
         }
         else if (buttonName.equalsIgnoreCase("Cancel Order")) {
-            abs.waitUtilElementFind(confirmBtnAos);
+            abs.waitUntilElementFind(confirmBtnAos);
             confirmBtnAos.click();
         }
     }
@@ -106,7 +106,7 @@ public class AppPortfolioPage {
     }
 
     public String getTitleAos() {
-        abs.waitUtilElementFind(titleAos);
+        abs.waitUntilElementFind(titleAos);
         return titleAos.getText();
     }
 
@@ -166,7 +166,7 @@ public class AppPortfolioPage {
             };
 
             if (tab != null) {
-                abs.waitUtilElementFind(tab);
+                abs.waitUntilElementFind(tab);
                 tab.click();
             }
         }
@@ -176,23 +176,23 @@ public class AppPortfolioPage {
         if (driver instanceof AndroidDriver) {
             switch (buttonName) {
                 case "arrow" -> {
-                    abs.waitUtilElementFind(arrowBtnAos);
+                    abs.waitUntilElementFind(arrowBtnAos);
                     arrowBtnAos.click();
                 }
                 case "close" -> {
-                    abs.waitUtilElementClickable(closeBtnAos);
+                    abs.waitUntilElementFind(closeBtnAos);
                     closeBtnAos.click();
                 }
                 case "edit" -> {
-                    abs.waitUtilElementFind(editBtnAos);
+                    abs.waitUntilElementFind(editBtnAos);
                     editBtnAos.click();
                 }
                 case "cancel" -> {
-                    abs.waitUtilElementFind(cancelBtnAos);
+                    abs.waitUntilElementFind(cancelBtnAos);
                     cancelBtnAos.click();
                 }
                 case "detail" -> {
-                    abs.waitUtilElementClickable(detailBtnAos);
+                    abs.waitUntilElementClickable(detailBtnAos);
                     detailBtnAos.click();
                 }
             }
@@ -208,7 +208,7 @@ public class AppPortfolioPage {
 
     public String getDate(){
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementVisible(dateAos);
+            abs.waitUntilElementVisible(dateAos);
             return dateAos.getText();
         }
         return "";

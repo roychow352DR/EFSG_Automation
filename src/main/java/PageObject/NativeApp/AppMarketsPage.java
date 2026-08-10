@@ -4,7 +4,6 @@ import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
@@ -37,7 +36,7 @@ public class AppMarketsPage {
         if (driver instanceof AndroidDriver) {
             switch (buttonName) {
                 case "Open a Live Trading Accounts" -> {
-                    abs.waitUtilElementFind(applicationButtonAos);
+                    abs.waitUntilElementFind(applicationButtonAos);
                     applicationButtonAos.click();
                 }
                 default -> System.out.println("Button not found");
@@ -48,7 +47,8 @@ public class AppMarketsPage {
     public void tapSymbol(String symbol) {
         tradeSymbol = symbol;
         if (driver instanceof AndroidDriver) {
-            driver.findElement(By.xpath("//android.widget.TextView[@text=\""+symbol+"\"]/parent::android.view.ViewGroup")).click();
+            By symbolSelected = By.xpath("//android.widget.TextView[@text=\""+symbol+"\"]/parent::android.view.ViewGroup");
+            abs.waitUntilElementClickable(symbolSelected).click();
         }
     }
 

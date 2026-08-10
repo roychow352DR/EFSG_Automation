@@ -127,13 +127,13 @@ public class MobileAbstractComponents {
         } while (canSwipe < swipeCount);
     }
 
-    public void waitUtilElementFind(WebElement ele) {
+    public void waitUntilElementFind(WebElement ele) {
         WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(1000));
         w.until(ExpectedConditions.visibilityOf(ele));
     }
 
     public void waitUtilAllElementFind(List<WebElement> ele) {
-        WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(60));
+        WebDriverWait w = new WebDriverWait(driver, Duration.ofSeconds(100));
 
         for (int attempt = 1; attempt <= 5; attempt++) {
             try {
@@ -148,7 +148,12 @@ public class MobileAbstractComponents {
 
     }
 
-    public void waitUtilElementClickable(WebElement ele) {
+    public WebElement waitUntilElementClickable(By locator) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(500));
+        return wait.until(ExpectedConditions.elementToBeClickable(locator));
+    }
+
+    public void waitUntilElementClickable(WebElement ele) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(1000));
 
         for (int attempt = 1; attempt <= 3; attempt++) {
@@ -163,7 +168,7 @@ public class MobileAbstractComponents {
         throw new StaleElementReferenceException("Element remained stale after 3 attempts: " + ele);
     }
 
-    public void waitUtilElementVisible(WebElement ele) {
+    public void waitUntilElementVisible(WebElement ele) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
         for (int attempt = 1; attempt <= 10; attempt++) {
@@ -322,7 +327,7 @@ public class MobileAbstractComponents {
 
     public void typeWithAndroidKeys(AndroidDriver driver, WebElement element, String text) {
 
-        waitUtilElementClickable(element);
+        waitUntilElementClickable(element);
         // Focus the field first
         element.click();
 

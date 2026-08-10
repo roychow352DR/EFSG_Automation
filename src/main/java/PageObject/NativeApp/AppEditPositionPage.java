@@ -102,7 +102,7 @@ public class AppEditPositionPage {
                     } else {
                         enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) + priceDifVal);
                     }
-                    abs.waitUtilElementFind(stopLossTextFieldAos);
+                    abs.waitUntilElementFind(stopLossTextFieldAos);
                     abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossTextFieldAos,
                             enterPrice);
                     //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
@@ -115,7 +115,7 @@ public class AppEditPositionPage {
                         enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - priceDifVal);
                     }
 
-                    abs.waitUtilElementFind(takeProfitTextFieldAos);
+                    abs.waitUntilElementFind(takeProfitTextFieldAos);
                     abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitTextFieldAos,
                             enterPrice);
                     // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
@@ -175,7 +175,7 @@ public class AppEditPositionPage {
         if (driver instanceof AndroidDriver) {
             if (buttonName.contains("Cancel Order")) {
                 WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
-                abs.waitUtilElementFind(button);
+                abs.waitUntilElementFind(button);
                 button.click();
             } else {
                 driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
@@ -197,7 +197,7 @@ public class AppEditPositionPage {
 
     public boolean getHeader() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(headerAos);
+            abs.waitUntilElementFind(headerAos);
             return headerAos.isDisplayed();
         }
         return false;
@@ -205,7 +205,7 @@ public class AppEditPositionPage {
 
     public String getHeaderText() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(headerAos);
+            abs.waitUntilElementFind(headerAos);
             return headerAos.getText();
         }
         return null;
@@ -215,7 +215,7 @@ public class AppEditPositionPage {
         if (driver instanceof AndroidDriver) {
             switch (btnName) {
                 case "x" -> {
-                    abs.waitUtilElementClickable(closeBtnAos);
+                    abs.waitUntilElementClickable(closeBtnAos);
                     closeBtnAos.click();
                 }
             }
