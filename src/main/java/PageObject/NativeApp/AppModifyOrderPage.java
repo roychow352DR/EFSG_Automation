@@ -109,7 +109,7 @@ public class AppModifyOrderPage {
     public boolean getTextMessage(String messageContent) {
         if (driver instanceof AndroidDriver) {
             for (WebElement ele : textMessagesAos) {
-                abs.waitUtilElementFind(ele);
+                abs.waitUntilElementFind(ele);
                 if (ele.getText().equalsIgnoreCase(messageContent)) {
                     return true;
                 }
@@ -128,7 +128,7 @@ public class AppModifyOrderPage {
         if (driver instanceof AndroidDriver) {
             switch (btnName) {
                 case "x" -> {
-                    abs.waitUtilElementClickable(closeBtnAos);
+                    abs.waitUntilElementClickable(closeBtnAos);
                     closeBtnAos.click();
                 }
             }
@@ -136,7 +136,7 @@ public class AppModifyOrderPage {
     }
     public boolean getHeader(){
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(headerAos);
+            abs.waitUntilElementFind(headerAos);
             return headerAos.isDisplayed();
         }
         return false;

@@ -3,8 +3,6 @@ package PageObject.NativeApp;
 import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.ios.IOSDriver;
-import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -57,9 +55,9 @@ public class AppLoginPage {
 
     public void fillCredential(String email, String password) throws InterruptedException {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementClickable(emailFieldAndroid);
+            abs.waitUntilElementClickable(emailFieldAndroid);
             emailFieldAndroid.sendKeys(email);
-            abs.waitUtilElementClickable(passwordFieldAndroid);
+            abs.waitUntilElementClickable(passwordFieldAndroid);
             passwordFieldAndroid.sendKeys(password);
         } else {
             // avoid typo
@@ -74,10 +72,10 @@ public class AppLoginPage {
 
     public boolean loginPageValidation() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(loginTitleAndroid);
+            abs.waitUntilElementFind(loginTitleAndroid);
             return loginTitleAndroid.isDisplayed();
         } else {
-            abs.waitUtilElementFind(loginTitleIos);
+            abs.waitUntilElementFind(loginTitleIos);
             return loginTitleIos.isDisplayed();
         }
     }

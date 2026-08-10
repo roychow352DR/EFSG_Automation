@@ -34,11 +34,11 @@ public class BiometricsPage {
     public boolean biometricPageValidation()
     {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(skipBiometricAndroid);
+            abs.waitUntilElementFind(skipBiometricAndroid);
             return skipBiometricAndroid.isEnabled();
         }
         else {
-            abs.waitUtilElementFind(skipBiometricIos);
+            abs.waitUntilElementFind(skipBiometricIos);
             return skipBiometricIos.isDisplayed();
         }
     }

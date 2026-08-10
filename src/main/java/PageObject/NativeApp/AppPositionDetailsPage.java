@@ -35,7 +35,7 @@ public class AppPositionDetailsPage {
 
     public String getHeader() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(headerAos);
+            abs.waitUntilElementFind(headerAos);
             return headerAos.getText();
         }
         return "";

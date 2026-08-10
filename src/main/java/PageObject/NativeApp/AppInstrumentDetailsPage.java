@@ -228,7 +228,7 @@ public class AppInstrumentDetailsPage {
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), lotSize);
                 }
                 case "Price" -> {
-                    abs.waitUtilElementFind(editTextFieldAos.get(1));
+                    abs.waitUntilElementFind(editTextFieldAos.get(1));
                     editTextFieldAos.get(1).clear();
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType, decimal));
                 }
@@ -247,12 +247,12 @@ public class AppInstrumentDetailsPage {
                         enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) + priceDifVal);
                     }
                     if (!SCROLLED) {
-                        abs.waitUtilElementFind(marketStopLossTextFieldAos);
+                        abs.waitUntilElementFind(marketStopLossTextFieldAos);
                         abs.typeWithAndroidKeys((AndroidDriver) driver, marketStopLossTextFieldAos,
                                 enterPrice);
                         //  marketStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
                     } else {
-                        abs.waitUtilElementFind(editTextFieldAos.get(1));
+                        abs.waitUntilElementFind(editTextFieldAos.get(1));
                         abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1),
                                 enterPrice);
                         //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
@@ -266,12 +266,12 @@ public class AppInstrumentDetailsPage {
                         enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - priceDifVal);
                     }
                     if (!SCROLLED) {
-                        abs.waitUtilElementFind(marketTakeProfitTextFieldAos);
+                        abs.waitUntilElementFind(marketTakeProfitTextFieldAos);
                         abs.typeWithAndroidKeys((AndroidDriver) driver, marketTakeProfitTextFieldAos,
                                 enterPrice);
                         //  marketTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
                     } else {
-                        abs.waitUtilElementFind(editTextFieldAos.getLast());
+                        abs.waitUntilElementFind(editTextFieldAos.getLast());
                         abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getLast(),
                                 enterPrice);
                         // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
@@ -283,7 +283,7 @@ public class AppInstrumentDetailsPage {
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), lotSize);
                 }
                 case "Price" -> {
-                    abs.waitUtilElementFind(editTextFieldAos.get(1));
+                    abs.waitUntilElementFind(editTextFieldAos.get(1));
                     editTextFieldAos.get(1).clear();
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType, decimal));
                 }
@@ -335,14 +335,13 @@ public class AppInstrumentDetailsPage {
 
     public void tapsButton(String buttonName) {
         if (driver instanceof AndroidDriver) {
+
             if (buttonName.contains("Cancel Order")) {
-                WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
-                abs.waitUtilElementClickable(button);
-                button.click();
+                By button = By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup");
+                abs.waitUntilElementClickable(button).click();
             } else {
-                WebElement button = driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup"));
-                abs.waitUtilElementClickable(button);
-                button.click();
+                By button = By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup");
+                abs.waitUntilElementClickable(button).click();
             }
         }
     }
@@ -352,7 +351,7 @@ public class AppInstrumentDetailsPage {
             if (buttonName.contains("Position") || buttonName.contains("Modify") || buttonName.contains("Cancel Order")) {
                 WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
                 // abs.waitUtilElementFind(button);
-                abs.waitUtilElementClickable(button);
+                abs.waitUntilElementClickable(button);
                 button.click();
             } else if (buttonName.equalsIgnoreCase("Don't Show Again")) {
                 checkboxAos.click();
@@ -400,15 +399,18 @@ public class AppInstrumentDetailsPage {
     }
 
     public void selectOrderType(String orderType) throws InterruptedException {
-        if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementClickable(orderTypeDropdownBtn);
-            //android.widget.TextView[@text="Limit / Stop Order"]
-            orderTypeDropdownBtn.click();
-            Thread.sleep(500);
-            abs.waitUtilElementClickable(driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + orderType + "\"]/parent::android.view.ViewGroup")));
-            WebElement orderTypeBtn = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + orderType + "\"]/parent::android.view.ViewGroup"));
-            orderTypeBtn.click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+
+        abs.waitUntilElementClickable(orderTypeDropdownBtn);
+        orderTypeDropdownBtn.click();
+
+        By orderTypeLocator = By.xpath(
+                "//android.widget.TextView[@text=\"" + orderType.trim() + "\"]/parent::android.view.ViewGroup"
+        );
+
+        abs.waitUntilElementClickable(orderTypeLocator).click();
     }
 
     public void selectStopLimitOption(String option) {
@@ -555,11 +557,11 @@ public class AppInstrumentDetailsPage {
     public void closeConfirmation() {
         if (driver instanceof AndroidDriver) {
             if (AppInstrumentDetailsPage.stopOrderType.isEmpty()) {
-                abs.waitUtilElementClickable(closeMarketConfirmationBtnAos);
+                abs.waitUntilElementClickable(closeMarketConfirmationBtnAos);
                 closeMarketConfirmationBtnAos.click();
             }
             else {
-                abs.waitUtilElementClickable(closeLimitConfirmationBtnAos);
+                abs.waitUntilElementClickable(closeLimitConfirmationBtnAos);
                 closeLimitConfirmationBtnAos.click();
             }
         }
