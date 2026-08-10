@@ -7,6 +7,10 @@ Feature: Native App trade
       And the user taps button "Me" on the app footer
       And the user toggles off trade confirmation on the app setting page
       And the user taps button "Markets" on the app footer
+      And the user taps symbol on the app markets page
+      And the user selects tab "Positions" on the app trade view
+      And the total count of the positions is retrieved on the app trade view
+      And the user taps back button on the app trade view
       And the user creates a "BUY" position on the instrument details page
       When the user taps "close" cta button on the app trade view
       And the user taps button "Close Position" on the instrument details page

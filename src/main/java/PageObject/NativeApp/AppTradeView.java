@@ -1,7 +1,6 @@
 package PageObject.NativeApp;
 
 import AbstractComponent.MobileAbstractComponents;
-import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
@@ -10,7 +9,6 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
@@ -32,6 +30,8 @@ public class AppTradeView {
     public static String openOrderTargetPrice;
     public static String validity;
     public static String editPrice;
+    public static int positionsCount = 0;
+    public static int pendingOrdersCount = 0;
 
 
     public AppTradeView(AppiumDriver driver) {
@@ -47,7 +47,7 @@ public class AppTradeView {
     WebElement sellButtonAos;
 
 
-    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.widget.TextView")
+    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup")
     List<WebElement> rowsOnPositionTabAos;
 
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.widget.TextView")
@@ -95,6 +95,10 @@ public class AppTradeView {
 
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.widget.TextView")
     List<WebElement> openPositionRecordDetailsAos;
+
+    @FindBy(xpath = "//android.widget.HorizontalScrollView/android.view.ViewGroup/android.view.View[2]")
+    WebElement positionsTabAos;
+
 
 
     public void selectDirection(String direction) {
@@ -181,7 +185,7 @@ public class AppTradeView {
         if (driver instanceof AndroidDriver) {
             if (buttonName.contains("Cancel Order")) {
                 WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
-                abs.waitUtilElementFind(button);
+                abs.waitUntilElementFind(button);
                 button.click();
             } else {
                 driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
@@ -193,7 +197,7 @@ public class AppTradeView {
         if (driver instanceof AndroidDriver) {
             if (buttonName.contains("Position") || buttonName.contains("Modify") || buttonName.contains("Cancel Order")) {
                 WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
-                abs.waitUtilElementFind(button);
+                abs.waitUntilElementFind(button);
                 button.click();
             } else {
                 driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
@@ -347,15 +351,15 @@ public class AppTradeView {
         if (driver instanceof AndroidDriver) {
             switch (buttonName) {
                 case "detail" -> {
-                    abs.waitUtilElementClickable(detailsButton);
+                    abs.waitUntilElementClickable(detailsButton);
                     detailsButton.click();
                 }
                 case "close" -> {
-                    abs.waitUtilElementClickable(crossButtonAos);
+                    abs.waitUntilElementClickable(crossButtonAos);
                     crossButtonAos.click();
                 }
                 case "edit" -> {
-                    abs.waitUtilElementClickable(editPositionButtonAos);
+                    abs.waitUntilElementClickable(editPositionButtonAos);
                     editPositionButtonAos.click();
                 }
             }
@@ -390,7 +394,7 @@ public class AppTradeView {
         if (driver instanceof AndroidDriver) {
             crossButtonAos.click();
             if (AppSettingPage.isTradeConfirmNeeded) {
-                abs.waitUtilElementFind(cancelOrderButtonAos);
+                abs.waitUntilElementFind(cancelOrderButtonAos);
                 cancelOrderButtonAos.click();
             }
         }
@@ -398,9 +402,9 @@ public class AppTradeView {
 
     public void closePosition() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementClickable(crossButtonAos);
+            abs.waitUntilElementClickable(crossButtonAos);
             crossButtonAos.click();
-            abs.waitUtilElementFind(closePositionAos);
+            abs.waitUntilElementClickable(closePositionAos);
             closePositionAos.click();
             if (AppSettingPage.isTradeConfirmNeeded) {
                 confirmClosePositionBtnAos.click();
@@ -482,7 +486,7 @@ public class AppTradeView {
 
     public void tapBack() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementClickable(backBtnAos);
+            abs.waitUntilElementClickable(backBtnAos);
             backBtnAos.click();
         }
     }
@@ -516,7 +520,7 @@ public class AppTradeView {
 
     public void closeDialogue() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(closeDialogueBtnAos);
+            abs.waitUntilElementFind(closeDialogueBtnAos);
             closeDialogueBtnAos.click();
         }
     }
@@ -531,4 +535,76 @@ public class AppTradeView {
     public boolean isOpenPositionDateValid() {
         return abs.dateValidator(getOpenPositionTime());
     }
+
+    public void selectTab(String tabName){
+        if (driver instanceof AndroidDriver) {
+            switch (tabName) {
+                case "Positions" -> {
+                    abs.waitUntilElementClickable(positionsTabAos);
+                    positionsTabAos.click();
+                }
+            }
+        }
+    }
+
+    public int getNumberOfPositions(){
+        By rowsOnPositionTab = By.xpath(
+                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup"
+        );
+        if (driver instanceof AndroidDriver) {
+//            abs.waitUtilAllElementFind(rowsOnPositionTabAos);
+//            return rowsOnPositionTabAos.size();
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(100));
+            final int[] previous = {-1};
+            final int[] stable = {0};
+
+            return wait.until(d -> {
+                int current = d.findElements(rowsOnPositionTab).size();
+
+                if (current == previous[0]) {
+                    stable[0]++;
+                } else {
+                    previous[0] = current;
+                    stable[0] = 0;
+                }
+
+                return stable[0] >= 2 ? current : null;
+            });
+        }
+        return 0;
+
+    }
+
+    public int getNumberOfPendingOrders(){
+        By rowsOnPendingOrders = By.xpath(
+                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup"
+        );
+        if (driver instanceof AndroidDriver) {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(100));
+            final int[] previous = {-1};
+            final int[] stable = {0};
+
+            return wait.until(d -> {
+                int current = d.findElements(rowsOnPendingOrders).size();
+
+                if (current == previous[0]) {
+                    stable[0]++;
+                } else {
+                    previous[0] = current;
+                    stable[0] = 0;
+                }
+
+                return stable[0] >= 2 ? current : null;
+            });
+        }
+        return 0;
+    }
+
+    public void selectList(String listName){
+        if (driver instanceof AndroidDriver) {
+            driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + listName + "\"]/parent::android.view.ViewGroup")).click();
+        }
+    }
+
+
 }

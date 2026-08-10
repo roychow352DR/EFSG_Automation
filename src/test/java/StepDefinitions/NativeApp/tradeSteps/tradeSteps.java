@@ -70,9 +70,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees an open position is disappeared on the position tab of app trade view")
     public void the_user_sees_an_open_position_is_disappeared_on_the_position_tab_of_app_trade_view() throws InterruptedException {
-        Thread.sleep(2000);
-        Assert.assertFalse(appPoManager.getAppTradeView().getPosition());
-        Assert.assertFalse(appPoManager.getAppTradeView().getPositionDetail(AppTradeView.openPositionOpenPrice));
+        Assert.assertEquals(appPoManager.getAppTradeView().getNumberOfPositions(),AppTradeView.positionsCount);
     }
 
     @And("the user taps button {string} on the confirmation pop up")
@@ -91,7 +89,7 @@ public class tradeSteps extends BaseTest {
 
     @And("the user taps {string} cta button on the app trade view")
     public void the_user_taps_cta_button_on_the_app_trade_view(String buttonName) throws InterruptedException {
-        Thread.sleep(1000);
+        Thread.sleep(3000);
         if (TradeRecord.isOpenPosition) {
             appPoManager.getAppTradeView().getOpenPositionOpenPrice();
         } else {
@@ -102,7 +100,6 @@ public class tradeSteps extends BaseTest {
 
     @And("the user selects order type {string} on the instrument details page")
     public void the_user_selects_order_type_on_the_app_trade_view(String orderType) throws InterruptedException {
-        Thread.sleep(2000);
         appPoManager.getAppInstrumentDetailsPage().selectOrderType(orderType);
     }
 
@@ -153,7 +150,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees market order values are displayed correctly with the user input value on the confirmation pop up")
     public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_confirmation_pop_up() throws InterruptedException {
-        Thread.sleep(2000);
+        Thread.sleep(3000);
         for (String value : appPoManager.getAppInstrumentDetailsPage().marketOrderConfirmationPageValues()) {
             Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getDetailValue(value),
                     appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
@@ -173,6 +170,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees market order values are displayed correctly with the user input value on the position details page")
     public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_position_details_page() throws InterruptedException {
+        Thread.sleep(3000);
         for (String value : appPoManager.getAppTradeView().marketOrderConfirmationPageValues()) {
             Assert.assertEquals(appPoManager.getAppTradeView().getPositionValueWithRetry(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
                     appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
@@ -194,9 +192,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees the pending order is disappeared on the pending order list")
     public void the_user_sees_the_pending_order_is_disappeared_on_the_pending_order_list() throws InterruptedException {
-        Thread.sleep(500);
-        Assert.assertFalse(appPoManager.getAppTradeView().getPendingOrder());
-        Assert.assertFalse(appPoManager.getAppTradeView().getPendingOrdersDetail(AppTradeView.openOrderTargetPrice));
+        Assert.assertEquals(appPoManager.getAppTradeView().getNumberOfPendingOrders(),AppTradeView.pendingOrdersCount);
     }
 
     @And("the user places a pending order with direction {string} and order type {string} on the instrument details page")
@@ -366,7 +362,7 @@ public class tradeSteps extends BaseTest {
     @Then("the user sees the value {string} is updated on the position details page")
     public void the_user_sees_the_value_is_updated_on_the_position_details_page(String value) throws InterruptedException {
         // Thread.sleep(500);
-        Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value), appPoManager.getAppEditPositionPage().getValidationValue(value));
+        Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDetailValue(value), appPoManager.getAppEditPositionPage().getValidationValue(value));
         appPoManager.getAppTradeView().closePositionInDetails();
 
 
@@ -490,7 +486,8 @@ public class tradeSteps extends BaseTest {
     }
 
     @And("the user taps {string} button of the record row on the portfolio page")
-    public void the_user_taps_button_of_the_record_row_on_the_portfolio_page(String buttonName) {
+    public void the_user_taps_button_of_the_record_row_on_the_portfolio_page(String buttonName) throws InterruptedException {
+        Thread.sleep(2000);
         appPoManager.getAppPortfolioPage().tapButtonOnRow(buttonName);
     }
 
@@ -652,5 +649,25 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_the_value_is_displayed_correctly_on_the_portfolio_page(String value) {
         Assert.assertTrue(appPoManager.getAppPortfolioPage().isValueDisplayedCorrect(appPoManager.getAppPortfolioPage().getValidationValue(value)));
         appPoManager.getAppPortfolioPage().cancelPendingOrder();
+    }
+
+    @And("the user selects tab {string} on the app trade view")
+    public void the_user_selects_tab_on_the_app_trade_view(String tabName) {
+        appPoManager.getAppTradeView().selectTab(tabName);
+    }
+
+    @And("the total count of the positions is retrieved on the app trade view")
+    public void the_total_count_of_the_positions_is_retrieved_on_the_app_trade_view() {
+        AppTradeView.positionsCount = appPoManager.getAppTradeView().getNumberOfPositions();
+    }
+
+    @And("the total count of the pending order is retrieved on the app trade view")
+    public void the_total_count_of_the_pending_order_is_retrieved_on_the_app_trade_view() {
+        AppTradeView.pendingOrdersCount = appPoManager.getAppTradeView().getNumberOfPendingOrders();
+    }
+
+    @And("the user selects list {string} on the app trade view")
+    public void the_user_selects_list_pending_orders_on_the_app_trade_view(String listName) {
+        appPoManager.getAppTradeView().selectList(listName);
     }
 }
