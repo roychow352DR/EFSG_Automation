@@ -76,7 +76,7 @@ public class AppWelcomePage {
 
     public void swipeScreen() throws InterruptedException {
         int swipeCount = 3;
-        abs.waitUtilElementFind(getImage());
+        abs.waitUntilElementFind(getImage());
         abs.swipeAction(getImage(),"left",swipeCount);
     }
 

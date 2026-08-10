@@ -41,10 +41,10 @@ public class AppHomePage {
 
     public boolean buttonValidation() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(applicationButtonAos);
+            abs.waitUntilElementFind(applicationButtonAos);
             return applicationButtonAos.isDisplayed();
         } else {
-            abs.waitUtilElementFind(applicationButtonIos);
+            abs.waitUntilElementFind(applicationButtonIos);
             return applicationButtonIos.isDisplayed();
         }
     }
@@ -70,7 +70,7 @@ public class AppHomePage {
 
     public boolean bottomButtonIsTapped() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(homeButtonAos);
+            abs.waitUntilElementFind(homeButtonAos);
             return homeButtonAos.isEnabled();
         } else {
             applicationButtonIos.click();
@@ -100,7 +100,7 @@ public class AppHomePage {
     }
 
     public String getButtonText(){
-        abs.waitUtilElementFind(signUpButtonAos);
+        abs.waitUntilElementFind(signUpButtonAos);
         return signUpButtonAos.getText();
     }
 }

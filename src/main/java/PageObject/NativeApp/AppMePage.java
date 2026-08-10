@@ -27,7 +27,7 @@ public class AppMePage {
 
     public boolean getTradeAccountLabel() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(tradeAccountLabelAos);
+            abs.waitUntilElementFind(tradeAccountLabelAos);
             return tradeAccountLabelAos.isDisplayed();
         }
         return false;
@@ -52,7 +52,7 @@ public class AppMePage {
 
     public void tapWidget(String label){
         WebElement widget = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + label + "\"]"));
-        abs.waitUtilElementClickable(widget);
+        abs.waitUntilElementClickable(widget);
         widget.click();
     }
 

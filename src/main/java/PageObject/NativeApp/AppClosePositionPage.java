@@ -50,7 +50,7 @@ public class AppClosePositionPage {
 
     public String getEditFieldVal(){
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementVisible(editFieldAos);
+            abs.waitUntilElementVisible(editFieldAos);
             return editFieldAos.getText();
         }
         return "No edit field found";
@@ -60,15 +60,15 @@ public class AppClosePositionPage {
         if (driver instanceof AndroidDriver) {
             switch (btnName) {
                 case "-":
-                    abs.waitUtilElementClickable(minusBtnAos);
+                    abs.waitUntilElementClickable(minusBtnAos);
                     minusBtnAos.click();
                     break;
                 case "+":
-                    abs.waitUtilElementClickable(plusBtnAos);
+                    abs.waitUntilElementClickable(plusBtnAos);
                     plusBtnAos.click();
                     break;
                 case "All":
-                    abs.waitUtilElementClickable(allBtnAos);
+                    abs.waitUntilElementClickable(allBtnAos);
                     allBtnAos.click();
                     break;
             }
@@ -77,7 +77,7 @@ public class AppClosePositionPage {
 
     public boolean getHeader(){
         if (driver instanceof AndroidDriver) {
-            abs.waitUtilElementFind(headerAos);
+            abs.waitUntilElementFind(headerAos);
             return headerAos.isDisplayed();
         }
         return false;
@@ -175,12 +175,12 @@ public class AppClosePositionPage {
     }
 
     public void confirmPositionClose() {
-        abs.waitUtilElementFind(closeBtnConfirmAos);
+        abs.waitUntilElementFind(closeBtnConfirmAos);
         closeBtnConfirmAos.click();
     }
 
     public String getHeaderText(){
-        abs.waitUtilElementFind(headerAos);
+        abs.waitUntilElementFind(headerAos);
         return headerAos.getText();
     }
 }

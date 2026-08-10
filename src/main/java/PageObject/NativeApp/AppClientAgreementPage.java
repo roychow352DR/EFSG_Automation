@@ -21,7 +21,7 @@ public class AppClientAgreementPage {
     WebElement clientAgreementTitle;
 
     public WebElement getClientAgreementTitle() {
-        abs.waitUtilElementFind(clientAgreementTitle);
+        abs.waitUntilElementFind(clientAgreementTitle);
         return clientAgreementTitle;
     }
 }
