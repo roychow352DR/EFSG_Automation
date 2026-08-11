@@ -6,6 +6,10 @@ Feature: Native App trade
       And the user login as username "autol3" and password "Test1234@" on App login page
       And the user taps button "Markets" on the app footer
       When the user taps symbol on the app markets page
+      And the user selects tab "Positions" on the app trade view
+      And the total count of the positions is retrieved on the app trade view
+      And the user taps back button on the app trade view
+      And the user taps symbol on the app markets page
       And the user selects direction "BUY" on the app trade view
       And the user fills in the text field "Lot Size" with value "0.5" on the instrument details page
       And the user taps button "BUY" on the instrument details page

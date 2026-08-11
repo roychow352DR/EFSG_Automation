@@ -61,9 +61,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees a new open position is displayed at the position tab of app trade view")
     public void the_user_sees_a_new_open_position_is_displayed_at_the_position_tab_of_app_trade_view() throws InterruptedException {
-        Thread.sleep(2000);
-        Assert.assertTrue(appPoManager.getAppTradeView().getPosition());
-        Assert.assertTrue(appPoManager.getAppTradeView().getPositionDetail(AppTradeView.selectedDirection));
+        Assert.assertEquals(appPoManager.getAppTradeView().getNumberOfPositions(),AppTradeView.positionsCount+1);
         appPoManager.getAppTradeView().closePosition();
 
     }
