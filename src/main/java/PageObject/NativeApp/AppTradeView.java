@@ -241,9 +241,6 @@ public class AppTradeView {
     }
 
     public String getPositionValue(String value, String symbolDecimal) {
-//        List<WebElement> elements = driver.findElements(By.className("android.widget.TextView"));
-//        List<String> texts = new ArrayList<>(elements.size());
-//        abs.waitUtilElementFind(elements.getFirst());
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(100));
         wait.ignoring(StaleElementReferenceException.class);
 
@@ -253,19 +250,34 @@ public class AppTradeView {
                 List<String> texts = new ArrayList<>();
 
                 for (WebElement element : elements) {
-                    texts.add(element.getText());
+                    String text = element.getText();
+                    if (text != null && !text.trim().isEmpty()) {
+                        texts.add(text.trim());
+                    }
                 }
 
-                for (int i = 0; i < texts.size() - 1; i++) {
+                for (int i = 0; i < texts.size(); i++) {
                     String currentLabel = texts.get(i);
 
                     if (currentLabel != null && currentLabel.equalsIgnoreCase(value)) {
-                        return abs.normalizeDialogueValue(value, texts.get(i + 1));
-                    }
-                    if (value.equalsIgnoreCase("Take Profit Price") || value.equalsIgnoreCase("Stop Loss Price")) {
-                        return abs.normalizePriceToDecimals(texts.get(i + 1), symbolDecimal);
-                    }
+                        for (int j = i + 1; j < Math.min(i + 4, texts.size()); j++) {
+                            String candidate = texts.get(j);
 
+                            if (candidate == null || candidate.isBlank()) {
+                                continue;
+                            }
+
+                            if (candidate.equalsIgnoreCase(value)) {
+                                continue;
+                            }
+
+                            if (value.equalsIgnoreCase("Take Profit Price") || value.equalsIgnoreCase("Stop Loss Price")) {
+                                return abs.normalizePriceToDecimals(candidate, symbolDecimal);
+                            }
+
+                            return abs.normalizeDialogueValue(value, candidate);
+                        }
+                    }
                 }
 
                 return null;
@@ -273,23 +285,6 @@ public class AppTradeView {
         } catch (TimeoutException e) {
             return null;
         }
-//        for (WebElement el : elements) {
-//            texts.add(el.getText());
-//        }
-//
-//        for (int i = 0; i < texts.size(); i++) {
-//            if (texts.get(i).equalsIgnoreCase(value)) {
-//                if (value.equalsIgnoreCase("Volume")) {
-//                    return texts.get(i + 1).split("Lots")[0].trim();
-//                }
-//
-//                if (value.equalsIgnoreCase("Take Profit Price") || value.equalsIgnoreCase("Stop Loss Price")) {
-//                    return abs.normalizePriceToDecimals(texts.get(i + 1), symbolDecimal);
-//                }
-//                return texts.get(i + 1);
-//            }
-//        }
-//        return null;
     }
 
     public String getPositionValueWithRetry(String value, String symbolDecimal) {
