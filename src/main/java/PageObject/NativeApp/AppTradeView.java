@@ -287,6 +287,64 @@ public class AppTradeView {
         }
     }
 
+    public String getPositionValueByLabel(String label, String symbolDecimal) {
+        final int maxAttempts = 3;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+                List<WebElement> textViews = wait.until(d -> {
+                    List<WebElement> els = d.findElements(By.className("android.widget.TextView"));
+                    return els.isEmpty() ? null : els;
+                });
+
+                for (int i = 0; i < textViews.size() - 1; i++) {
+                    String currentText = textViews.get(i).getText();
+                    currentText = currentText == null ? "" : currentText.trim();
+
+                    if (label.equals(currentText)) {
+                        String rawValue = textViews.get(i + 1).getText();
+                        rawValue = rawValue == null ? "" : rawValue.trim();
+
+                        if (rawValue.isEmpty()) {
+                            return null;
+                        }
+
+                        return isPriceLabel(label)
+                                ? abs.normalizePriceToDecimals(rawValue, symbolDecimal)
+                                : abs.normalizeDialogueValue(label, rawValue);
+                    }
+                }
+
+                return null;
+
+            } catch (StaleElementReferenceException e) {
+                if (attempt == maxAttempts) {
+                    throw e;
+                }
+            } catch (TimeoutException e) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean isPriceLabel(String label) {
+        return label.equalsIgnoreCase("Take Profit Price")
+                || label.equalsIgnoreCase("Stop Loss Price");
+    }
+
+    private boolean isKnownLabel(String text) {
+        for (String knownLabel : marketOrderConfirmationPageValues()) {
+            if (knownLabel.equalsIgnoreCase(text)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public String getPositionValueWithRetry(String value, String symbolDecimal) {
         int attempts = 3;
         while (attempts-- > 0) {
