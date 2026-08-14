@@ -33,7 +33,7 @@ public class appCommonSteps extends BaseTest {
     }
 
     @Then("the user sees header {string} on the page")
-    public void the_user_sees_header_on_the_page(String expectedHeader) {
+    public void the_user_sees_header_on_the_page(String expectedHeader) throws InterruptedException {
         String actualHeaderTitle = "";
         switch (expectedHeader) {
             case "Position Details" -> actualHeaderTitle = appPoManager.getAppPositionDetailsPage().getHeader();
@@ -43,10 +43,7 @@ public class appCommonSteps extends BaseTest {
         }
         Assert.assertEquals(actualHeaderTitle, expectedHeader);
 
-        if (expectedHeader.equals("Position Details")) {
-            appPoManager.getAppTradeView().closePositionInDetails();
-        }
-       else {
+        if (!expectedHeader.equals("Position Details")) {
             appPoManager.getAppTradeView().tapBack();
             appPoManager.getAppTradeView().closePosition();
         }

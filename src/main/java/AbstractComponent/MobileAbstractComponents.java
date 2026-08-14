@@ -27,6 +27,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MobileAbstractComponents {
     static AppiumDriver driver;
@@ -182,6 +184,11 @@ public class MobileAbstractComponents {
         }
 
         throw new StaleElementReferenceException("Element remained stale after 10 attempts: " + ele);
+    }
+
+    public WebElement waitUntilElementVisible(By locator) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(50));
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 
     /**
@@ -602,6 +609,28 @@ public class MobileAbstractComponents {
         }
 
         throw new RuntimeException("Transient text not found within timeout");
+    }
+
+    public List<String> extractTextViewTexts(String xml) {
+        List<String> texts = new ArrayList<>();
+        Pattern pattern = Pattern.compile(
+                "<android\\.widget\\.TextView[^>]*text=\"([^\"]*)\"[^>]*/?>"
+        );
+        Matcher matcher = pattern.matcher(xml);
+
+        while (matcher.find()) {
+            texts.add(matcher.group(1).trim());
+        }
+
+        return texts;
+    }
+
+    public void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
 }
