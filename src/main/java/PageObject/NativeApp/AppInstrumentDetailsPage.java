@@ -5,6 +5,7 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
@@ -60,8 +61,9 @@ public class AppInstrumentDetailsPage {
     @FindBy(className = "android.widget.EditText")
     List<WebElement> editTextFieldAos;
 
-    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup")
-    WebElement orderTypeDropdownBtn;
+//    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup")
+//    WebElement orderTypeDropdownBtn;
+
 
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.widget.TextView")
     WebElement dialogueTextAos;
@@ -398,20 +400,37 @@ public class AppInstrumentDetailsPage {
         return abs.getDialogueValue(value);
     }
 
-    public void selectOrderType(String orderType) throws InterruptedException {
+    public void selectOrderType(String orderType) {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
 
-        abs.waitUntilElementClickable(orderTypeDropdownBtn);
-        orderTypeDropdownBtn.click();
+        String text = orderType.trim();
 
-        By orderTypeLocator = By.xpath(
-                "//android.widget.TextView[@text=\"" + orderType.trim() + "\"]/parent::android.view.ViewGroup"
+        final By orderTypeDropdownBtn = By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup");
+
+        abs.waitUntilElementVisible(orderTypeDropdownBtn).click();
+
+        By optionTextLocator = By.xpath("//android.widget.TextView[@text=\"" + text + "\"]");
+        By optionContainerLocator = By.xpath(
+                "//android.widget.TextView[@text=\"" + text + "\"]/ancestor::android.view.ViewGroup[1]"
         );
 
-        abs.waitUntilElementClickable(orderTypeLocator).click();
+        try {
+            WebElement optionText = abs.waitUntilElementVisible(optionTextLocator);
+            optionText.click();
+            return;
+        } catch (Exception e1) {
+            try {
+                WebElement optionContainer = abs.waitUntilElementVisible(optionContainerLocator);
+                optionContainer.click();
+                return;
+            } catch (Exception e2) {
+                throw new TimeoutException("Unable to select order type: " + orderType, e2);
+            }
+        }
     }
+
 
     public void selectStopLimitOption(String option) {
         stopOrderType = option;

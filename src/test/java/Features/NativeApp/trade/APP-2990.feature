@@ -7,6 +7,11 @@ Feature: Native App trade
       And the user taps button "Me" on the app footer
       And the user toggles off trade confirmation on the app setting page
       And the user taps button "Markets" on the app footer
+      And the user taps symbol on the app markets page
+      And the user selects tab "Positions" on the app trade view
+      And the user selects list "Pending Orders" on the app trade view
+      And the total count of the pending order is retrieved on the app trade view
+      And the user taps back button on the app trade view
       When the user taps symbol on the app markets page
       And the user selects direction "BUY" on the app trade view
       And the user selects order type "Limit / Stop Order" on the instrument details page
