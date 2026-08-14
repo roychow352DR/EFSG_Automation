@@ -56,12 +56,15 @@ public class AppTradeView {
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup")
     WebElement detailsButton;
 
-    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]")
-    WebElement crossButtonAos;
+//    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]")
+//    WebElement crossButtonAos;
 
+    private final By crossButtonAos = By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]");
 
-    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[14]")
-    WebElement cancelOrderButtonAos;
+//    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[14]")
+//    WebElement cancelOrderButtonAos;
+
+    private final By cancelOrderButtonAos = By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[14]");
 
     @FindBy(xpath = "(//android.widget.TextView[@text=\"Close Position\"])[2]/parent::android.view.ViewGroup")
     WebElement closePositionAos;
@@ -288,28 +291,21 @@ public class AppTradeView {
     }
 
     public String getPositionValueByLabel(String label, String symbolDecimal) {
-        final int maxAttempts = 3;
+        final int maxAttempts = 5;
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+                String xml = driver.getPageSource();
+                List<String> texts = abs.extractTextViewTexts(xml);
 
-                List<WebElement> textViews = wait.until(d -> {
-                    List<WebElement> els = d.findElements(By.className("android.widget.TextView"));
-                    return els.isEmpty() ? null : els;
-                });
-
-                for (int i = 0; i < textViews.size() - 1; i++) {
-                    String currentText = textViews.get(i).getText();
-                    currentText = currentText == null ? "" : currentText.trim();
-
-                    if (label.equals(currentText)) {
-                        String rawValue = textViews.get(i + 1).getText();
-                        rawValue = rawValue == null ? "" : rawValue.trim();
-
-                        if (rawValue.isEmpty()) {
+                for (int i = 0; i < texts.size() - 1; i++) {
+                    if (label.equals(texts.get(i))) {
+                        String rawValue = texts.get(i + 1);
+                        if (rawValue == null || rawValue.trim().isEmpty()) {
                             return null;
                         }
+
+                        rawValue = rawValue.trim();
 
                         return isPriceLabel(label)
                                 ? abs.normalizePriceToDecimals(rawValue, symbolDecimal)
@@ -319,12 +315,11 @@ public class AppTradeView {
 
                 return null;
 
-            } catch (StaleElementReferenceException e) {
+            } catch (Exception e) {
                 if (attempt == maxAttempts) {
                     throw e;
                 }
-            } catch (TimeoutException e) {
-                return null;
+                abs.sleep(250);
             }
         }
 
@@ -408,8 +403,8 @@ public class AppTradeView {
                     detailsButton.click();
                 }
                 case "close" -> {
-                    abs.waitUntilElementClickable(crossButtonAos);
-                    crossButtonAos.click();
+                    abs.waitUntilElementClickable(crossButtonAos).click();
+                //    crossButtonAos.click();
                 }
                 case "edit" -> {
                     abs.waitUntilElementClickable(editPositionButtonAos);
@@ -445,20 +440,21 @@ public class AppTradeView {
 
     public void cancelOrder() {
         if (driver instanceof AndroidDriver) {
-            crossButtonAos.click();
-            if (AppSettingPage.isTradeConfirmNeeded) {
-                abs.waitUntilElementFind(cancelOrderButtonAos);
-                cancelOrderButtonAos.click();
+            abs.waitUntilElementClickable(crossButtonAos).click();
+            if (!AppSettingPage.isTradeConfirmNeeded) {
+                abs.waitUntilElementClickable(cancelOrderButtonAos).click();
+            } else {
+                throw new RuntimeException("Cancel order confirmation button did not appear.");
             }
+
         }
     }
 
     public void closePosition() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementClickable(crossButtonAos);
-            crossButtonAos.click();
-            abs.waitUntilElementClickable(closePositionAos);
-            closePositionAos.click();
+            abs.waitUntilElementClickable(crossButtonAos).click();
+            By closeButton = By.xpath("(//android.widget.TextView[@text=\"Close Position\"])[2]/parent::android.view.ViewGroup");
+            abs.waitUntilElementClickable(closeButton).click();
             if (AppSettingPage.isTradeConfirmNeeded) {
                 confirmClosePositionBtnAos.click();
             }
@@ -467,6 +463,7 @@ public class AppTradeView {
 
     public void closePositionInDetails() {
         if (driver instanceof AndroidDriver) {
+            abs.waitUntilElementClickable(closePositionBtnInDetailsAos);
             closePositionBtnInDetailsAos.click();
             closePositionBtnWithLotsAos.click();
             confirmClosePositionBtnAos.click();
@@ -605,8 +602,6 @@ public class AppTradeView {
                 "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup"
         );
         if (driver instanceof AndroidDriver) {
-//            abs.waitUtilAllElementFind(rowsOnPositionTabAos);
-//            return rowsOnPositionTabAos.size();
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(100));
             final int[] previous = {-1};
             final int[] stable = {0};

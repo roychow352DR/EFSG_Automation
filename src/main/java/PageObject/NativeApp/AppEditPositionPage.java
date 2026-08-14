@@ -7,7 +7,10 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.List;
 
 public class AppEditPositionPage {
@@ -205,10 +208,19 @@ public class AppEditPositionPage {
 
     public String getHeaderText() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementFind(headerAos);
-            return headerAos.getText();
+            By locator = By.xpath("//*[@text='Edit Position']");
+
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+            WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+
+            String text = element.getText();
+            if (text == null || text.trim().isEmpty()) {
+                text = element.getAttribute("text");
+            }
+
+            return text;
         }
-        return null;
+        return "";
     }
 
     public void tapButtonOnDialogue(String btnName) {
