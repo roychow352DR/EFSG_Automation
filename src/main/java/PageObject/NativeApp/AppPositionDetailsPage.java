@@ -7,6 +7,7 @@ import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.math.BigDecimal;
@@ -35,8 +36,17 @@ public class AppPositionDetailsPage {
 
     public String getHeader() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementFind(headerAos);
-            return headerAos.getText();
+            By locator = By.xpath("//*[@text='Position Details']");
+
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+            WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+
+            String text = element.getText();
+            if (text == null || text.trim().isEmpty()) {
+                text = element.getAttribute("text");
+            }
+
+            return text;
         }
         return "";
     }

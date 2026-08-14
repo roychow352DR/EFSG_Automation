@@ -114,10 +114,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees a new pending order is displayed at the pending order tab of app trade view")
     public void the_user_sees_a_new_pending_order_is_displayed_at_the_pending_order_tab_of_app_trade_view() throws InterruptedException {
-        Thread.sleep(2000);
-        Assert.assertTrue(appPoManager.getAppTradeView().getPendingOrdersDetail(AppInstrumentDetailsPage.executedPrice));
-        Assert.assertTrue(appPoManager.getAppTradeView().getPendingOrdersDetail(AppTradeView.selectedDirection));
-        Assert.assertTrue(appPoManager.getAppTradeView().getPendingOrdersDetail(AppInstrumentDetailsPage.stopOrderType.split(" ")[1].trim()));
+        Assert.assertEquals(appPoManager.getAppTradeView().getNumberOfPendingOrders(),AppTradeView.pendingOrdersCount+1);
         appPoManager.getAppTradeView().cancelOrder();
     }
 

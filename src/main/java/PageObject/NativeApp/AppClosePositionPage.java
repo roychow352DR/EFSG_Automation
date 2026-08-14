@@ -10,6 +10,7 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.math.BigDecimal;
@@ -179,8 +180,20 @@ public class AppClosePositionPage {
         closeBtnConfirmAos.click();
     }
 
-    public String getHeaderText(){
-        abs.waitUntilElementFind(headerAos);
-        return headerAos.getText();
+    public String getHeaderText() {
+        if (driver instanceof AndroidDriver) {
+            By locator = By.xpath("//*[@text='Close Position']");
+
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+            WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+
+            String text = element.getText();
+            if (text == null || text.trim().isEmpty()) {
+                text = element.getAttribute("text");
+            }
+
+            return text;
+        }
+        return "";
     }
 }
