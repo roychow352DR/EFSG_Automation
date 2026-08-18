@@ -1,6 +1,7 @@
 package PageObject.NativeApp;
 
 import AbstractComponent.MobileAbstractComponents;
+import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
@@ -338,23 +339,22 @@ public class AppInstrumentDetailsPage {
     public void tapsButton(String buttonName) {
         if (driver instanceof AndroidDriver) {
 
+            By button;
             if (buttonName.contains("Cancel Order")) {
-                By button = By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup");
-                abs.waitUntilElementClickable(button).click();
+                button = By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup");
             } else {
-                By button = By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup");
-                abs.waitUntilElementClickable(button).click();
+                button = By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup");
             }
+            abs.waitUntilElementClickable(button).click();
         }
     }
 
     public void tapsButtonOnConfirm(String buttonName) {
         if (driver instanceof AndroidDriver) {
             if (buttonName.contains("Position") || buttonName.contains("Modify") || buttonName.contains("Cancel Order")) {
-                WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
+                By button = By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup");
                 // abs.waitUtilElementFind(button);
-                abs.waitUntilElementClickable(button);
-                button.click();
+                abs.waitUntilElementClickable(button).click();
             } else if (buttonName.equalsIgnoreCase("Don't Show Again")) {
                 checkboxAos.click();
             } else if (buttonName.equalsIgnoreCase("Cross")) {
@@ -362,7 +362,8 @@ public class AppInstrumentDetailsPage {
             } else if (buttonName.equalsIgnoreCase("x")) {
                 closeConfirmation();
             } else {
-                driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
+                By button = By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup");
+                abs.waitUntilElementClickable(button).click();
             }
         }
     }
@@ -400,6 +401,7 @@ public class AppInstrumentDetailsPage {
         return abs.getDialogueValue(value);
     }
 
+
     public void selectOrderType(String orderType) {
         if (!(driver instanceof AndroidDriver)) {
             return;
@@ -407,29 +409,30 @@ public class AppInstrumentDetailsPage {
 
         String text = orderType.trim();
 
-        final By orderTypeDropdownBtn = By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup");
-
-        abs.waitUntilElementVisible(orderTypeDropdownBtn).click();
-
-        By optionTextLocator = By.xpath("//android.widget.TextView[@text=\"" + text + "\"]");
-        By optionContainerLocator = By.xpath(
-                "//android.widget.TextView[@text=\"" + text + "\"]/ancestor::android.view.ViewGroup[1]"
+        By orderTypeDropdownBtn = By.xpath(
+                "//android.widget.TextView[@text='Market Order']/parent::android.view.ViewGroup"
         );
 
+        By bottomSheet = AppiumBy.accessibilityId("Bottom Sheet");
+
+        By optionRow = By.xpath(
+                "//android.widget.TextView[@text=\"" + text + "\"]/parent::android.view.ViewGroup"
+        );
+
+        By optionText = By.xpath(
+                "//android.widget.TextView[@text=\"" + text + "\"]"
+        );
+
+        abs.clickWithRetry(orderTypeDropdownBtn, "order type dropdown", 3);
+        abs.waitUntilElementVisible(bottomSheet);
+
         try {
-            WebElement optionText = abs.waitUntilElementVisible(optionTextLocator);
-            optionText.click();
-            return;
-        } catch (Exception e1) {
-            try {
-                WebElement optionContainer = abs.waitUntilElementVisible(optionContainerLocator);
-                optionContainer.click();
-                return;
-            } catch (Exception e2) {
-                throw new TimeoutException("Unable to select order type: " + orderType, e2);
-            }
+            abs.clickWithRetry(optionRow, "order type option row: " + text, 3);
+        } catch (Exception e) {
+            abs.clickWithRetry(optionText, "order type option text: " + text, 3);
         }
     }
+
 
 
     public void selectStopLimitOption(String option) {

@@ -108,8 +108,8 @@ public class AppModifyOrderPage {
 
     public boolean getTextMessage(String messageContent) {
         if (driver instanceof AndroidDriver) {
+            abs.waitUntilElementFind(textMessagesAos.getFirst());
             for (WebElement ele : textMessagesAos) {
-                abs.waitUntilElementFind(ele);
                 if (ele.getText().equalsIgnoreCase(messageContent)) {
                     return true;
                 }
