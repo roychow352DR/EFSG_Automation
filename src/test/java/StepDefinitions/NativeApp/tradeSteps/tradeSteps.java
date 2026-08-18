@@ -165,12 +165,6 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees market order values are displayed correctly with the user input value on the position details page")
     public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_position_details_page() throws InterruptedException {
-        Thread.sleep(3000);
-//        for (String value : appPoManager.getAppTradeView().marketOrderConfirmationPageValues()) {
-//            Assert.assertEquals(appPoManager.getAppTradeView().getPositionValueWithRetry(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
-//                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
-//        }
-
         for (String value : appPoManager.getAppTradeView().marketOrderConfirmationPageValues()) {
             Assert.assertEquals(
                     appPoManager.getAppTradeView().getPositionValueByLabel(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
