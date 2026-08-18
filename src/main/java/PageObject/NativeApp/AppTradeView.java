@@ -290,36 +290,68 @@ public class AppTradeView {
         }
     }
 
+//    public String getPositionValueByLabel(String label, String symbolDecimal) {
+//        final int maxAttempts = 5;
+//
+//        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+//            try {
+//                String xml = driver.getPageSource();
+//                List<String> texts = abs.extractTextViewTexts(xml);
+//
+//                for (int i = 0; i < texts.size() - 1; i++) {
+//                    if (label.equals(texts.get(i))) {
+//                        String rawValue = texts.get(i + 1);
+//                        if (rawValue == null || rawValue.trim().isEmpty()) {
+//                            return null;
+//                        }
+//
+//                        rawValue = rawValue.trim();
+//
+//                        return isPriceLabel(label)
+//                                ? abs.normalizePriceToDecimals(rawValue, symbolDecimal)
+//                                : abs.normalizeDialogueValue(label, rawValue);
+//                    }
+//                }
+//
+//                return null;
+//
+//            } catch (Exception e) {
+//                if (attempt == maxAttempts) {
+//                    throw e;
+//                }
+//                abs.sleep(250);
+//            }
+//        }
+//
+//        return null;
+//    }
+
     public String getPositionValueByLabel(String label, String symbolDecimal) {
-        final int maxAttempts = 5;
+        By locator = By.xpath(
+                "//android.widget.TextView[@text=\"" + label + "\"]/following-sibling::android.widget.TextView[1]"
+        );
 
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+        int attempts = 3;
+
+        for (int i = 1; i <= attempts; i++) {
             try {
-                String xml = driver.getPageSource();
-                List<String> texts = abs.extractTextViewTexts(xml);
+                String rawValue = abs.waitUntilElementVisible(locator).getText();
 
-                for (int i = 0; i < texts.size() - 1; i++) {
-                    if (label.equals(texts.get(i))) {
-                        String rawValue = texts.get(i + 1);
-                        if (rawValue == null || rawValue.trim().isEmpty()) {
-                            return null;
-                        }
-
-                        rawValue = rawValue.trim();
-
-                        return isPriceLabel(label)
-                                ? abs.normalizePriceToDecimals(rawValue, symbolDecimal)
-                                : abs.normalizeDialogueValue(label, rawValue);
-                    }
+                if (rawValue == null || rawValue.trim().isEmpty()) {
+                    return null;
                 }
 
-                return null;
+                rawValue = rawValue.trim();
 
-            } catch (Exception e) {
-                if (attempt == maxAttempts) {
+                return isPriceLabel(label)
+                        ? abs.normalizePriceToDecimals(rawValue, symbolDecimal)
+                        : abs.normalizeDialogueValue(label, rawValue);
+
+            } catch (StaleElementReferenceException e) {
+                if (i == attempts) {
                     throw e;
                 }
-                abs.sleep(250);
+                abs.sleep(500);
             }
         }
 
@@ -441,7 +473,7 @@ public class AppTradeView {
     public void cancelOrder() {
         if (driver instanceof AndroidDriver) {
             abs.waitUntilElementClickable(crossButtonAos).click();
-            if (!AppSettingPage.isTradeConfirmNeeded) {
+            if (AppSettingPage.isTradeConfirmNeeded) {
                 abs.waitUntilElementClickable(cancelOrderButtonAos).click();
             } else {
                 throw new RuntimeException("Cancel order confirmation button did not appear.");

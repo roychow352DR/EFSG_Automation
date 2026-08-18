@@ -633,6 +633,21 @@ public class MobileAbstractComponents {
         }
     }
 
+    public void clickWithRetry(By locator, String name, int attempts) {
+        for (int i = 1; i <= attempts; i++) {
+            try {
+                WebElement element = waitUntilElementVisible(locator);
+                element.click();
+                return;
+            } catch (Exception e) {
+                if (i == attempts) {
+                    throw new TimeoutException("Failed to click " + name, e);
+                }
+                sleep(500);
+            }
+        }
+    }
+
 }
 
 
