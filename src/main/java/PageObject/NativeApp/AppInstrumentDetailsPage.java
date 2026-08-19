@@ -93,14 +93,20 @@ public class AppInstrumentDetailsPage {
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[10]")
     WebElement checkboxAos;
 
-    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[2]")
-    WebElement crossButtonAos;
+//    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[2]")
+//    WebElement crossButtonAos;
+//
+    private final By crossButtonAos = By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[2]");
 
-    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[12]")
-    WebElement closeMarketConfirmationBtnAos;
+//    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[12]")
+//    WebElement closeMarketConfirmationBtnAos;
 
-    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[14]")
-    WebElement closeLimitConfirmationBtnAos;
+    private final By closeMarketConfirmationBtnAos = By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[12]");
+
+//    @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[14]")
+//    WebElement closeLimitConfirmationBtnAos;
+
+    private final By closeLimitConfirmationBtnAos = By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[14]");
 
 
     public boolean getTextMessage(String messageContent) {
@@ -358,7 +364,7 @@ public class AppInstrumentDetailsPage {
             } else if (buttonName.equalsIgnoreCase("Don't Show Again")) {
                 checkboxAos.click();
             } else if (buttonName.equalsIgnoreCase("Cross")) {
-                crossButtonAos.click();
+                abs.waitUntilElementClickable(crossButtonAos).click();
             } else if (buttonName.equalsIgnoreCase("x")) {
                 closeConfirmation();
             } else {
@@ -413,7 +419,7 @@ public class AppInstrumentDetailsPage {
                 "//android.widget.TextView[@text='Market Order']/parent::android.view.ViewGroup"
         );
 
-        By bottomSheet = AppiumBy.accessibilityId("Bottom Sheet");
+  //      By bottomSheet = AppiumBy.accessibilityId("Bottom Sheet");
 
         By optionRow = By.xpath(
                 "//android.widget.TextView[@text=\"" + text + "\"]/parent::android.view.ViewGroup"
@@ -424,7 +430,7 @@ public class AppInstrumentDetailsPage {
         );
 
         abs.clickWithRetry(orderTypeDropdownBtn, "order type dropdown", 3);
-        abs.waitUntilElementVisible(bottomSheet);
+    //    abs.waitUntilElementVisible(bottomSheet);
 
         try {
             abs.clickWithRetry(optionRow, "order type option row: " + text, 3);
@@ -572,19 +578,17 @@ public class AppInstrumentDetailsPage {
 
     public void tapCross() {
         if (driver instanceof AndroidDriver) {
-            crossButtonAos.click();
+            abs.waitUntilElementClickable(crossButtonAos).click();
         }
     }
 
     public void closeConfirmation() {
         if (driver instanceof AndroidDriver) {
             if (AppInstrumentDetailsPage.stopOrderType.isEmpty()) {
-                abs.waitUntilElementClickable(closeMarketConfirmationBtnAos);
-                closeMarketConfirmationBtnAos.click();
+                abs.waitUntilElementClickable(closeMarketConfirmationBtnAos).click();
             }
             else {
-                abs.waitUntilElementClickable(closeLimitConfirmationBtnAos);
-                closeLimitConfirmationBtnAos.click();
+                abs.waitUntilElementClickable(closeLimitConfirmationBtnAos).click();
             }
         }
     }

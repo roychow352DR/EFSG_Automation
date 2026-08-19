@@ -1,6 +1,6 @@
 Feature: Native App trade
 
-    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
+    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro @AppTest
     Scenario: Prompted error message upon the TPSL pending order is modified with unacceptable range of stop loss price
       Given the user launch the app
       And the user login as username "autol3" and password "Test1234@" on App login page
