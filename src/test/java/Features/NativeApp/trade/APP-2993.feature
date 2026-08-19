@@ -1,6 +1,6 @@
 Feature: Native App trade
 
-    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
+    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro @AppTest
     Scenario: Back to new order creation page after the trade confirmation dialogue of market order is closed
       Given the user launch the app
       And the user login as username "autol3" and password "Test1234@" on App login page

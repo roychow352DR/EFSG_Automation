@@ -165,6 +165,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees market order values are displayed correctly with the user input value on the position details page")
     public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_position_details_page() throws InterruptedException {
+        Thread.sleep(3000);
         for (String value : appPoManager.getAppTradeView().marketOrderConfirmationPageValues()) {
             Assert.assertEquals(
                     appPoManager.getAppTradeView().getPositionValueByLabel(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
@@ -316,6 +317,7 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_the_price_is_populate_to_the_input_field_on_the_edit_position_page(String inputField) {
         Assert.assertNotNull(appPoManager.getAppEditPositionPage().getInputFieldValue(inputField));
         appPoManager.getAppTradeView().tapBack();
+        appPoManager.getAppTradeView().selectTab("Positions");
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -490,7 +492,7 @@ public class tradeSteps extends BaseTest {
     @Then("the user sees {string} checkbox is unchecked on the confirmation pop up")
     public void the_user_sees_checkbox_is_unchecked_on_the_confirmation_pop_up(String checkboxLabel) {
         Assert.assertFalse(appPoManager.getAppInstrumentDetailsPage().getCheckboxStatus(checkboxLabel));
-        appPoManager.getAppInstrumentDetailsPage().tapCross();
+        appPoManager.getAppInstrumentDetailsPage().closeConfirmation();
     }
 
     @And("the user toggles off trade confirmation on the app setting page")
