@@ -585,9 +585,11 @@ public class AppInstrumentDetailsPage {
     public void closeConfirmation() {
         if (driver instanceof AndroidDriver) {
             if (AppInstrumentDetailsPage.stopOrderType.isEmpty()) {
+                abs.waitUntilElementVisible(closeMarketConfirmationBtnAos);
                 abs.waitUntilElementClickable(closeMarketConfirmationBtnAos).click();
             }
             else {
+                abs.waitUntilElementVisible(closeMarketConfirmationBtnAos);
                 abs.waitUntilElementClickable(closeLimitConfirmationBtnAos).click();
             }
         }
