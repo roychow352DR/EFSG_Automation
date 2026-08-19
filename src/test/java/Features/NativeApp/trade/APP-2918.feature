@@ -1,6 +1,6 @@
 Feature: Native App trade
 
-    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
+    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro @AppTest
     Scenario: User sees an error message on edit position when the stop loss price of sell order is smaller than current price plus BS point
       Given the user launch the app
       And the user login as username "autol3" and password "Test1234@" on App login page
