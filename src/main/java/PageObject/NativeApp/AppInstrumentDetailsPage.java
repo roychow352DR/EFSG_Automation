@@ -589,7 +589,7 @@ public class AppInstrumentDetailsPage {
                 abs.waitUntilElementClickable(closeMarketConfirmationBtnAos).click();
             }
             else {
-                abs.waitUntilElementVisible(closeMarketConfirmationBtnAos);
+                abs.waitUntilElementVisible(closeLimitConfirmationBtnAos);
                 abs.waitUntilElementClickable(closeLimitConfirmationBtnAos).click();
             }
         }

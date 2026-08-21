@@ -1,6 +1,7 @@
 package PageObject.NativeApp;
 
 import AbstractComponent.MobileAbstractComponents;
+import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
@@ -9,16 +10,34 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import io.appium.java_client.AppiumBy;
+import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.GetPageElement;
+
+import java.time.Duration;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AppTradeView {
 
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
+    private final GetPageElement getPageElement;
     public static String stopLossPrice;
     public static String stopOrderPrice;
     public static String stopOrderType;
@@ -38,6 +57,8 @@ public class AppTradeView {
         this.driver = driver;
         abs = new MobileAbstractComponents(driver);
         PageFactory.initElements(driver, this);
+        this.getPageElement = new GetPageElement(driver);
+
     }
 
     @FindBy(xpath = "//android.widget.TextView[@text=\"BUY\"]/parent::android.view.ViewGroup")
@@ -326,64 +347,31 @@ public class AppTradeView {
 //        return null;
 //    }
 
+
     public String getPositionValueByLabel(String label, String symbolDecimal) {
-        By locator = By.xpath(
-                "//android.widget.TextView[@text=\"" + label + "\"]/following-sibling::android.widget.TextView[1]"
-        );
+        String uiLabel = getPageElement.mapUiLabel(label);
 
-        int attempts = 3;
+        String rawValue = getPageElement.findValueByFollowingSibling(uiLabel);
 
-        for (int i = 1; i <= attempts; i++) {
-            try {
-                String rawValue = abs.waitUntilElementVisible(locator).getText();
-
-                if (rawValue == null || rawValue.trim().isEmpty()) {
-                    return null;
-                }
-
-                rawValue = rawValue.trim();
-
-                return isPriceLabel(label)
-                        ? abs.normalizePriceToDecimals(rawValue, symbolDecimal)
-                        : abs.normalizeDialogueValue(label, rawValue);
-
-            } catch (StaleElementReferenceException e) {
-                if (i == attempts) {
-                    throw e;
-                }
-                abs.sleep(500);
-            }
+        if (rawValue == null || rawValue.isBlank()) {
+            rawValue = getPageElement.findValueByFollowingSiblingScoped(uiLabel);
         }
 
-        return null;
-    }
-
-    private boolean isPriceLabel(String label) {
-        return label.equalsIgnoreCase("Take Profit Price")
-                || label.equalsIgnoreCase("Stop Loss Price");
-    }
-
-    private boolean isKnownLabel(String text) {
-        for (String knownLabel : marketOrderConfirmationPageValues()) {
-            if (knownLabel.equalsIgnoreCase(text)) {
-                return true;
-            }
+        if (rawValue == null || rawValue.isBlank()) {
+            rawValue = getPageElement.findValueFromPageSource(uiLabel);
         }
-        return false;
+
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new NoSuchElementException("Could not find value in hierarchy for label: " + uiLabel);
+        }
+
+        getPageElement.logInfo("Resolved raw value for " + uiLabel + ": " + rawValue);
+
+        return getPageElement.normalizeByLabel(label, rawValue.trim(), symbolDecimal);
     }
 
-    public String getPositionValueWithRetry(String value, String symbolDecimal) {
-        int attempts = 3;
-        while (attempts-- > 0) {
-            try {
-                return getPositionValue(value, symbolDecimal); // the snapshot version above
-            } catch (StaleElementReferenceException e) {
-                if (attempts == 0) throw e;
-                // small pause or just retry
-            }
-        }
-        return null;
-    }
+
+
 
     public String getValidationValue(String label) {
         return switch (label) {
