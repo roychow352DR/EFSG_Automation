@@ -16,7 +16,7 @@ import java.io.IOException;
 
 public class loginSteps extends BaseTest {
     public static AppPOManager appPOManager;
-    private AppiumDriver driver;
+    public static AppiumDriver driver;
 
     @Given("the user launch the app")
     public void the_user_launch_the_app() throws IOException, InterruptedException {
