@@ -1,15 +1,18 @@
 package PageObject.NativeApp;
 
 import AbstractComponent.MobileAbstractComponents;
-import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.GetPageElement;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -19,6 +22,7 @@ public class AppInstrumentDetailsPage {
 
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
+    private final GetPageElement getPageElement;
     public static String stopLossPrice;
     public static String stopOrderPrice;
     public static String stopOrderType = "";
@@ -35,6 +39,7 @@ public class AppInstrumentDetailsPage {
         this.driver = driver;
         PageFactory.initElements(new AppiumFieldDecorator(driver, Duration.ofSeconds(10)), this);
         this.abs = new MobileAbstractComponents(driver);
+        this.getPageElement = new GetPageElement(driver);
     }
 
 
@@ -407,6 +412,29 @@ public class AppInstrumentDetailsPage {
         return abs.getDialogueValue(value);
     }
 
+    public String getDetailValue(String label, String symbolDecimal) {
+        String uiLabel = getPageElement.mapUiLabel(label);
+
+        String rawValue = getPageElement.findValueByFollowingSibling(uiLabel);
+
+        if (rawValue == null || rawValue.isBlank()) {
+            rawValue = getPageElement.findValueByFollowingSiblingScoped(uiLabel);
+        }
+
+        if (rawValue == null || rawValue.isBlank()) {
+            rawValue = getPageElement.findValueFromPageSource(uiLabel);
+        }
+
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new NoSuchElementException("Could not find value in hierarchy for label: " + uiLabel);
+        }
+
+        getPageElement.logInfo("Resolved raw value for " + uiLabel + ": " + rawValue);
+
+        return getPageElement.normalizeByLabel(label, rawValue.trim(), symbolDecimal);
+    }
+
+
 
     public void selectOrderType(String orderType) {
         if (!(driver instanceof AndroidDriver)) {
@@ -414,29 +442,76 @@ public class AppInstrumentDetailsPage {
         }
 
         String text = orderType.trim();
+        openOrderTypePicker(text);
+        clickOrderTypeOption(text);
+    }
 
-        By orderTypeDropdownBtn = By.xpath(
-                "//android.widget.TextView[@text='Market Order']/parent::android.view.ViewGroup"
+    private void openOrderTypePicker(String optionText) {
+        By[] dropdownLocators = {
+                By.xpath("//android.widget.TextView[@text='Market Order']/ancestor::android.view.ViewGroup[@clickable='true'][1]"),
+                By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup"),
+                By.xpath("//android.widget.TextView[@text='Order']/parent::android.view.ViewGroup"),
+                By.xpath("//android.widget.TextView[@text='Market Order']")
+        };
+
+        for (By locator : dropdownLocators) {
+            try {
+                WebElement dropdown = new WebDriverWait(driver, Duration.ofSeconds(8))
+                        .until(ExpectedConditions.visibilityOfElementLocated(locator));
+                abs.tapElement(dropdown);
+                if (isOrderTypeOptionVisible(optionText)) {
+                    return;
+                }
+                dropdown.click();
+                if (isOrderTypeOptionVisible(optionText)) {
+                    return;
+                }
+            } catch (Exception ignored) {
+                // try the next locator
+            }
+        }
+
+        throw new TimeoutException("Failed to open order type dropdown");
+    }
+
+    private boolean isOrderTypeOptionVisible(String optionText) {
+        By exact = By.xpath("//android.widget.TextView[@text=\"" + optionText + "\"]");
+        By containsLimitStop = By.xpath(
+                "//android.widget.TextView[contains(@text,'Limit') and contains(@text,'Stop')]"
         );
-
-  //      By bottomSheet = AppiumBy.accessibilityId("Bottom Sheet");
-
-        By optionRow = By.xpath(
-                "//android.widget.TextView[@text=\"" + text + "\"]/parent::android.view.ViewGroup"
-        );
-
-        By optionText = By.xpath(
-                "//android.widget.TextView[@text=\"" + text + "\"]"
-        );
-
-        abs.clickWithRetry(orderTypeDropdownBtn, "order type dropdown", 3);
-    //    abs.waitUntilElementVisible(bottomSheet);
 
         try {
-            abs.clickWithRetry(optionRow, "order type option row: " + text, 3);
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(ExpectedConditions.or(
+                            ExpectedConditions.visibilityOfElementLocated(exact),
+                            ExpectedConditions.visibilityOfElementLocated(containsLimitStop)
+                    ));
+            return true;
         } catch (Exception e) {
-            abs.clickWithRetry(optionText, "order type option text: " + text, 3);
+            return false;
         }
+    }
+
+    private void clickOrderTypeOption(String text) {
+        By[] optionLocators = {
+                By.xpath("//android.widget.TextView[@text=\"" + text + "\"]/parent::android.view.ViewGroup"),
+                By.xpath("//android.widget.TextView[@text=\"" + text + "\"]"),
+                By.xpath("//android.widget.TextView[contains(@text,'Limit') and contains(@text,'Stop')]")
+        };
+
+        Exception lastError = null;
+        for (By locator : optionLocators) {
+            try {
+                WebElement option = new WebDriverWait(driver, Duration.ofSeconds(8))
+                        .until(ExpectedConditions.visibilityOfElementLocated(locator));
+                abs.tapElement(option);
+                return;
+            } catch (Exception e) {
+                lastError = e;
+            }
+        }
+
+        throw new TimeoutException("Failed to click order type option text: " + text, lastError);
     }
 
 
@@ -583,16 +658,32 @@ public class AppInstrumentDetailsPage {
     }
 
     public void closeConfirmation() {
-        if (driver instanceof AndroidDriver) {
-            if (AppInstrumentDetailsPage.stopOrderType.isEmpty()) {
-                abs.waitUntilElementVisible(closeMarketConfirmationBtnAos);
-                abs.waitUntilElementClickable(closeMarketConfirmationBtnAos).click();
-            }
-            else {
-                abs.waitUntilElementVisible(closeLimitConfirmationBtnAos);
-                abs.waitUntilElementClickable(closeLimitConfirmationBtnAos).click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+
+        abs.waitUntilElementVisible(By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]"));
+
+        By[] closeButtons = {
+                By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[last()]"),
+                closeMarketConfirmationBtnAos,
+                closeLimitConfirmationBtnAos,
+                crossButtonAos
+        };
+
+        Exception lastError = null;
+        for (By locator : closeButtons) {
+            try {
+                WebElement closeBtn = new WebDriverWait(driver, Duration.ofSeconds(8))
+                        .until(ExpectedConditions.visibilityOfElementLocated(locator));
+                abs.tapElement(closeBtn);
+                return;
+            } catch (Exception e) {
+                lastError = e;
             }
         }
+
+        throw new TimeoutException("Failed to close confirmation overlay", lastError);
     }
 
     public boolean getTpslToggleStatus() {
