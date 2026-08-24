@@ -415,7 +415,11 @@ public class AppInstrumentDetailsPage {
     public String getDetailValue(String label, String symbolDecimal) {
         String uiLabel = getPageElement.mapUiLabel(label);
 
-        String rawValue = getPageElement.findValueByFollowingSibling(uiLabel);
+        String rawValue = getPageElement.findValueOnSameRow(uiLabel);
+
+        if (rawValue == null || rawValue.isBlank()) {
+            rawValue = getPageElement.findValueByFollowingSibling(uiLabel);
+        }
 
         if (rawValue == null || rawValue.isBlank()) {
             rawValue = getPageElement.findValueByFollowingSiblingScoped(uiLabel);
