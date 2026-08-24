@@ -40,6 +40,7 @@ public class AppSettingPage {
             }
             else {
                 System.out.println("Trade Confirmation has already been disabled");
+                isTradeConfirmNeeded = false;
             }
         }
     }
