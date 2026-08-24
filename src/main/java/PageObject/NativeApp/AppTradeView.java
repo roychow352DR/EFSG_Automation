@@ -120,13 +120,14 @@ public class AppTradeView {
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.widget.TextView")
     List<WebElement> openPositionRecordDetailsAos;
 
-    @FindBy(xpath = "//android.widget.HorizontalScrollView/android.view.ViewGroup/android.view.View[2]")
-    WebElement positionsTabAos;
+
+    private final By positionsTabAos = By.xpath("//android.widget.HorizontalScrollView/android.view.ViewGroup/android.view.View[2]");
 
 
 
     public void selectDirection(String direction) {
         selectedDirection = direction;
+        AppInstrumentDetailsPage.stopOrderType = "";
         if (driver instanceof AndroidDriver) {
             switch (direction) {
                 case "BUY" -> buyButtonAos.click();
@@ -262,6 +263,28 @@ public class AppTradeView {
         }
         throw new RuntimeException("Unable to get texts from TextViews");
 
+    }
+
+    public String getDetailValue(String label, String symbolDecimal) {
+        String uiLabel = getPageElement.mapUiLabel(label);
+
+        String rawValue = getPageElement.findValueByFollowingSibling(uiLabel);
+
+        if (rawValue == null || rawValue.isBlank()) {
+            rawValue = getPageElement.findValueByFollowingSiblingScoped(uiLabel);
+        }
+
+        if (rawValue == null || rawValue.isBlank()) {
+            rawValue = getPageElement.findValueFromPageSource(uiLabel);
+        }
+
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new NoSuchElementException("Could not find value in hierarchy for label: " + uiLabel);
+        }
+
+        getPageElement.logInfo("Resolved raw value for " + uiLabel + ": " + rawValue);
+
+        return getPageElement.normalizeByLabel(label, rawValue.trim(), symbolDecimal);
     }
 
     public String getPositionValue(String value, String symbolDecimal) {
@@ -610,8 +633,7 @@ public class AppTradeView {
         if (driver instanceof AndroidDriver) {
             switch (tabName) {
                 case "Positions" -> {
-                    abs.waitUntilElementClickable(positionsTabAos);
-                    positionsTabAos.click();
+                    abs.waitUntilElementClickable(positionsTabAos).click();
                 }
             }
         }

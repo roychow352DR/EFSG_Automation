@@ -149,7 +149,7 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_confirmation_pop_up() throws InterruptedException {
         Thread.sleep(3000);
         for (String value : appPoManager.getAppInstrumentDetailsPage().marketOrderConfirmationPageValues()) {
-            Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getDetailValue(value),
+            Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getDetailValue(value,tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
                     appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
         }
         appPoManager.getAppInstrumentDetailsPage().closeConfirmation();
@@ -464,7 +464,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees the value {string} is edited on the pending order details page")
     public void the_user_sees_the_value_is_edited_on_the_pending_order_details_page(String value) throws InterruptedException {
-        Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value), AppModifyOrderPage.editPrice);
+        Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value,tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)), AppModifyOrderPage.editPrice);
         appPoManager.getAppTradeView().cancelPendingOrderInDetail();
     }
 
