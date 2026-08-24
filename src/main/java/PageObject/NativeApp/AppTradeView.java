@@ -268,7 +268,11 @@ public class AppTradeView {
     public String getDetailValue(String label, String symbolDecimal) {
         String uiLabel = getPageElement.mapUiLabel(label);
 
-        String rawValue = getPageElement.findValueByFollowingSibling(uiLabel);
+        String rawValue = getPageElement.findValueOnSameRow(uiLabel);
+
+        if (rawValue == null || rawValue.isBlank()) {
+            rawValue = getPageElement.findValueByFollowingSibling(uiLabel);
+        }
 
         if (rawValue == null || rawValue.isBlank()) {
             rawValue = getPageElement.findValueByFollowingSiblingScoped(uiLabel);
@@ -372,17 +376,9 @@ public class AppTradeView {
 
 
     public String getPositionValueByLabel(String label, String symbolDecimal) {
-        String uiLabel = getPageElement.mapUiLabel(label);
+        String uiLabel = getPageElement.mapPositionDetailsLabel(label);
 
-        String rawValue = getPageElement.findValueByFollowingSibling(uiLabel);
-
-        if (rawValue == null || rawValue.isBlank()) {
-            rawValue = getPageElement.findValueByFollowingSiblingScoped(uiLabel);
-        }
-
-        if (rawValue == null || rawValue.isBlank()) {
-            rawValue = getPageElement.findValueFromPageSource(uiLabel);
-        }
+        String rawValue = getPageElement.resolveLabelValue(uiLabel);
 
         if (rawValue == null || rawValue.isBlank()) {
             throw new NoSuchElementException("Could not find value in hierarchy for label: " + uiLabel);
@@ -487,7 +483,7 @@ public class AppTradeView {
             if (AppSettingPage.isTradeConfirmNeeded) {
                 abs.waitUntilElementClickable(cancelOrderButtonAos).click();
             } else {
-                throw new RuntimeException("Cancel order confirmation button did not appear.");
+                System.out.println("Pending order cancelled");
             }
 
         }
