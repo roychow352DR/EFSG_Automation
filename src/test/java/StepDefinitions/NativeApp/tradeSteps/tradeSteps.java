@@ -1,6 +1,5 @@
 package StepDefinitions.NativeApp.tradeSteps;
 
-import Data.PositionDetail;
 import Data.TradeRecord;
 import Data.TradeSymbolConfig;
 import PageObject.NativeApp.*;
@@ -18,7 +17,6 @@ public class tradeSteps extends BaseTest {
     AppPOManager appPoManager = loginSteps.appPOManager;
     TradeSymbolConfig tradeSymbolConfig = new TradeSymbolConfig();
     TradeRecord tradeRecord = new TradeRecord(appPoManager);
-    PositionDetail positionDetail = new PositionDetail(loginSteps.driver);
 
     @When("the user taps symbol on the app markets page")
     public void the_user_taps_symbol_on_the_app_markets_page() throws IOException {
