@@ -373,7 +373,24 @@ public class GetPageElement {
     }
 
     private String nextKnownLabel(String uiLabel) {
-        List<String> order = Arrays.asList(
+        String source;
+        try {
+            source = driver.getPageSource();
+        } catch (Exception e) {
+            return null;
+        }
+
+        String marker = "text=\"" + uiLabel + "\"";
+        int from = source.indexOf(marker);
+        if (from < 0) {
+            return null;
+        }
+
+        int searchFrom = from + marker.length();
+        String nearest = null;
+        int nearestPos = Integer.MAX_VALUE;
+
+        List<String> labels = Arrays.asList(
                 "Product",
                 "Product Name",
                 "Account",
@@ -384,18 +401,29 @@ public class GetPageElement {
                 "Open Price",
                 "Current Price",
                 "Initial Margin",
+                "Estimated Margin",
                 "Floating P/L",
                 "Take Profit Price",
                 "Stop Loss Price",
                 "Interest",
                 "Open Position Time",
-                "Position ID"
+                "Order Time",
+                "Position ID",
+                "Validity",
+                "Target Price"
         );
-        int index = order.indexOf(uiLabel);
-        if (index < 0 || index >= order.size() - 1) {
-            return null;
+
+        for (String label : labels) {
+            if (label.equals(uiLabel)) {
+                continue;
+            }
+            int pos = source.indexOf("text=\"" + label + "\"", searchFrom);
+            if (pos >= 0 && pos < nearestPos) {
+                nearestPos = pos;
+                nearest = label;
+            }
         }
-        return order.get(index + 1);
+        return nearest;
     }
 
     public String findValueByFollowingSibling(String uiLabel) {
