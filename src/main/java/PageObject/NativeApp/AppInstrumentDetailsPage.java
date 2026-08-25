@@ -35,6 +35,20 @@ public class AppInstrumentDetailsPage {
     public static String estMargin;
     public static boolean SCROLLED = false;
 
+    public static void resetCapturedOrderValues() {
+        stopLossPrice = null;
+        stopOrderPrice = null;
+        stopOrderType = "";
+        takeProfitPrice = null;
+        selectedDirection = null;
+        lotSize = null;
+        executedPrice = null;
+        validity = null;
+        editPrice = null;
+        estMargin = null;
+        SCROLLED = false;
+    }
+
     public AppInstrumentDetailsPage(AppiumDriver driver) {
         this.driver = driver;
         PageFactory.initElements(new AppiumFieldDecorator(driver, Duration.ofSeconds(10)), this);
