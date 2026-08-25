@@ -2,6 +2,10 @@ package StepDefinitions;
 
 import Data.QASEConfig;
 import Data.GlobalConfig;
+import PageObject.NativeApp.AppEditPositionPage;
+import PageObject.NativeApp.AppInstrumentDetailsPage;
+import PageObject.NativeApp.AppModifyOrderPage;
+import PageObject.NativeApp.AppTradeView;
 import io.appium.java_client.InteractsWithApps;
 import io.cucumber.java.*;
 import org.openqa.selenium.NoSuchSessionException;
@@ -85,7 +89,14 @@ public class Hooks extends BaseTest {
         position = 1;
         scenarioFeatureSteps = getFeatureScenarioSteps(scenario);
         scenarioHasFailedStep = false;
+        resetNativeAppCapturedState();
+    }
 
+    private void resetNativeAppCapturedState() {
+        AppInstrumentDetailsPage.resetCapturedOrderValues();
+        AppTradeView.resetCapturedOrderValues();
+        AppEditPositionPage.resetCapturedOrderValues();
+        AppModifyOrderPage.resetCapturedOrderValues();
     }
 
     /**
@@ -269,6 +280,7 @@ public class Hooks extends BaseTest {
 
     @After
     public void tearDown(Scenario scenario) throws IOException, InterruptedException {
+        resetNativeAppCapturedState();
         if (productType.equalsIgnoreCase("app")) {
             handleVideoRecording(scenario);
             cleanupDriver();
