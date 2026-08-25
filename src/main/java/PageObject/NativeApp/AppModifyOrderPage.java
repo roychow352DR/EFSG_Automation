@@ -22,6 +22,11 @@ public class AppModifyOrderPage {
     public static String editPrice;
     public static boolean SCROLLED = false;
 
+    public static void resetCapturedOrderValues() {
+        editPrice = null;
+        SCROLLED = false;
+    }
+
     public AppModifyOrderPage(AppiumDriver driver) {
         this.driver = driver;
         this.abs = new MobileAbstractComponents(driver);

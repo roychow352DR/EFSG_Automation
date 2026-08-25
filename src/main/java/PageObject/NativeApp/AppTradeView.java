@@ -52,6 +52,21 @@ public class AppTradeView {
     public static int positionsCount = 0;
     public static int pendingOrdersCount = 0;
 
+    public static void resetCapturedOrderValues() {
+        stopLossPrice = null;
+        stopOrderPrice = null;
+        stopOrderType = null;
+        takeProfitPrice = null;
+        selectedDirection = null;
+        lotSize = null;
+        executedPrice = null;
+        openPositionOpenPrice = null;
+        openOrderTargetPrice = null;
+        validity = null;
+        editPrice = null;
+        positionsCount = 0;
+        pendingOrdersCount = 0;
+    }
 
     public AppTradeView(AppiumDriver driver) {
         this.driver = driver;
@@ -127,13 +142,25 @@ public class AppTradeView {
 
     public void selectDirection(String direction) {
         selectedDirection = direction;
-        AppInstrumentDetailsPage.stopOrderType = "";
+        resetLeftoverTpslValues();
         if (driver instanceof AndroidDriver) {
             switch (direction) {
                 case "BUY" -> buyButtonAos.click();
                 case "SELL" -> sellButtonAos.click();
             }
         }
+    }
+
+    private void resetLeftoverTpslValues() {
+        AppInstrumentDetailsPage.stopOrderType = "";
+        AppInstrumentDetailsPage.stopLossPrice = null;
+        AppInstrumentDetailsPage.takeProfitPrice = null;
+        AppInstrumentDetailsPage.stopOrderPrice = null;
+        AppInstrumentDetailsPage.SCROLLED = false;
+        stopLossPrice = null;
+        takeProfitPrice = null;
+        stopOrderType = null;
+        stopOrderPrice = null;
     }
 
 
