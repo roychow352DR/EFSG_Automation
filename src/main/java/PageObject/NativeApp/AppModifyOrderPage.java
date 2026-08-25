@@ -69,15 +69,7 @@ public class AppModifyOrderPage {
     }
 
     private WebElement priceField(String priceType) {
-        String labelToken = switch (priceType) {
-            case "Stop Loss" -> "Stop Loss";
-            case "Take Profit" -> "Take Profit";
-            default -> "Price (";
-        };
-
-        WebElement label = abs.waitUntilElementVisible(
-                By.xpath("//android.widget.TextView[contains(@text,\"" + labelToken + "\")]")
-        );
+        WebElement label = priceLabel(priceType);
         int[] labelBounds = parseBounds(label.getAttribute("bounds"));
 
         WebElement closest = null;
@@ -106,6 +98,33 @@ public class AppModifyOrderPage {
             );
         }
         return closest;
+    }
+
+    private WebElement priceLabel(String priceType) {
+        String labelToken = switch (priceType) {
+            case "Stop Loss" -> "Stop Loss";
+            case "Take Profit" -> "Take Profit";
+            default -> "Price (";
+        };
+
+        abs.waitUntilElementVisible(
+                By.xpath("//android.widget.TextView[contains(@text,\"" + labelToken + "\")]")
+        );
+
+        WebElement fieldLabel = null;
+        for (WebElement el : driver.findElements(
+                By.xpath("//android.widget.TextView[contains(@text,\"" + labelToken + "\")]"))) {
+            String text = el.getText() == null ? "" : el.getText().trim();
+            if (text.contains("&") || text.toLowerCase().contains(" and ")) {
+                continue;
+            }
+            fieldLabel = el;
+        }
+
+        if (fieldLabel == null) {
+            throw new NoSuchElementException("Could not find field label for price type: " + priceType);
+        }
+        return fieldLabel;
     }
 
     private int[] parseBounds(String bounds) {
