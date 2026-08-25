@@ -20,6 +20,11 @@ public class AppEditPositionPage {
     public static String stopLossPrice;
     public static String takeProfitPrice;
 
+    public static void resetCapturedOrderValues() {
+        stopLossPrice = null;
+        takeProfitPrice = null;
+    }
+
     public AppEditPositionPage(AppiumDriver driver) {
         this.driver = driver;
         abs = new MobileAbstractComponents(driver);
