@@ -5,12 +5,15 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AppModifyOrderPage {
 
@@ -24,9 +27,6 @@ public class AppModifyOrderPage {
         this.abs = new MobileAbstractComponents(driver);
         PageFactory.initElements(new AppiumFieldDecorator(driver, Duration.ofSeconds(10)), this);
     }
-
-    @FindBy(className = "android.widget.EditText")
-    List<WebElement> editTextFieldAos;
 
     @FindBy(className = "android.widget.TextView")
     List<WebElement> textMessagesAos;
@@ -46,25 +46,13 @@ public class AppModifyOrderPage {
     public String getEditPrice(String direction, String decimal, String priceType, int value) {
         String price = "";
         if (driver instanceof AndroidDriver) {
+            float current = Float.parseFloat(priceField(priceType).getText());
             if (priceType.equalsIgnoreCase("Stop Limit")) {
-                switch (direction) {
-                    case "BUY" ->
-                            price = Float.toString(Float.parseFloat(editTextFieldAos.getFirst().getText()) + value);
-                    case "SELL" ->
-                            price = Float.toString(Float.parseFloat(editTextFieldAos.getFirst().getText()) - value);
-                }
+                price = Float.toString(direction.equalsIgnoreCase("BUY") ? current + value : current - value);
             } else if (priceType.equalsIgnoreCase("Stop Loss")) {
-                switch (direction) {
-                    case "BUY" -> price = Float.toString(Float.parseFloat(editTextFieldAos.get(1).getText()) - value);
-                    case "SELL" -> price = Float.toString(Float.parseFloat(editTextFieldAos.get(1).getText()) + value);
-                }
+                price = Float.toString(direction.equalsIgnoreCase("BUY") ? current - value : current + value);
             } else {
-                switch (direction) {
-                    case "BUY" ->
-                            price = Float.toString(Float.parseFloat(editTextFieldAos.getLast().getText()) + value);
-                    case "SELL" ->
-                            price = Float.toString(Float.parseFloat(editTextFieldAos.getLast().getText()) - value);
-                }
+                price = Float.toString(direction.equalsIgnoreCase("BUY") ? current + value : current - value);
             }
         }
         editPrice = abs.normalizePriceToDecimals(price, decimal);
@@ -73,26 +61,67 @@ public class AppModifyOrderPage {
 
     public void editTextField(String priceType, String direction, String decimal, int value) {
         if (driver instanceof AndroidDriver) {
-            switch (priceType) {
-                case "Stop Loss" -> {
-                    String editStopLossPrice = getEditPrice(direction, decimal, priceType, value);
-                    editTextFieldAos.get(1).clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), editStopLossPrice);
-                }
-                case "Stop Limit" -> {
-                    String editStopLimitPrice = getEditPrice(direction, decimal, priceType, value);
-                    editTextFieldAos.getFirst().clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), editStopLimitPrice);
-                }
-                case "Take Profit" -> {
-                    // WebElement takeProfitField = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,'Take Profit')]"));
-                    //  abs.swipeUntilElementVisible(driver,takeProfitField,5);
-                    String editTakeProfitPrice = getEditPrice(direction, decimal, priceType, value);
-                    editTextFieldAos.getLast().clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getLast(), editTakeProfitPrice);
-                }
+            String editedPrice = getEditPrice(direction, decimal, priceType, value);
+            WebElement field = priceField(priceType);
+            field.clear();
+            abs.typeWithAndroidKeys((AndroidDriver) driver, field, editedPrice);
+        }
+    }
+
+    private WebElement priceField(String priceType) {
+        String labelToken = switch (priceType) {
+            case "Stop Loss" -> "Stop Loss";
+            case "Take Profit" -> "Take Profit";
+            default -> "Price (";
+        };
+
+        WebElement label = abs.waitUntilElementVisible(
+                By.xpath("//android.widget.TextView[contains(@text,\"" + labelToken + "\")]")
+        );
+        int[] labelBounds = parseBounds(label.getAttribute("bounds"));
+
+        WebElement closest = null;
+        int bestScore = Integer.MAX_VALUE;
+        for (WebElement field : driver.findElements(By.className("android.widget.EditText"))) {
+            int[] fieldBounds = parseBounds(field.getAttribute("bounds"));
+            if (labelBounds == null || fieldBounds == null) {
+                continue;
+            }
+            int labelCenterY = (labelBounds[1] + labelBounds[3]) / 2;
+            int fieldCenterY = (fieldBounds[1] + fieldBounds[3]) / 2;
+            int verticalGap = fieldCenterY - labelCenterY;
+            if (verticalGap < -20) {
+                continue;
+            }
+            int score = Math.abs(verticalGap) * 100 + Math.abs(fieldBounds[0] - labelBounds[0]);
+            if (score < bestScore) {
+                bestScore = score;
+                closest = field;
             }
         }
+
+        if (closest == null) {
+            throw new NoSuchElementException(
+                    "Could not find EditText for price type: " + priceType
+            );
+        }
+        return closest;
+    }
+
+    private int[] parseBounds(String bounds) {
+        if (bounds == null || bounds.isBlank()) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]").matcher(bounds);
+        if (!matcher.matches()) {
+            return null;
+        }
+        return new int[]{
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                Integer.parseInt(matcher.group(3)),
+                Integer.parseInt(matcher.group(4))
+        };
     }
 
     public void tapsButton(String buttonName) {
