@@ -461,6 +461,8 @@ public class MobileDriver {
         aosOptions.setCapability("appWaitActivity", mainActivity);
         aosOptions.setCapability("appWaitForLaunch", true);
         aosOptions.setCapability("appWaitDuration", 30000); // 30 seconds
+        aosOptions.setCapability("appium:autoAcceptAlerts", true);
+        aosOptions.setCapability("appium:autoDismissAlerts",true);
 
         aosOptions.setAutoGrantPermissions(true);
 
