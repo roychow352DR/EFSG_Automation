@@ -26,6 +26,7 @@ public class TradeRecord {
     }
 
     public void placePendingOrder(String direction, String orderType, TradeSymbolConfig tradeSymbolConfig) throws InterruptedException, IOException {
+        isOpenPosition = false;
         tapSymbol();
         selectDirection(direction);
         selectOrderType("Limit / Stop Order");
@@ -36,6 +37,7 @@ public class TradeRecord {
     }
 
     public void placePendingOrder(String direction, String orderType, TradeSymbolConfig tradeSymbolConfig,String symbol) throws InterruptedException, IOException {
+        isOpenPosition = false;
         tapSymbol(symbol);
         selectDirection(direction);
         selectOrderType("Limit / Stop Order");
@@ -46,6 +48,7 @@ public class TradeRecord {
     }
 
     public void placeTPSLPendingOrder(String direction, String orderType, TradeSymbolConfig tradeSymbolConfig) throws InterruptedException, IOException {
+        isOpenPosition = false;
         tapSymbol();
         selectDirection(direction);
         selectOrderType("Limit / Stop Order");
