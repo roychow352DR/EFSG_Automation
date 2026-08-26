@@ -323,29 +323,26 @@ public class AppInstrumentDetailsPage {
         if (driver instanceof AndroidDriver) {
             switch (textFieldName) {
                 case "Stop Loss" -> {
+                    String editedStopLoss;
                     if (direction.equalsIgnoreCase("BUY")) {
-                        String editBuyStopLossPrice = Float.toString(Float.parseFloat(getStopLossPrice(direction, decimal)) - 25);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, editBuyStopLossPrice);
+                        editedStopLoss = Float.toString(Float.parseFloat(getStopLossPrice(direction, decimal)) - 25);
+                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, editedStopLoss);
+                    } else {
+                        editedStopLoss = Float.toString(Float.parseFloat(getStopLossPrice(direction, decimal)) + 25);
+                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, editedStopLoss);
                     }
-                    else {
-                        String editSellStopLossPrice = Float.toString(Float.parseFloat(getStopLossPrice(direction, decimal)) + 25);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, editSellStopLossPrice);
-                    }
-                 //   abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, getStopLossPrice(direction,decimal));
-                    // stopLossEditFieldAos.sendKeys(getStopLossPrice(direction));
+                    stopLossPrice = abs.normalizePriceToDecimals(editedStopLoss, decimal);
                 }
                 case "Take Profit" -> {
+                    String editedTakeProfit;
                     if (direction.equalsIgnoreCase("BUY")) {
-                        String editBuyTakeProfitPrice = Float.toString(Float.parseFloat(getTakeProfitPrice(direction, decimal)) + 25);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, editBuyTakeProfitPrice);
+                        editedTakeProfit = Float.toString(Float.parseFloat(getTakeProfitPrice(direction, decimal)) + 25);
+                        abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, editedTakeProfit);
+                    } else {
+                        editedTakeProfit = Float.toString(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - 25);
+                        abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, editedTakeProfit);
                     }
-                    else {
-                        String editSellTakeProfitPrice = Float.toString(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - 25);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, editSellTakeProfitPrice);
-                    }
-                  //  abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, getTakeProfitPrice(direction, decimal));
-                    //   takeProfitEditFieldAos.sendKeys(getTakeProfitPrice(direction));
-
+                    takeProfitPrice = abs.normalizePriceToDecimals(editedTakeProfit, decimal);
                 }
                 case "Lot Size" -> editTextFieldAos.getFirst().sendKeys("0.45");
                 case "Price" -> {
@@ -382,9 +379,7 @@ public class AppInstrumentDetailsPage {
                 abs.waitUntilElementClickable(button).click();
             } else if (buttonName.equalsIgnoreCase("Don't Show Again")) {
                 checkboxAos.click();
-            } else if (buttonName.equalsIgnoreCase("Cross")) {
-                abs.waitUntilElementClickable(crossButtonAos).click();
-            } else if (buttonName.equalsIgnoreCase("x")) {
+            } else if (buttonName.equalsIgnoreCase("Cross") || buttonName.equalsIgnoreCase("x")) {
                 closeConfirmation();
             } else {
                 By button = By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup");
@@ -670,9 +665,7 @@ public class AppInstrumentDetailsPage {
     }
 
     public void tapCross() {
-        if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementClickable(crossButtonAos).click();
-        }
+        closeConfirmation();
     }
 
     public void closeConfirmation() {
