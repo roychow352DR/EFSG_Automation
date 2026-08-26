@@ -74,7 +74,11 @@ public class tradeSteps extends BaseTest {
     @And("the user taps button {string} on the confirmation pop up")
     public void the_user_taps_button_on_the_confirmation_pop_up(String buttonName) throws InterruptedException {
         Thread.sleep(500);
-        appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
+        if (!buttonName.equalsIgnoreCase("Don't Show Again")
+                && !buttonName.equalsIgnoreCase("Cross")
+                && !buttonName.equalsIgnoreCase("x")) {
+            appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
+        }
         appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(buttonName);
     }
 
@@ -88,11 +92,7 @@ public class tradeSteps extends BaseTest {
     @And("the user taps {string} cta button on the app trade view")
     public void the_user_taps_cta_button_on_the_app_trade_view(String buttonName) throws InterruptedException {
         Thread.sleep(3000);
-        if (TradeRecord.isOpenPosition) {
-            appPoManager.getAppTradeView().getOpenPositionOpenPrice();
-        } else {
-            appPoManager.getAppTradeView().getPendingOrderTargetPrice();
-        }
+        appPoManager.getAppTradeView().captureVisibleRowPrice();
         appPoManager.getAppTradeView().tapCtaButton(buttonName);
     }
 
@@ -490,7 +490,9 @@ public class tradeSteps extends BaseTest {
     }
 
     @Then("the user sees {string} checkbox is unchecked on the confirmation pop up")
-    public void the_user_sees_checkbox_is_unchecked_on_the_confirmation_pop_up(String checkboxLabel) {
+    public void the_user_sees_checkbox_is_unchecked_on_the_confirmation_pop_up(String checkboxLabel) throws InterruptedException {
+        //appPoManager.getAppInstrumentDetailsPage().tapsButton(AppTradeView.selectedDirection);
+        Thread.sleep(500);
         Assert.assertFalse(appPoManager.getAppInstrumentDetailsPage().getCheckboxStatus(checkboxLabel));
         appPoManager.getAppInstrumentDetailsPage().closeConfirmation();
     }

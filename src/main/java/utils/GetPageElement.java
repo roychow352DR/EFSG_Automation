@@ -5,8 +5,11 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -240,12 +243,22 @@ public class GetPageElement {
 
     public String resolveLabelValue(String uiLabel) {
         includeUnimportantViews();
+        waitForLabel(uiLabel);
 
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        for (int attempt = 1; attempt <= 5; attempt++) {
             try {
-                String value = findValueBetweenAdjacentLabels(uiLabel);
+                String value = findValueFromParentRow(uiLabel);
+                if (isBlank(value)) {
+                    value = findValueBetweenAdjacentLabels(uiLabel);
+                }
+                if (isBlank(value)) {
+                    value = findValueOnSameRowFromSource(uiLabel);
+                }
                 if (isBlank(value)) {
                     value = findValueOnSameRow(uiLabel);
+                }
+                if (isBlank(value)) {
+                    value = findValueFromSiblings(uiLabel);
                 }
                 if (isBlank(value)) {
                     value = findValueByFollowingSibling(uiLabel);
@@ -253,13 +266,33 @@ public class GetPageElement {
                 if (isBlank(value)) {
                     value = findValueByFollowingSiblingScoped(uiLabel);
                 }
-                return value;
+                if (isBlank(value)) {
+                    value = findValueFromPageSource(uiLabel);
+                }
+                if (isBlank(value)) {
+                    value = findPaintedRowValue(uiLabel);
+                }
+                if (!isBlank(value)) {
+                    return value;
+                }
             } catch (StaleElementReferenceException e) {
                 logWarn("Stale hierarchy while reading [" + uiLabel + "], retry " + attempt);
-                abs.sleep(250);
             }
+            abs.sleep(300);
         }
         return null;
+    }
+
+    private void waitForLabel(String uiLabel) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !d.findElements(
+                            By.xpath("//android.widget.TextView[@text=\"" + uiLabel + "\"]")
+                    ).isEmpty());
+        } catch (TimeoutException e) {
+            logWarn("Label was not visible: " + uiLabel);
+        }
     }
 
     private boolean isBlank(String value) {
@@ -272,6 +305,8 @@ public class GetPageElement {
                 androidDriver.setSetting("ignoreUnimportantViews", false);
                 androidDriver.setSetting("allowInvisibleElements", true);
                 androidDriver.setSetting("snapshotMaxDepth", 100);
+                androidDriver.setSetting("shouldUseCompactResponses", false);
+                androidDriver.setSetting("elementResponseAttributes", "name,text,contentDescription,class,bounds,hint,displayed");
             } catch (Exception e) {
                 logWarn("Could not update accessibility dump settings: " + e.getMessage());
             }
@@ -359,7 +394,7 @@ public class GetPageElement {
             return null;
         }
 
-        Matcher textMatcher = Pattern.compile("text=\"([^\"]+)\"").matcher(windowMatcher.group(1));
+        Matcher textMatcher = Pattern.compile("(?:text|content-desc|hint)=\"([^\"]+)\"").matcher(windowMatcher.group(1));
         while (textMatcher.find()) {
             String found = textMatcher.group(1).trim();
             if (found.isBlank() || uiLabel.equals(found) || isLikelyLabel(found)) {
@@ -424,6 +459,277 @@ public class GetPageElement {
             }
         }
         return nearest;
+    }
+
+    public String findValueFromParentRow(String uiLabel) {
+        List<WebElement> labels = driver.findElements(
+                By.xpath("//android.widget.TextView[@text=\"" + uiLabel + "\"]")
+        );
+        if (labels.isEmpty()) {
+            return null;
+        }
+
+        WebElement label = labels.getFirst();
+        WebElement current = label;
+        for (int depth = 0; depth < 5; depth++) {
+            try {
+                current = current.findElement(By.xpath("./parent::*"));
+            } catch (Exception e) {
+                break;
+            }
+
+            String combined = firstNonBlank(
+                    extractBestText(current),
+                    safeAttr(current, "name")
+            );
+            String stripped = valueAfterStrippingLabels(combined, uiLabel);
+            if (stripped != null) {
+                logInfo("Found parent-row value for label [" + uiLabel + "]: " + stripped);
+                return stripped;
+            }
+
+            try {
+                for (WebElement child : current.findElements(By.xpath(".//*"))) {
+                    String text = extractBestText(child);
+                    if (isBlank(text) || uiLabel.equals(text) || isLikelyLabel(text)) {
+                        continue;
+                    }
+                    Rect childRect = parseBounds(safeAttr(child, "bounds"));
+                    Rect labelRect = parseBounds(safeAttr(label, "bounds"));
+                    if (labelRect == null || childRect == null) {
+                        continue;
+                    }
+                    int verticalDelta = Math.abs(childRect.centerY() - labelRect.centerY());
+                    boolean sameRow = verticalDelta <= Math.max(28, labelRect.height());
+                    boolean toRight = childRect.left >= labelRect.right - 10;
+                    if (sameRow && toRight) {
+                        logInfo("Found parent-child value for label [" + uiLabel + "]: " + text);
+                        return text.trim();
+                    }
+                }
+            } catch (StaleElementReferenceException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    public String findValueFromSiblings(String uiLabel) {
+        List<WebElement> siblings = driver.findElements(By.xpath(
+                "//android.widget.TextView[@text=\"" + uiLabel + "\"]/following-sibling::*"
+        ));
+        Rect labelRect = null;
+        List<WebElement> labels = driver.findElements(
+                By.xpath("//android.widget.TextView[@text=\"" + uiLabel + "\"]")
+        );
+        if (!labels.isEmpty()) {
+            labelRect = parseBounds(safeAttr(labels.getFirst(), "bounds"));
+        }
+
+        for (WebElement sibling : siblings) {
+            try {
+                Rect rect = parseBounds(safeAttr(sibling, "bounds"));
+                if (rect != null && rect.height() <= 8) {
+                    continue;
+                }
+                if (labelRect != null && rect != null) {
+                    int verticalDelta = Math.abs(rect.centerY() - labelRect.centerY());
+                    boolean sameRow = verticalDelta <= Math.max(36, labelRect.height());
+                    boolean toRight = rect.left >= labelRect.right - 10;
+                    if (!sameRow || !toRight) {
+                        String siblingText = extractBestText(sibling);
+                        if (isLikelyLabel(siblingText)) {
+                            break;
+                        }
+                        continue;
+                    }
+                }
+
+                String text = extractBestText(sibling);
+                if (isLikelyLabel(text)) {
+                    break;
+                }
+                if (!isBlank(text) && !uiLabel.equals(text)) {
+                    logInfo("Found sibling value for label [" + uiLabel + "]: " + text);
+                    return text.trim();
+                }
+
+                for (WebElement child : sibling.findElements(By.xpath(".//*"))) {
+                    String childText = extractBestText(child);
+                    if (isBlank(childText) || uiLabel.equals(childText) || isLikelyLabel(childText)) {
+                        continue;
+                    }
+                    logInfo("Found sibling-child value for label [" + uiLabel + "]: " + childText);
+                    return childText.trim();
+                }
+            } catch (StaleElementReferenceException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    public String findValueOnSameRowFromSource(String uiLabel) {
+        String source;
+        try {
+            source = driver.getPageSource();
+        } catch (Exception e) {
+            return null;
+        }
+
+        Matcher nodeMatcher = Pattern.compile("<[^>]+bounds=\"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]\"[^>]*>").matcher(source);
+        Rect labelRect = null;
+        String bestValue = null;
+        int bestScore = Integer.MAX_VALUE;
+
+        List<int[]> nodes = new java.util.ArrayList<>();
+        List<String> values = new java.util.ArrayList<>();
+        while (nodeMatcher.find()) {
+            String tag = nodeMatcher.group(0);
+            String value = firstNonBlank(
+                    xmlAttr(tag, "text"),
+                    xmlAttr(tag, "content-desc"),
+                    xmlAttr(tag, "hint")
+            );
+            if (isBlank(value)) {
+                continue;
+            }
+            int left = Integer.parseInt(nodeMatcher.group(1));
+            int top = Integer.parseInt(nodeMatcher.group(2));
+            int right = Integer.parseInt(nodeMatcher.group(3));
+            int bottom = Integer.parseInt(nodeMatcher.group(4));
+            if (uiLabel.equals(value)) {
+                labelRect = new Rect(left, top, right, bottom);
+            }
+            nodes.add(new int[]{left, top, right, bottom});
+            values.add(value);
+        }
+
+        if (labelRect == null) {
+            return null;
+        }
+
+        for (int i = 0; i < values.size(); i++) {
+            String value = values.get(i);
+            if (uiLabel.equals(value) || isLikelyLabel(value)) {
+                continue;
+            }
+            int[] bounds = nodes.get(i);
+            Rect rect = new Rect(bounds[0], bounds[1], bounds[2], bounds[3]);
+            int verticalDelta = Math.abs(rect.centerY() - labelRect.centerY());
+            boolean sameRow = verticalDelta <= Math.max(28, labelRect.height());
+            boolean toRight = rect.left >= labelRect.right - 10;
+            if (!sameRow || !toRight) {
+                continue;
+            }
+            int score = verticalDelta * 100 + Math.abs(rect.left - labelRect.right);
+            if (score < bestScore) {
+                bestScore = score;
+                bestValue = value.trim();
+            }
+        }
+
+        if (bestValue != null) {
+            logInfo("Found same-row XML value for label [" + uiLabel + "]: " + bestValue);
+        }
+        return bestValue;
+    }
+
+    private String xmlAttr(String tag, String name) {
+        Matcher matcher = Pattern.compile(name + "=\"([^\"]*)\"").matcher(tag);
+        if (!matcher.find()) {
+            return "";
+        }
+        String value = matcher.group(1);
+        return "null".equalsIgnoreCase(value) ? "" : value.trim();
+    }
+
+    private String valueAfterStrippingLabels(String combined, String uiLabel) {
+        if (isBlank(combined)) {
+            return null;
+        }
+        String remaining = combined.replace('\n', ' ').replace('\u00A0', ' ').trim();
+        if (remaining.startsWith(uiLabel)) {
+            remaining = remaining.substring(uiLabel.length()).trim();
+        }
+        remaining = remaining.replace(uiLabel, " ");
+        for (String label : Arrays.asList(
+                "Product", "Product Name", "Account", "Status", "Direction", "Volume",
+                "Contract Value", "Open Price", "Current Price", "Initial Margin",
+                "Floating P/L", "Take Profit Price", "Stop Loss Price", "Interest",
+                "Open Position Time", "Order Time", "Position ID"
+        )) {
+            if (!label.equals(uiLabel)) {
+                remaining = remaining.replace(label, " ");
+            }
+        }
+        remaining = remaining.replaceAll("[,|:]+", " ").trim();
+        if (isBlank(remaining) || isLikelyLabel(remaining)) {
+            return null;
+        }
+        for (String token : remaining.split("\\s+")) {
+            if (!token.isBlank() && !isLikelyLabel(token)) {
+                return token;
+            }
+        }
+        return remaining;
+    }
+
+    public String findPaintedRowValue(String uiLabel) {
+        Rect labelRect = labelBounds(uiLabel);
+        if (labelRect == null) {
+            return null;
+        }
+
+        List<String> candidates;
+        if ("Direction".equals(uiLabel)) {
+            candidates = Arrays.asList("BUY", "SELL", "Buy", "Sell");
+        } else if ("Volume".equals(uiLabel)) {
+            candidates = new java.util.ArrayList<>();
+            for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
+                String text = extractBestText(el);
+                if (text != null && text.matches("(?i)\\d+(\\.\\d+)?(\\s*Lots?)?")) {
+                    candidates.add(text);
+                }
+            }
+        } else {
+            return null;
+        }
+
+        for (String candidate : candidates) {
+            List<WebElement> matches = driver.findElements(
+                    By.xpath("//*[(@text=\"" + candidate + "\" or @content-desc=\"" + candidate + "\")]")
+            );
+            for (WebElement match : matches) {
+                try {
+                    Rect rect = parseBounds(safeAttr(match, "bounds"));
+                    if (rect == null) {
+                        continue;
+                    }
+                    int verticalDelta = Math.abs(rect.centerY() - labelRect.centerY());
+                    boolean sameRow = verticalDelta <= Math.max(40, labelRect.height());
+                    boolean toRight = rect.left >= labelRect.right - 10;
+                    if (sameRow && toRight) {
+                        String text = firstNonBlank(extractBestText(match), candidate);
+                        logInfo("Found painted-row value for label [" + uiLabel + "]: " + text);
+                        return text.trim();
+                    }
+                } catch (StaleElementReferenceException ignored) {
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
+    private Rect labelBounds(String uiLabel) {
+        List<WebElement> labels = driver.findElements(
+                By.xpath("//android.widget.TextView[@text=\"" + uiLabel + "\"]")
+        );
+        if (labels.isEmpty()) {
+            return null;
+        }
+        return parseBounds(safeAttr(labels.getFirst(), "bounds"));
     }
 
     public String findValueByFollowingSibling(String uiLabel) {

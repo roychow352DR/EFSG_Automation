@@ -2,6 +2,7 @@ package StepDefinitions;
 
 import Data.QASEConfig;
 import Data.GlobalConfig;
+import Data.TradeRecord;
 import PageObject.NativeApp.AppEditPositionPage;
 import PageObject.NativeApp.AppInstrumentDetailsPage;
 import PageObject.NativeApp.AppModifyOrderPage;
@@ -97,6 +98,7 @@ public class Hooks extends BaseTest {
         AppTradeView.resetCapturedOrderValues();
         AppEditPositionPage.resetCapturedOrderValues();
         AppModifyOrderPage.resetCapturedOrderValues();
+        TradeRecord.isOpenPosition = false;
     }
 
     /**

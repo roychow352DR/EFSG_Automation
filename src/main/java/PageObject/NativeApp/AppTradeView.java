@@ -89,8 +89,10 @@ public class AppTradeView {
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.widget.TextView")
     List<WebElement> rowsOnPendingOrdersTabAos;
 
-    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup")
-    WebElement detailsButton;
+//    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup")
+//    WebElement detailsButton;
+
+    private final By detailsButton = By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup");
 
 //    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]")
 //    WebElement crossButtonAos;
@@ -124,10 +126,10 @@ public class AppTradeView {
             "/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup")
     WebElement closePositionBtnWithLotsAos;
 
-    @FindBy(xpath = "//android.widget.FrameLayout[@resource-id=\"android:id/content\"]/android.widget.FrameLayout" +
-            "/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup/android.view.ViewGroup" +
-            "/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[1]")
-    WebElement backBtnAos;
+
+    private final By backBtnAos = By.xpath("//android.widget.FrameLayout[@resource-id=\\\"android:id/content\\\"]/android.widget.FrameLayout\" +\n" +
+            "            \"/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup/android.view.ViewGroup\" +\n" +
+            "            \"/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[1]");
 
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[15]")
     WebElement closeDialogueBtnAos;
@@ -403,6 +405,7 @@ public class AppTradeView {
 
 
     public String getPositionValueByLabel(String label, String symbolDecimal) {
+        abs.waitUntilElementVisible(By.xpath("//*[@text='Position Details']"));
         String uiLabel = getPageElement.mapPositionDetailsLabel(label);
 
         String rawValue = getPageElement.resolveLabelValue(uiLabel);
@@ -464,13 +467,9 @@ public class AppTradeView {
     public void tapCtaButton(String buttonName) {
         if (driver instanceof AndroidDriver) {
             switch (buttonName) {
-                case "detail" -> {
-                    abs.waitUntilElementClickable(detailsButton);
-                    detailsButton.click();
-                }
+                case "detail" -> openPositionDetails();
                 case "close" -> {
                     abs.waitUntilElementClickable(crossButtonAos).click();
-                //    crossButtonAos.click();
                 }
                 case "edit" -> {
                     abs.waitUntilElementClickable(editPositionButtonAos);
@@ -479,6 +478,32 @@ public class AppTradeView {
             }
         }
 
+    }
+
+    private void openPositionDetails() {
+        By detailsHeader = By.xpath("//*[@text='Position Details']");
+        By lastCta = By.xpath(
+                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]" +
+                        "/android.view.ViewGroup/android.view.ViewGroup[last()]/android.view.ViewGroup"
+        );
+
+        abs.waitUntilElementClickable(detailsButton).click();
+        if (isVisible(detailsHeader, 10)) {
+            return;
+        }
+
+        abs.waitUntilElementClickable(lastCta).click();
+        abs.waitUntilElementVisible(detailsHeader);
+    }
+
+    private boolean isVisible(By locator, int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                    .until(ExpectedConditions.visibilityOfElementLocated(locator));
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
     }
 
 
@@ -548,10 +573,10 @@ public class AppTradeView {
 
     public List<String> marketOrderConfirmationPageValues() {
         List<String> values = new ArrayList<>();
-        if (!(stopLossPrice == null)) {
+        if (stopLossPrice != null || AppInstrumentDetailsPage.stopLossPrice != null) {
             values.add("Stop Loss Price");
         }
-        if (!(takeProfitPrice == null)) {
+        if (takeProfitPrice != null || AppInstrumentDetailsPage.takeProfitPrice != null) {
             values.add("Take Profit Price");
         }
         values.add("Direction");
@@ -602,36 +627,54 @@ public class AppTradeView {
 
     public void tapBack() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementClickable(backBtnAos);
-            backBtnAos.click();
+            abs.waitUntilElementClickable(backBtnAos).click();
         }
     }
 
+    public void captureVisibleRowPrice() {
+        List<WebElement> texts = driver.findElements(By.xpath(
+                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]" +
+                        "/android.view.ViewGroup/android.widget.TextView"
+        ));
+        String price = firstPriceLikeText(texts);
+        if (price == null) {
+            return;
+        }
+        openPositionOpenPrice = price;
+        openOrderTargetPrice = price;
+    }
+
     public void getOpenPositionOpenPrice() {
-        By openPriceLocator = By.xpath(
-                "(//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]" +
-                        "/android.view.ViewGroup/android.view.ViewGroup[2]/parent::android.view.ViewGroup" +
-                        "/android.widget.TextView)[3]"
+        By rowTexts = By.xpath(
+                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]" +
+                        "/android.view.ViewGroup/android.widget.TextView"
         );
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         wait.ignoring(StaleElementReferenceException.class);
-        openPositionOpenPrice = wait.until(driver -> {
-            WebElement element = driver.findElement(openPriceLocator);
-            String text = element.getText();
-            return !text.trim().isEmpty() ? text : null;
-        });
+        openPositionOpenPrice = wait.until(d -> firstPriceLikeText(d.findElements(rowTexts)));
     }
 
     public void getPendingOrderTargetPrice() {
-        By targetPriceLocator = By.xpath("(//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]" +
-                "/parent::android.view.ViewGroup/android.widget.TextView)[4]");
+        By rowTexts = By.xpath(
+                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup" +
+                        "/android.view.ViewGroup/android.widget.TextView"
+        );
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         wait.ignoring(StaleElementReferenceException.class);
-        openOrderTargetPrice = wait.until(driver -> {
-            WebElement element = driver.findElement(targetPriceLocator);
+        openOrderTargetPrice = wait.until(d -> firstPriceLikeText(d.findElements(rowTexts)));
+    }
+
+    private String firstPriceLikeText(List<WebElement> texts) {
+        if (texts == null || texts.isEmpty()) {
+            return null;
+        }
+        for (WebElement element : texts) {
             String text = element.getText();
-            return !text.trim().isEmpty() ? text : null;
-        });
+            if (text != null && text.trim().matches("\\d+[.,]\\d+")) {
+                return text.trim();
+            }
+        }
+        return null;
     }
 
     public void closeDialogue() {
