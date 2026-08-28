@@ -8,6 +8,10 @@ Feature: Native App trade
       And the user toggles off trade confirmation on the app setting page
       And the user taps button "Markets" on the app footer
       When the user taps symbol on the app markets page
+      And the user selects tab "Positions" on the app trade view
+      And the total count of the positions is retrieved on the app trade view
+      And the user taps back button on the app trade view
+      And the user taps symbol on the app markets page
       And the user selects direction "BUY" on the app trade view
       And the user taps button "BUY" on the instrument details page
       Then the user sees a new open position is displayed at the position tab of app trade view
