@@ -576,11 +576,22 @@ public class AppTradeView {
         }
         tapClosePositionSubmit();
         if (AppSettingPage.isTradeConfirmNeeded) {
-            try {
-                abs.tapVisible(By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[last()]"), 10);
-            } catch (TimeoutException ignored) {
-                System.out.println("Close position confirmation overlay was not shown");
-            }
+            confirmClosePositionDialogue();
+        }
+    }
+
+    private void confirmClosePositionDialogue() {
+        By overlay = By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]");
+        By overlayClosePosition = By.xpath(
+                "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]//*[@text='Close Position']"
+        );
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(ExpectedConditions.visibilityOfElementLocated(overlay));
+            abs.tapBottomMost(overlayClosePosition, 10);
+        } catch (TimeoutException ignored) {
+            System.out.println("Close position confirmation overlay was not shown");
         }
     }
 
