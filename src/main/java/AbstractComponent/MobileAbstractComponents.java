@@ -370,6 +370,13 @@ public class MobileAbstractComponents {
         tapAt(point.getX(), point.getY());
     }
 
+    public void tapBottomMost(By locator, int seconds) {
+        Point point = new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                .ignoring(StaleElementReferenceException.class)
+                .until(d -> bottomCenterIfVisible(d, locator));
+        tapAt(point.getX(), point.getY());
+    }
+
     private Point centerPointIfVisible(WebDriver d, By locator) {
         try {
             List<WebElement> elements = d.findElements(locator);
@@ -383,6 +390,27 @@ public class MobileAbstractComponents {
             Point location = element.getLocation();
             Dimension size = element.getSize();
             return new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+        } catch (StaleElementReferenceException e) {
+            return null;
+        }
+    }
+
+    private Point bottomCenterIfVisible(WebDriver d, By locator) {
+        try {
+            Point best = null;
+            int maxY = Integer.MIN_VALUE;
+            for (WebElement element : d.findElements(locator)) {
+                if (!element.isDisplayed()) {
+                    continue;
+                }
+                Point location = element.getLocation();
+                Dimension size = element.getSize();
+                if (location.getY() >= maxY) {
+                    maxY = location.getY();
+                    best = new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+                }
+            }
+            return best;
         } catch (StaleElementReferenceException e) {
             return null;
         }

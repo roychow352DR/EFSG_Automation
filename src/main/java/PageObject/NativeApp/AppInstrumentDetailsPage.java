@@ -374,9 +374,10 @@ public class AppInstrumentDetailsPage {
     public void tapsButtonOnConfirm(String buttonName) {
         if (driver instanceof AndroidDriver) {
             if (buttonName.contains("Position") || buttonName.contains("Modify") || buttonName.contains("Cancel Order")) {
-                By button = By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup");
-                // abs.waitUtilElementFind(button);
-                abs.waitUntilElementClickable(button).click();
+                By overlayButton = By.xpath(
+                        "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]//*[@text=\"" + buttonName + "\"]"
+                );
+                abs.tapBottomMost(overlayButton, 15);
             } else if (buttonName.equalsIgnoreCase("Don't Show Again")) {
                 checkboxAos.click();
             } else if (buttonName.equalsIgnoreCase("Cross") || buttonName.equalsIgnoreCase("x")) {
