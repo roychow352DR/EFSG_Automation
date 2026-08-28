@@ -34,12 +34,11 @@ public class GetPageElement {
     }
 
     private String extractBestText(WebElement el) {
-        return firstNonBlank(
+        return firstUsableValue(
                 safeText(el),
                 safeAttr(el, "text"),
                 safeAttr(el, "contentDescription"),
-                safeAttr(el, "content-desc"),
-                safeAttr(el, "hint")
+                safeAttr(el, "content-desc")
         );
     }
 
@@ -172,6 +171,41 @@ public class GetPageElement {
         return null;
     }
 
+    private String firstUsableValue(String... values) {
+        for (String v : values) {
+            if (!isNoiseValue(v)) {
+                return v.trim();
+            }
+        }
+        return null;
+    }
+
+    private boolean isNoiseValue(String value) {
+        if (value == null || value.isBlank()) {
+            return true;
+        }
+        String text = value.trim();
+        return text.equalsIgnoreCase("true")
+                || text.equalsIgnoreCase("false")
+                || text.equalsIgnoreCase("null");
+    }
+
+    private boolean isPlausibleValue(String uiLabel, String value) {
+        if (isNoiseValue(value) || isLikelyLabel(value) || uiLabel.equals(value)) {
+            return false;
+        }
+        if ("Direction".equals(uiLabel) || "Side".equals(uiLabel)) {
+            return value.equalsIgnoreCase("BUY") || value.equalsIgnoreCase("SELL");
+        }
+        if ("Volume".equals(uiLabel) || "Qty".equals(uiLabel)) {
+            return value.matches("(?i)\\d+(\\.\\d+)?(\\s*Lots?)?");
+        }
+        if ("Contract Value".equals(uiLabel) || "Initial Margin".equals(uiLabel)) {
+            return value.matches("(?i).*\\d.*");
+        }
+        return true;
+    }
+
     private String safeElementFingerprint(WebElement el) {
         return safeAttr(el, "className") + "|" + safeAttr(el, "bounds") + "|" + extractBestText(el);
     }
@@ -247,32 +281,32 @@ public class GetPageElement {
 
         for (int attempt = 1; attempt <= 5; attempt++) {
             try {
-                String value = findValueFromParentRow(uiLabel);
-                if (isBlank(value)) {
-                    value = findValueBetweenAdjacentLabels(uiLabel);
+                String value = plausible(uiLabel, findValueFromParentRow(uiLabel));
+                if (value == null) {
+                    value = plausible(uiLabel, findValueBetweenAdjacentLabels(uiLabel));
                 }
-                if (isBlank(value)) {
-                    value = findValueOnSameRowFromSource(uiLabel);
+                if (value == null) {
+                    value = plausible(uiLabel, findValueOnSameRowFromSource(uiLabel));
                 }
-                if (isBlank(value)) {
-                    value = findValueOnSameRow(uiLabel);
+                if (value == null) {
+                    value = plausible(uiLabel, findValueOnSameRow(uiLabel));
                 }
-                if (isBlank(value)) {
-                    value = findValueFromSiblings(uiLabel);
+                if (value == null) {
+                    value = plausible(uiLabel, findValueFromSiblings(uiLabel));
                 }
-                if (isBlank(value)) {
-                    value = findValueByFollowingSibling(uiLabel);
+                if (value == null) {
+                    value = plausible(uiLabel, findValueByFollowingSibling(uiLabel));
                 }
-                if (isBlank(value)) {
-                    value = findValueByFollowingSiblingScoped(uiLabel);
+                if (value == null) {
+                    value = plausible(uiLabel, findValueByFollowingSiblingScoped(uiLabel));
                 }
-                if (isBlank(value)) {
-                    value = findValueFromPageSource(uiLabel);
+                if (value == null) {
+                    value = plausible(uiLabel, findValueFromPageSource(uiLabel));
                 }
-                if (isBlank(value)) {
-                    value = findPaintedRowValue(uiLabel);
+                if (value == null) {
+                    value = plausible(uiLabel, findPaintedRowValue(uiLabel));
                 }
-                if (!isBlank(value)) {
+                if (value != null) {
                     return value;
                 }
             } catch (StaleElementReferenceException e) {
@@ -281,6 +315,10 @@ public class GetPageElement {
             abs.sleep(300);
         }
         return null;
+    }
+
+    private String plausible(String uiLabel, String value) {
+        return isPlausibleValue(uiLabel, value) ? value.trim() : null;
     }
 
     private void waitForLabel(String uiLabel) {

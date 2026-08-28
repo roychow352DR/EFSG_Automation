@@ -4,11 +4,13 @@ import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.GetPageElement;
 
 import java.time.Duration;
 import java.util.List;
@@ -17,6 +19,7 @@ public class AppEditPositionPage {
 
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
+    private final GetPageElement getPageElement;
     public static String stopLossPrice;
     public static String takeProfitPrice;
 
@@ -28,6 +31,7 @@ public class AppEditPositionPage {
     public AppEditPositionPage(AppiumDriver driver) {
         this.driver = driver;
         abs = new MobileAbstractComponents(driver);
+        this.getPageElement = new GetPageElement(driver);
         PageFactory.initElements(driver, this);
     }
 
@@ -67,6 +71,16 @@ public class AppEditPositionPage {
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[13]")
     WebElement closeBtnAos;
 
+
+    public String getDisplayedValue(String label, String symbolDecimal) {
+        abs.waitUntilElementVisible(By.xpath("//*[@text='Edit Position']"));
+        String uiLabel = getPageElement.mapUiLabel(label);
+        String rawValue = getPageElement.resolveLabelValue(uiLabel);
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new NoSuchElementException("Could not find value on Edit Position for label: " + uiLabel);
+        }
+        return getPageElement.normalizeByLabel(label, rawValue.trim(), symbolDecimal);
+    }
 
     public String getInputFieldValue(String inputFieldName) {
         if (driver instanceof AndroidDriver) {

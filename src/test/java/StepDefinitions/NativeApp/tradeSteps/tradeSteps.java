@@ -297,7 +297,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees the value {string} is displayed correctly on the edit position page")
     public void the_user_sees_the_value_is_displayed_correctly_on_the_edit_position_page(String value) throws InterruptedException {
-        Assert.assertEquals(appPoManager.getAppTradeView().getPositionValueByLabel(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
+        Assert.assertEquals(appPoManager.getAppEditPositionPage().getDisplayedValue(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
                 appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
         appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
@@ -317,7 +317,6 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_the_price_is_populate_to_the_input_field_on_the_edit_position_page(String inputField) {
         Assert.assertNotNull(appPoManager.getAppEditPositionPage().getInputFieldValue(inputField));
         appPoManager.getAppTradeView().tapBack();
-        appPoManager.getAppTradeView().selectTab("Positions");
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -416,7 +415,6 @@ public class tradeSteps extends BaseTest {
     @Then("the user sees a full volume lot size on the app close position page")
     public void the_user_sees_a_full_volume_lot_size_on_the_app_close_position_page() {
         Assert.assertEquals(appPoManager.getAppClosePositionPage().getEditFieldVal(), appPoManager.getAppInstrumentDetailsPage().getValidationValue("Volume"));
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -429,14 +427,12 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_the_lots_value_is_decreased_by_default_step_size_on_the_close_position_page() throws InterruptedException {
         Assert.assertEquals(appPoManager.getAppClosePositionPage().getEditFieldVal(),
                 String.valueOf(Float.parseFloat(appPoManager.getAppInstrumentDetailsPage().getValidationValue("Volume")) - Float.parseFloat(tradeSymbolConfig.getStepSize())));
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
     @Then("the user sees the lots value is increased by default step size on the close position page")
     public void the_user_sees_the_lots_value_is_increased_by_default_step_size_on_the_close_position_page() throws InterruptedException {
         Assert.assertEquals(appPoManager.getAppClosePositionPage().getEditFieldVal(), appPoManager.getAppInstrumentDetailsPage().getValidationValue("Volume"));
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -515,7 +511,6 @@ public class tradeSteps extends BaseTest {
     @Then("the user sees close position page")
     public void the_user_sees_close_position_page() {
         Assert.assertTrue(appPoManager.getAppClosePositionPage().getHeader());
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -548,7 +543,6 @@ public class tradeSteps extends BaseTest {
             }
             case "Close Position" -> {
                 Assert.assertTrue(appPoManager.getAppClosePositionPage().getHeader());
-                appPoManager.getAppTradeView().tapBack();
                 appPoManager.getAppTradeView().closePosition();
             }
             case "Modify Order" -> {
