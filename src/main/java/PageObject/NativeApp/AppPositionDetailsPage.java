@@ -9,20 +9,21 @@ import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.GetPageElement;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 
 public class AppPositionDetailsPage {
 
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
+    private final GetPageElement getPageElement;
 
     public AppPositionDetailsPage(AppiumDriver driver) {
         this.driver = driver;
         abs = new MobileAbstractComponents(driver);
+        this.getPageElement = new GetPageElement(driver);
         PageFactory.initElements(new AppiumFieldDecorator(driver, Duration.ofSeconds(10)), this);
     }
 
@@ -53,35 +54,13 @@ public class AppPositionDetailsPage {
 
 
     public String getDetailValue(String label) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
-        wait.ignoring(StaleElementReferenceException.class);
-
-        try {
-            return wait.until(d -> {
-                List<WebElement> elements = d.findElements(By.className("android.widget.TextView"));
-                List<String> texts = new ArrayList<>();
-
-                for (WebElement element : elements) {
-                    texts.add(element.getText());
-                }
-
-                for (int i = 0; i < texts.size() - 1; i++) {
-                    String currentLabel = texts.get(i);
-
-                    if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
-                        if (currentLabel.equalsIgnoreCase("Product")){
-                            return productAos.getText();
-                        }
-                        else {
-                            return normalizeDetailValue(label, texts.get(i + 1));
-                        }
-                    }
-                }
-                return "";
-            });
-        } catch (TimeoutException e) {
-            return null;
+        abs.waitUntilElementVisible(By.xpath("//*[@text='Position Details']"));
+        String uiLabel = getPageElement.mapPositionDetailsLabel(label);
+        String rawValue = getPageElement.resolveLabelValue(uiLabel);
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new NoSuchElementException("Could not find value on Position Details for label: " + uiLabel);
         }
+        return normalizeDetailValue(label, rawValue);
     }
 
     public String normalizeDetailValue(String label, String rawValue) {
@@ -109,8 +88,13 @@ public class AppPositionDetailsPage {
     }
 
     public String getContractValue(int contractSize) {
-        BigDecimal openPrice = new BigDecimal(getDetailValue("Open Price").trim());
-        BigDecimal lotSize = new BigDecimal(getDetailValue("Volume").trim());
+        String openPriceText = getDetailValue("Open Price");
+        String volumeText = getDetailValue("Volume");
+        if (openPriceText == null || volumeText == null) {
+            throw new NoSuchElementException("Could not read Open Price or Volume on Position Details");
+        }
+        BigDecimal openPrice = new BigDecimal(openPriceText.trim());
+        BigDecimal lotSize = new BigDecimal(volumeText.trim());
         BigDecimal contract = BigDecimal.valueOf(contractSize);
 
         System.out.println("open price: " + openPrice);
