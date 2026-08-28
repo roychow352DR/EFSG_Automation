@@ -188,6 +188,7 @@ public class MobileAbstractComponents {
 
     public WebElement waitUntilElementVisible(By locator) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(50));
+        wait.ignoring(StaleElementReferenceException.class);
         return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 
@@ -358,7 +359,36 @@ public class MobileAbstractComponents {
         tapAt(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
     }
 
-    private void tapAt(int x, int y) {
+    public void tapVisible(By locator) {
+        tapVisible(locator, 15);
+    }
+
+    public void tapVisible(By locator, int seconds) {
+        Point point = new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                .ignoring(StaleElementReferenceException.class)
+                .until(d -> centerPointIfVisible(d, locator));
+        tapAt(point.getX(), point.getY());
+    }
+
+    private Point centerPointIfVisible(WebDriver d, By locator) {
+        try {
+            List<WebElement> elements = d.findElements(locator);
+            if (elements.isEmpty()) {
+                return null;
+            }
+            WebElement element = elements.getFirst();
+            if (!element.isDisplayed()) {
+                return null;
+            }
+            Point location = element.getLocation();
+            Dimension size = element.getSize();
+            return new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+        } catch (StaleElementReferenceException e) {
+            return null;
+        }
+    }
+
+    public void tapAt(int x, int y) {
         PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
         Sequence tap = new Sequence(finger, 1);
 

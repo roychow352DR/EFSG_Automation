@@ -5,6 +5,9 @@ import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
@@ -465,45 +468,68 @@ public class AppTradeView {
     }
 
     public void tapCtaButton(String buttonName) {
-        if (driver instanceof AndroidDriver) {
-            switch (buttonName) {
-                case "detail" -> openPositionDetails();
-                case "close" -> {
-                    abs.waitUntilElementClickable(crossButtonAos).click();
-                }
-                case "edit" -> {
-                    abs.waitUntilElementClickable(editPositionButtonAos);
-                    editPositionButtonAos.click();
-                }
-            }
-        }
-
-    }
-
-    private void openPositionDetails() {
-        By detailsHeader = By.xpath("//*[@text='Position Details']");
-        By lastCta = By.xpath(
-                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]" +
-                        "/android.view.ViewGroup/android.view.ViewGroup[last()]/android.view.ViewGroup"
-        );
-
-        abs.waitUntilElementClickable(detailsButton).click();
-        if (isVisible(detailsHeader, 10)) {
+        if (!(driver instanceof AndroidDriver)) {
             return;
         }
-
-        abs.waitUntilElementClickable(lastCta).click();
-        abs.waitUntilElementVisible(detailsHeader);
+        switch (buttonName) {
+            case "detail" -> openRowDetails();
+            case "close" -> clickRowCta(rowCloseLocators());
+            case "edit" -> clickRowCta(rowEditLocators());
+        }
     }
 
-    private boolean isVisible(By locator, int seconds) {
+    private void openRowDetails() {
+        clickRowCta(rowDetailLocators());
+        if (isRowDetailsOpen(10)) {
+            return;
+        }
+        throw new TimeoutException("Details page did not open after tapping the detail CTA");
+    }
+
+    private boolean isRowDetailsOpen(int seconds) {
         try {
-            new WebDriverWait(driver, Duration.ofSeconds(seconds))
-                    .until(ExpectedConditions.visibilityOfElementLocated(locator));
+            new WebDriverWait(driver, Duration.ofSeconds(seconds)).until(d ->
+                    !d.findElements(By.xpath("//*[@text='Position Details']")).isEmpty()
+                            || !d.findElements(By.xpath("//*[@text='Pending Order Details']")).isEmpty()
+            );
             return true;
         } catch (TimeoutException e) {
             return false;
         }
+    }
+
+    private List<By> rowCloseLocators() {
+        return Arrays.asList(
+                By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup"),
+                crossButtonAos
+        );
+    }
+
+    private List<By> rowEditLocators() {
+        return Arrays.asList(
+                By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup"),
+                By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup")
+        );
+    }
+
+    private List<By> rowDetailLocators() {
+        return Arrays.asList(
+                detailsButton,
+                By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[last()]/android.view.ViewGroup")
+        );
+    }
+
+    private void clickRowCta(List<By> locators) {
+        TimeoutException lastError = null;
+        for (By locator : locators) {
+            try {
+                abs.tapVisible(locator);
+                return;
+            } catch (TimeoutException e) {
+                lastError = e;
+            }
+        }
+        throw lastError != null ? lastError : new TimeoutException("Row CTA was not visible");
     }
 
 
@@ -531,7 +557,7 @@ public class AppTradeView {
 
     public void cancelOrder() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementClickable(crossButtonAos).click();
+            clickRowCta(rowCloseLocators());
             if (AppSettingPage.isTradeConfirmNeeded) {
                 abs.waitUntilElementClickable(cancelOrderButtonAos).click();
             } else {
@@ -542,23 +568,101 @@ public class AppTradeView {
     }
 
     public void closePosition() {
-        if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementClickable(crossButtonAos).click();
-            By closeButton = By.xpath("(//android.widget.TextView[@text=\"Close Position\"])[2]/parent::android.view.ViewGroup");
-            abs.waitUntilElementClickable(closeButton).click();
-            if (AppSettingPage.isTradeConfirmNeeded) {
-                confirmClosePositionBtnAos.click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        if (!isClosePositionPageOpen(2)) {
+            clickRowCta(rowCloseLocators());
+        }
+        tapClosePositionSubmit();
+        if (AppSettingPage.isTradeConfirmNeeded) {
+            try {
+                abs.tapVisible(By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[last()]"), 10);
+            } catch (TimeoutException ignored) {
+                System.out.println("Close position confirmation overlay was not shown");
             }
         }
     }
 
-    public void closePositionInDetails() {
-        if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementClickable(closePositionBtnInDetailsAos);
-            closePositionBtnInDetailsAos.click();
-            closePositionBtnWithLotsAos.click();
-            confirmClosePositionBtnAos.click();
+    private boolean isClosePositionPageOpen(int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> bottomVisibleClosePositionLabel() != null);
+            return true;
+        } catch (TimeoutException e) {
+            return false;
         }
+    }
+
+    private void tapClosePositionSubmit() {
+        try {
+            Point tapPoint = new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> closePositionSubmitPoint());
+            abs.tapAt(tapPoint.getX(), tapPoint.getY());
+            return;
+        } catch (TimeoutException ignored) {
+            System.out.println("Bottom Close Position label was not a visible @text node; trying UiAutomator instance");
+        }
+        abs.tapVisible(AppiumBy.androidUIAutomator("new UiSelector().text(\"Close Position\").instance(1)"), 10);
+    }
+
+    private Point closePositionSubmitPoint() {
+        try {
+            WebElement bottom = bottomVisibleClosePositionLabel();
+            if (bottom == null) {
+                return null;
+            }
+            Point location = bottom.getLocation();
+            Dimension size = bottom.getSize();
+            if (location.getY() < driver.manage().window().getSize().getHeight() / 2) {
+                return null;
+            }
+            return new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+        } catch (StaleElementReferenceException e) {
+            return null;
+        }
+    }
+
+    private WebElement bottomVisibleClosePositionLabel() {
+        WebElement bottom = null;
+        int maxY = Integer.MIN_VALUE;
+        for (WebElement el : driver.findElements(By.xpath("//*[@text='Close Position']"))) {
+            try {
+                if (!el.isDisplayed()) {
+                    continue;
+                }
+                int y = el.getLocation().getY();
+                if (y >= maxY) {
+                    maxY = y;
+                    bottom = el;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return bottom;
+    }
+
+    public void closePositionInDetails() {
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        tapClosePositionSubmit();
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> {
+                        try {
+                            return d.findElements(By.xpath("//*[@text='Position Details']")).isEmpty();
+                        } catch (StaleElementReferenceException e) {
+                            return false;
+                        }
+                    });
+        } catch (TimeoutException ignored) {
+            System.out.println("Position Details was still visible after tapping Close Position");
+        }
+        closePosition();
     }
 
     public List<String> stopOrderConfirmationPageValues() {
@@ -696,13 +800,15 @@ public class AppTradeView {
     }
 
     public void selectTab(String tabName){
-        if (driver instanceof AndroidDriver) {
-            switch (tabName) {
-                case "Positions" -> {
-                    abs.waitUntilElementClickable(positionsTabAos).click();
-                }
-            }
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+        List<By> locators = Arrays.asList(
+                By.xpath("//android.widget.TextView[@text=\"" + tabName + "\"]/parent::android.view.ViewGroup"),
+                By.xpath("//android.widget.TextView[@text=\"" + tabName + "\"]"),
+                positionsTabAos
+        );
+        clickRowCta(locators);
     }
 
     public int getNumberOfPositions(){

@@ -43,10 +43,13 @@ public class appCommonSteps extends BaseTest {
         }
         Assert.assertEquals(actualHeaderTitle, expectedHeader);
 
-        if (!expectedHeader.equals("Position Details")) {
-            appPoManager.getAppTradeView().tapBack();
-            appPoManager.getAppTradeView().closePosition();
+        if (expectedHeader.equals("Position Details")) {
+            return;
         }
+        if (!expectedHeader.equals("Close Position")) {
+            appPoManager.getAppTradeView().tapBack();
+        }
+        appPoManager.getAppTradeView().closePosition();
     }
 
     @Then("the user is redirected to the {string} on the page")
