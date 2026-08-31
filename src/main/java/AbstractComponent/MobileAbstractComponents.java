@@ -334,10 +334,16 @@ public class MobileAbstractComponents {
     }
 
     public void typeWithAndroidKeys(AndroidDriver driver, WebElement element, String text) {
-
-        waitUntilElementClickable(element);
-        // Focus the field first
-        element.click();
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                tapElement(element);
+                break;
+            } catch (StaleElementReferenceException e) {
+                if (attempt == 3) {
+                    throw e;
+                }
+            }
+        }
 
         for (char c : text.toCharArray()) {
             AndroidKey key = mapCharToAndroidKey(c);

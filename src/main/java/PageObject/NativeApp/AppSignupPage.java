@@ -62,7 +62,7 @@ public class AppSignupPage {
 
     public void navigateToLoginPage() {
         if (driver instanceof AndroidDriver) {
-            navigateToLoginAos.click();
+            abs.tapVisible(By.xpath("//android.widget.TextView[contains(@text,'Have an account')]"), 15);
         }
     }
 

@@ -14,6 +14,8 @@ import utils.GetPageElement;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AppEditPositionPage {
 
@@ -84,11 +86,7 @@ public class AppEditPositionPage {
 
     public String getInputFieldValue(String inputFieldName) {
         if (driver instanceof AndroidDriver) {
-            return switch (inputFieldName) {
-                case "Stop Loss" -> inputFields.getFirst().getText();
-                case "Take Profit" -> inputFields.getLast().getText();
-                default -> throw new IllegalStateException("Unexpected value: " + inputFieldName);
-            };
+            return priceField(inputFieldName).getText();
         }
         return inputFieldName;
     }
@@ -115,37 +113,123 @@ public class AppEditPositionPage {
     }
 
     public void fillInTextField(String textFieldName, String direction, String decimal, int priceDifVal) {
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
         String enterPrice;
-        if (driver instanceof AndroidDriver) {
-            switch (textFieldName) {
-                case "Stop Loss" -> {
-                    if (direction.equalsIgnoreCase("BUY")) {
-                        enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) - priceDifVal);
-                    } else {
-                        enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) + priceDifVal);
-                    }
-                    abs.waitUntilElementFind(stopLossTextFieldAos);
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossTextFieldAos,
-                            enterPrice);
-                    //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
-                    stopLossPrice = abs.normalizePriceToDecimals(enterPrice, decimal);
+        switch (textFieldName) {
+            case "Stop Loss" -> {
+                if (direction.equalsIgnoreCase("BUY")) {
+                    enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) - priceDifVal);
+                } else {
+                    enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) + priceDifVal);
                 }
-                case "Take Profit" -> {
-                    if (direction.equalsIgnoreCase("BUY")) {
-                        enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) + priceDifVal);
-                    } else {
-                        enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - priceDifVal);
-                    }
-
-                    abs.waitUntilElementFind(takeProfitTextFieldAos);
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitTextFieldAos,
-                            enterPrice);
-                    // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
-
-                    takeProfitPrice = abs.normalizePriceToDecimals(enterPrice, decimal);
+                stopLossPrice = abs.normalizePriceToDecimals(enterPrice, decimal);
+            }
+            case "Take Profit" -> {
+                if (direction.equalsIgnoreCase("BUY")) {
+                    enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) + priceDifVal);
+                } else {
+                    enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - priceDifVal);
                 }
+                takeProfitPrice = abs.normalizePriceToDecimals(enterPrice, decimal);
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + textFieldName);
+        }
+        typeIntoPriceField(textFieldName, enterPrice);
+    }
+
+    private void typeIntoPriceField(String textFieldName, String enterPrice) {
+        WebElement field = priceField(textFieldName);
+        try {
+            field.clear();
+        } catch (Exception ignored) {
+            abs.tapElement(field);
+        }
+        field = priceField(textFieldName);
+        abs.typeWithAndroidKeys((AndroidDriver) driver, field, enterPrice);
+    }
+
+    private WebElement priceField(String priceType) {
+        abs.waitUntilElementVisible(By.xpath("//*[@text='Edit Position']"));
+        WebElement label = priceLabel(priceType);
+        int[] labelBounds = parseBounds(elementAttribute(label, "bounds"));
+
+        WebElement closest = null;
+        int bestScore = Integer.MAX_VALUE;
+        for (WebElement field : driver.findElements(By.className("android.widget.EditText"))) {
+            int[] fieldBounds = parseBounds(elementAttribute(field, "bounds"));
+            if (labelBounds == null || fieldBounds == null) {
+                continue;
+            }
+            int labelCenterY = (labelBounds[1] + labelBounds[3]) / 2;
+            int fieldCenterY = (fieldBounds[1] + fieldBounds[3]) / 2;
+            int verticalGap = fieldCenterY - labelCenterY;
+            if (verticalGap < -20) {
+                continue;
+            }
+            int score = Math.abs(verticalGap) * 100 + Math.abs(fieldBounds[0] - labelBounds[0]);
+            if (score < bestScore) {
+                bestScore = score;
+                closest = field;
             }
         }
+
+        if (closest == null) {
+            throw new NoSuchElementException("Could not find EditText for price type: " + priceType);
+        }
+        return closest;
+    }
+
+    private WebElement priceLabel(String priceType) {
+        String labelToken = switch (priceType) {
+            case "Stop Loss" -> "Stop Loss";
+            case "Take Profit" -> "Take Profit";
+            default -> throw new IllegalStateException("Unexpected value: " + priceType);
+        };
+
+        abs.waitUntilElementVisible(
+                By.xpath("//android.widget.TextView[contains(@text,\"" + labelToken + "\")]")
+        );
+
+        WebElement fieldLabel = null;
+        for (WebElement el : driver.findElements(
+                By.xpath("//android.widget.TextView[contains(@text,\"" + labelToken + "\")]"))) {
+            String text = el.getText() == null ? "" : el.getText().trim();
+            if (text.contains("&") || text.toLowerCase().contains(" and ")) {
+                continue;
+            }
+            fieldLabel = el;
+        }
+
+        if (fieldLabel == null) {
+            throw new NoSuchElementException("Could not find field label for price type: " + priceType);
+        }
+        return fieldLabel;
+    }
+
+    private String elementAttribute(WebElement element, String name) {
+        String value = element.getDomAttribute(name);
+        if (value == null || value.isBlank()) {
+            value = element.getDomProperty(name);
+        }
+        return value;
+    }
+
+    private int[] parseBounds(String bounds) {
+        if (bounds == null || bounds.isBlank()) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]").matcher(bounds);
+        if (!matcher.matches()) {
+            return null;
+        }
+        return new int[]{
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                Integer.parseInt(matcher.group(3)),
+                Integer.parseInt(matcher.group(4))
+        };
     }
 
     public String getStopLossPrice(String direction, String symbolDecimal) {
@@ -234,7 +318,7 @@ public class AppEditPositionPage {
 
             String text = element.getText();
             if (text == null || text.trim().isEmpty()) {
-                text = element.getAttribute("text");
+                text = elementAttribute(element, "text");
             }
 
             return text;
