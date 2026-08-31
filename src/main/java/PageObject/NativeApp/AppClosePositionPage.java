@@ -77,11 +77,10 @@ public class AppClosePositionPage {
     }
 
     public boolean getHeader(){
-        if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementFind(headerAos);
-            return headerAos.isDisplayed();
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
         }
-        return false;
+        return waitForClosePositionHeader() != null;
     }
 
     public String getConfirmationValue(String value) {
@@ -181,19 +180,32 @@ public class AppClosePositionPage {
     }
 
     public String getHeaderText() {
-        if (driver instanceof AndroidDriver) {
-            By locator = By.xpath("//*[@text='Close Position']");
-
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-            WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
-
-            String text = element.getText();
-            if (text == null || text.trim().isEmpty()) {
-                text = element.getAttribute("text");
-            }
-
-            return text;
+        WebElement header = waitForClosePositionHeader();
+        if (header == null) {
+            return "";
         }
-        return "";
+        String text = header.getText();
+        if (text == null || text.trim().isEmpty()) {
+            text = header.getAttribute("text");
+        }
+        return text == null ? "" : text;
+    }
+
+    private WebElement waitForClosePositionHeader() {
+        if (!(driver instanceof AndroidDriver)) {
+            return null;
+        }
+        By overlay = By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]");
+        By header = By.xpath("//*[@text='Close Position']");
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+        wait.ignoring(StaleElementReferenceException.class);
+        wait.until(d -> d.findElements(overlay).stream().noneMatch(el -> {
+            try {
+                return el.isDisplayed();
+            } catch (StaleElementReferenceException e) {
+                return false;
+            }
+        }));
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(header));
     }
 }

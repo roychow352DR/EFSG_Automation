@@ -4,6 +4,7 @@ import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.ios.IOSDriver;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
@@ -80,7 +81,12 @@ public class AppHomePage {
 
     public void navigateToSignupPage() throws InterruptedException {
         if (driver instanceof AndroidDriver) {
-            signUpButtonAos.click();
+            try {
+                abs.tapVisible(By.xpath("//*[@text='Sign Up / Login']"), 10);
+            } catch (org.openqa.selenium.TimeoutException e) {
+                abs.tapVisible(By.xpath("//android.widget.TextView[@text='Me']"), 10);
+                abs.tapVisible(By.xpath("//*[@text='Sign Up / Login']"), 10);
+            }
         } else {
             applicationButtonIos.click();
         }
