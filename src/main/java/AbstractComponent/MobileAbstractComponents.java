@@ -385,17 +385,13 @@ public class MobileAbstractComponents {
 
     private Point centerPointIfVisible(WebDriver d, By locator) {
         try {
-            List<WebElement> elements = d.findElements(locator);
-            if (elements.isEmpty()) {
-                return null;
+            for (WebElement element : d.findElements(locator)) {
+                Point point = centerIfShown(element);
+                if (point != null) {
+                    return point;
+                }
             }
-            WebElement element = elements.getFirst();
-            if (!element.isDisplayed()) {
-                return null;
-            }
-            Point location = element.getLocation();
-            Dimension size = element.getSize();
-            return new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+            return null;
         } catch (StaleElementReferenceException e) {
             return null;
         }
@@ -406,17 +402,32 @@ public class MobileAbstractComponents {
             Point best = null;
             int maxY = Integer.MIN_VALUE;
             for (WebElement element : d.findElements(locator)) {
-                if (!element.isDisplayed()) {
+                Point point = centerIfShown(element);
+                if (point == null) {
                     continue;
                 }
-                Point location = element.getLocation();
-                Dimension size = element.getSize();
-                if (location.getY() >= maxY) {
-                    maxY = location.getY();
-                    best = new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+                if (point.getY() >= maxY) {
+                    maxY = point.getY();
+                    best = point;
                 }
             }
             return best;
+        } catch (StaleElementReferenceException e) {
+            return null;
+        }
+    }
+
+    private Point centerIfShown(WebElement element) {
+        try {
+            if (!element.isDisplayed()) {
+                return null;
+            }
+            Point location = element.getLocation();
+            Dimension size = element.getSize();
+            if (size.getWidth() <= 0 || size.getHeight() <= 0) {
+                return null;
+            }
+            return new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
         } catch (StaleElementReferenceException e) {
             return null;
         }
