@@ -618,7 +618,7 @@ public class tradeSteps extends BaseTest {
 
     @And("the user taps back button on the app trade view")
     public void the_user_taps_back_button_on_the_app_trade_view() {
-        appPoManager.getAppTradeView().tapBack();
+        appPoManager.getAppTradeView().leaveTradeView();
     }
 
     @Then("the user sees confirmation dialogue on the portfolio page")
