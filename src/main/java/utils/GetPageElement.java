@@ -149,11 +149,14 @@ public class GetPageElement {
 
     private String safeAttr(WebElement el, String attr) {
         try {
-            String value = el.getAttribute(attr);
-            if (value == null) {
-                return "";
+            String value = el.getDomAttribute(attr);
+            if (value == null || value.isBlank() || "null".equalsIgnoreCase(value.trim())) {
+                value = el.getDomProperty(attr);
             }
-            if ("null".equalsIgnoreCase(value.trim())) {
+            if (value == null || value.isBlank() || "null".equalsIgnoreCase(value.trim())) {
+                value = el.getAttribute(attr);
+            }
+            if (value == null || "null".equalsIgnoreCase(value.trim())) {
                 return "";
             }
             return value.trim();
@@ -278,41 +281,95 @@ public class GetPageElement {
     public String resolveLabelValue(String uiLabel) {
         includeUnimportantViews();
         waitForLabel(uiLabel);
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(20))
+                    .pollingEvery(Duration.ofMillis(400))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> readLabelValueOnce(uiLabel));
+        } catch (TimeoutException e) {
+            logWarn("Could not resolve value for label [" + uiLabel + "] after waiting");
+            return null;
+        }
+    }
 
-        for (int attempt = 1; attempt <= 5; attempt++) {
-            try {
-                String value = plausible(uiLabel, findValueFromParentRow(uiLabel));
-                if (value == null) {
-                    value = plausible(uiLabel, findValueBetweenAdjacentLabels(uiLabel));
-                }
-                if (value == null) {
-                    value = plausible(uiLabel, findValueOnSameRowFromSource(uiLabel));
-                }
-                if (value == null) {
-                    value = plausible(uiLabel, findValueOnSameRow(uiLabel));
-                }
-                if (value == null) {
-                    value = plausible(uiLabel, findValueFromSiblings(uiLabel));
-                }
-                if (value == null) {
-                    value = plausible(uiLabel, findValueByFollowingSibling(uiLabel));
-                }
-                if (value == null) {
-                    value = plausible(uiLabel, findValueByFollowingSiblingScoped(uiLabel));
-                }
-                if (value == null) {
-                    value = plausible(uiLabel, findValueFromPageSource(uiLabel));
-                }
-                if (value == null) {
-                    value = plausible(uiLabel, findPaintedRowValue(uiLabel));
-                }
-                if (value != null) {
-                    return value;
-                }
-            } catch (StaleElementReferenceException e) {
-                logWarn("Stale hierarchy while reading [" + uiLabel + "], retry " + attempt);
+    private String readLabelValueOnce(String uiLabel) {
+        if ("Direction".equals(uiLabel) || "Side".equals(uiLabel)) {
+            String direction = plausible(uiLabel, findDirectionValue());
+            if (direction != null) {
+                return direction;
             }
-            abs.sleep(300);
+        }
+        String value = plausible(uiLabel, findValueFromParentRow(uiLabel));
+        if (value == null) {
+            value = plausible(uiLabel, findValueBetweenAdjacentLabels(uiLabel));
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findValueOnSameRowFromSource(uiLabel));
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findValueOnSameRow(uiLabel));
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findValueFromSiblings(uiLabel));
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findValueByFollowingSibling(uiLabel));
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findValueByFollowingSiblingScoped(uiLabel));
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findValueFromPageSource(uiLabel));
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findPaintedRowValue(uiLabel));
+        }
+        return value;
+    }
+
+    private String findDirectionValue() {
+        for (String direction : Arrays.asList("BUY", "SELL")) {
+            List<WebElement> matches = driver.findElements(By.xpath(
+                    "//*[@text='" + direction + "' or @content-desc='" + direction + "']"
+            ));
+            for (WebElement match : matches) {
+                try {
+                    String text = firstUsableValue(extractBestText(match), direction);
+                    if (text != null && isPlausibleValue("Direction", text)) {
+                        logInfo("Found Direction from accessibility node: " + text);
+                        return text.equalsIgnoreCase("SELL") ? "SELL" : "BUY";
+                    }
+                } catch (StaleElementReferenceException ignored) {
+                }
+            }
+        }
+
+        String source;
+        try {
+            source = driver.getPageSource();
+        } catch (Exception e) {
+            return null;
+        }
+        if (source == null || source.isBlank()) {
+            return null;
+        }
+
+        int from = source.indexOf("text=\"Direction\"");
+        String window = from >= 0
+                ? source.substring(from, Math.min(source.length(), from + 4000))
+                : source;
+        int volumeAt = window.indexOf("text=\"Volume\"");
+        if (volumeAt > 0) {
+            window = window.substring(0, volumeAt);
+        }
+
+        Matcher matcher = Pattern.compile(
+                "(?:text|content-desc|contentDescription|name)=\"(BUY|SELL|Buy|Sell)\""
+        ).matcher(window);
+        if (matcher.find()) {
+            String found = matcher.group(1).equalsIgnoreCase("SELL") ? "SELL" : "BUY";
+            logInfo("Found Direction from page source: " + found);
+            return found;
         }
         return null;
     }
@@ -546,7 +603,7 @@ public class GetPageElement {
                     }
                 }
             } catch (StaleElementReferenceException ignored) {
-                return null;
+                // Live quotes can invalidate a child; try the next parent.
             }
         }
         return null;
@@ -753,7 +810,7 @@ public class GetPageElement {
                         return text.trim();
                     }
                 } catch (StaleElementReferenceException ignored) {
-                    return null;
+                    // Live quotes can invalidate one node; keep scanning the rest.
                 }
             }
         }
