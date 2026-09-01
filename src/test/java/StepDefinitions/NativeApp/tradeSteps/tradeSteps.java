@@ -160,16 +160,25 @@ public class tradeSteps extends BaseTest {
 
     @And("the user edit price type {string} of the position on the instrument details page")
     public void the_user_edit_price_type_of_the_position_on_the_app_trade_view(String priceType) {
-        appPoManager.getAppInstrumentDetailsPage().editTextField(priceType, AppTradeView.selectedDirection, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
+        appPoManager.getAppEditPositionPage().fillInTextField(
+                priceType,
+                AppTradeView.selectedDirection,
+                tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),
+                25
+        );
     }
 
     @Then("the user sees market order values are displayed correctly with the user input value on the position details page")
     public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_position_details_page() throws InterruptedException {
         Thread.sleep(3000);
         for (String value : appPoManager.getAppTradeView().marketOrderConfirmationPageValues()) {
+            String expected = appPoManager.getAppEditPositionPage().getValidationValue(value);
+            if (expected == null) {
+                expected = appPoManager.getAppInstrumentDetailsPage().getValidationValue(value);
+            }
             Assert.assertEquals(
                     appPoManager.getAppTradeView().getPositionValueByLabel(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
-                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(value)
+                    expected
             );
         }
         appPoManager.getAppTradeView().closePositionInDetails();

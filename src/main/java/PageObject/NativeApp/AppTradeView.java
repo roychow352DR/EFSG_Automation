@@ -910,10 +910,14 @@ public class AppTradeView {
 
     public List<String> marketOrderConfirmationPageValues() {
         List<String> values = new ArrayList<>();
-        if (stopLossPrice != null || AppInstrumentDetailsPage.stopLossPrice != null) {
+        if (stopLossPrice != null
+                || AppInstrumentDetailsPage.stopLossPrice != null
+                || AppEditPositionPage.stopLossPrice != null) {
             values.add("Stop Loss Price");
         }
-        if (takeProfitPrice != null || AppInstrumentDetailsPage.takeProfitPrice != null) {
+        if (takeProfitPrice != null
+                || AppInstrumentDetailsPage.takeProfitPrice != null
+                || AppEditPositionPage.takeProfitPrice != null) {
             values.add("Take Profit Price");
         }
         values.add("Direction");

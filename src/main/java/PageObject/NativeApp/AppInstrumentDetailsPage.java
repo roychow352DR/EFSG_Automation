@@ -359,16 +359,20 @@ public class AppInstrumentDetailsPage {
     }
 
     public void tapsButton(String buttonName) {
-        if (driver instanceof AndroidDriver) {
-
-            By button;
-            if (buttonName.contains("Cancel Order")) {
-                button = By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup");
-            } else {
-                button = By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup");
-            }
-            abs.waitUntilElementClickable(button).click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+        if (buttonName.equals("Edit Position") || buttonName.equals("Modify Order")) {
+            abs.tapBottomMost(By.xpath("//*[@text='" + buttonName + "']"), 10);
+            return;
+        }
+        By button;
+        if (buttonName.contains("Cancel Order")) {
+            button = By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup");
+        } else {
+            button = By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup");
+        }
+        abs.waitUntilElementClickable(button).click();
     }
 
     public void tapsButtonOnConfirm(String buttonName) {
