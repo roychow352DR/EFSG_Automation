@@ -473,6 +473,7 @@ public class AppTradeView {
         }
         waitUntilOverlayGone();
         waitForTradeRowArea();
+        revealListForCurrentOrder();
         switch (buttonName) {
             case "detail" -> openRowDetails();
             case "close" -> openClosePositionPage();
@@ -481,14 +482,58 @@ public class AppTradeView {
     }
 
     private void openEditPosition() {
-        clickBottomRowCta(rowEditLocators());
-        if (isHeaderVisible("Edit Position", 8)) {
+        if (!tryClickRowCta(rowEditLocators())) {
+            revealOtherOrderList();
+            clickBottomRowCta(rowEditLocators());
+        }
+        if (isEditOrModifyOpen(8)) {
             return;
         }
         abs.swipeUp(driver);
         clickBottomRowCta(rowEditLocators());
-        if (!isHeaderVisible("Edit Position", 8)) {
-            throw new TimeoutException("Edit Position did not open after tapping the edit CTA");
+        if (!isEditOrModifyOpen(8)) {
+            throw new TimeoutException("Edit or Modify page did not open after tapping the edit CTA");
+        }
+    }
+
+    private boolean isEditOrModifyOpen(int seconds) {
+        return isHeaderVisible("Edit Position", seconds) || isHeaderVisible("Modify Order", seconds);
+    }
+
+    private boolean isPendingOrderFlow() {
+        String type = AppInstrumentDetailsPage.stopOrderType;
+        return type != null && !type.isBlank();
+    }
+
+    private void revealListForCurrentOrder() {
+        tapListTab(isPendingOrderFlow() ? "Pending Orders" : "Positions");
+    }
+
+    private void revealOtherOrderList() {
+        tapListTab(isPendingOrderFlow() ? "Positions" : "Pending Orders");
+    }
+
+    private void tapListTab(String tabName) {
+        List<By> locators = Arrays.asList(
+                By.xpath("//android.widget.TextView[@text='" + tabName + "']"),
+                By.xpath("//*[@text='" + tabName + "']"),
+                By.xpath("//android.widget.TextView[@text='" + tabName + "']/parent::android.view.ViewGroup")
+        );
+        for (By locator : locators) {
+            try {
+                abs.tapVisible(locator, 6);
+                return;
+            } catch (TimeoutException ignored) {
+            }
+        }
+    }
+
+    private boolean tryClickRowCta(List<By> locators) {
+        try {
+            clickBottomRowCta(locators);
+            return true;
+        } catch (TimeoutException e) {
+            return false;
         }
     }
 
