@@ -689,7 +689,7 @@ public class AppTradeView {
         try {
             Point point = new WebDriverWait(driver, Duration.ofSeconds(seconds))
                     .ignoring(StaleElementReferenceException.class)
-                    .until(d -> bottomMostRowCtaPoint(locators));
+                    .until(d -> listRowCtaPoint(locators));
             abs.tapAt(point.getX(), point.getY());
             return true;
         } catch (TimeoutException e) {
@@ -697,22 +697,42 @@ public class AppTradeView {
         }
     }
 
-    private Point bottomMostRowCtaPoint(List<By> locators) {
+    private Point listRowCtaPoint(List<By> locators) {
+        int minY = listAreaTopY();
         Point best = null;
-        int maxY = Integer.MIN_VALUE;
+        int bestY = Integer.MAX_VALUE;
         for (By locator : locators) {
             for (WebElement element : driver.findElements(locator)) {
                 Point point = visibleCenter(element);
-                if (point == null) {
+                if (point == null || point.getY() < minY) {
                     continue;
                 }
-                if (point.getY() >= maxY) {
-                    maxY = point.getY();
+                if (point.getY() < bestY) {
+                    bestY = point.getY();
                     best = point;
                 }
             }
         }
         return best;
+    }
+
+    private int listAreaTopY() {
+        int fallback = (int) (driver.manage().window().getSize().getHeight() * 0.42);
+        for (String tab : Arrays.asList("Positions", "Pending Orders")) {
+            try {
+                for (WebElement el : driver.findElements(By.xpath("//*[@text='" + tab + "']"))) {
+                    if (!el.isDisplayed()) {
+                        continue;
+                    }
+                    int top = el.getLocation().getY() + el.getSize().getHeight();
+                    if (top > 0) {
+                        return top;
+                    }
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return fallback;
     }
 
     private Point visibleCenter(WebElement element) {
