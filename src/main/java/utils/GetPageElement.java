@@ -76,18 +76,20 @@ public class GetPageElement {
             capturePageSource();
         }
         try {
-            String value = plausible(uiLabel, findValueOnSameRowFromSource(uiLabel));
+            String value = null;
+            if ("Direction".equals(uiLabel) || "Side".equals(uiLabel)) {
+                value = plausible(uiLabel, findDirectionValueFromSource());
+            } else if ("Volume".equals(uiLabel) || "Qty".equals(uiLabel)) {
+                value = plausible(uiLabel, resolveVolumeValue());
+            }
+            if (value == null) {
+                value = plausible(uiLabel, findValueOnSameRowFromSource(uiLabel));
+            }
             if (value == null) {
                 value = plausible(uiLabel, findValueBetweenAdjacentLabels(uiLabel));
             }
             if (value == null) {
                 value = plausible(uiLabel, findValueFromPageSource(uiLabel));
-            }
-            if (value == null && ("Direction".equals(uiLabel) || "Side".equals(uiLabel))) {
-                value = plausible(uiLabel, findDirectionValueFromSource());
-            }
-            if (value == null && ("Volume".equals(uiLabel) || "Qty".equals(uiLabel))) {
-                value = plausible(uiLabel, findVolumeValueFromSource());
             }
             if (value == null) {
                 value = plausible(uiLabel, findValueByFollowingSiblingScoped(uiLabel));
@@ -648,6 +650,10 @@ public class GetPageElement {
         if (withLots.find()) {
             return withLots.group(0).trim();
         }
+        Matcher gluedLots = Pattern.compile("(?i)(\\d+(?:[.,]\\d+)?)Lots?").matcher(text);
+        if (gluedLots.find()) {
+            return gluedLots.group(0).trim();
+        }
         Matcher numeric = Pattern.compile("^\\d+(?:[.,]\\d+)?$").matcher(text);
         return numeric.matches() ? text : null;
     }
@@ -690,6 +696,47 @@ public class GetPageElement {
         return pickVolumeBesideLabel(labelBoundsFromPageSource("Volume"), volumeHitsFromPageSource());
     }
 
+    private String resolveVolumeValue() {
+        String value = findVolumeValueFromSource();
+        if (value != null) {
+            return value;
+        }
+        value = volumeBetweenAdjacentLabels();
+        if (value != null) {
+            return value;
+        }
+        capturePageSource();
+        value = findVolumeValueFromSource();
+        if (value != null) {
+            return value;
+        }
+        return findVolumeValue();
+    }
+
+    private String volumeBetweenAdjacentLabels() {
+        String nextLabel = nextKnownLabel("Volume");
+        String source = pageSource();
+        if (nextLabel == null || source == null || source.isBlank()) {
+            return null;
+        }
+        Matcher window = Pattern.compile(
+                Pattern.quote("text=\"Volume\"") + "(.*?)" + Pattern.quote("text=\"" + nextLabel + "\""),
+                Pattern.DOTALL
+        ).matcher(source);
+        if (!window.find()) {
+            return null;
+        }
+        Matcher token = Pattern.compile("(?:^|[\\s])(?:text|content-desc|contentDescription|name|hint)=\"([^\"]+)\"").matcher(window.group(1));
+        while (token.find()) {
+            String found = extractVolumeToken(token.group(1));
+            if (found != null) {
+                logInfo("Found Volume between adjacent labels: " + found);
+                return found;
+            }
+        }
+        return null;
+    }
+
     private String pickVolumeBesideLabel(Rect labelRect, List<VolumeHit> hits) {
         if (labelRect == null) {
             return null;
@@ -719,7 +766,9 @@ public class GetPageElement {
         if (rect == null) {
             return false;
         }
-        if (!isOnCompactRow(labelRect, rect)) {
+        int slop = Math.min(64, Math.max(32, labelRect.height() + 16));
+        boolean sameRow = Math.abs(rect.centerY() - labelRect.centerY()) <= slop;
+        if (!sameRow) {
             return false;
         }
         boolean toRight = rect.left >= labelRect.right - 20;
@@ -731,8 +780,14 @@ public class GetPageElement {
     }
 
     private boolean isLotChipHit(VolumeHit hit, List<VolumeHit> all) {
+        if (hit.token().toLowerCase().contains("lot")) {
+            return false;
+        }
         int sameRow = 0;
         for (VolumeHit other : all) {
+            if (other.token().toLowerCase().contains("lot")) {
+                continue;
+            }
             if (Math.abs(other.rect().centerY() - hit.rect().centerY()) <= 24) {
                 sameRow++;
             }
@@ -911,10 +966,10 @@ public class GetPageElement {
             return null;
         }
 
-        Matcher textMatcher = Pattern.compile("(?:text|content-desc|contentDescription|name)=\"([^\"]+)\"").matcher(windowMatcher.group(1));
+        Matcher textMatcher = Pattern.compile("(?:^|[\\s])(?:text|content-desc|contentDescription|name)=\"([^\"]+)\"").matcher(windowMatcher.group(1));
         while (textMatcher.find()) {
             String found = textMatcher.group(1).trim();
-            if (found.isBlank() || uiLabel.equals(found) || isLikelyLabel(found)) {
+            if (found.isBlank() || uiLabel.equals(found) || isLikelyLabel(found) || !isPlausibleValue(uiLabel, found)) {
                 continue;
             }
             logInfo("Found value for label [" + uiLabel + "] between adjacent labels: " + found);
@@ -1129,7 +1184,7 @@ public class GetPageElement {
 
         for (int i = 0; i < values.size(); i++) {
             String value = values.get(i);
-            if (uiLabel.equals(value) || isLikelyLabel(value)) {
+            if (uiLabel.equals(value) || isLikelyLabel(value) || !isPlausibleValue(uiLabel, value)) {
                 continue;
             }
             int[] bounds = nodes.get(i);
@@ -1154,12 +1209,12 @@ public class GetPageElement {
     }
 
     private String xmlAttr(String tag, String name) {
-        Matcher matcher = Pattern.compile(name + "=\"([^\"]*)\"").matcher(tag);
+        Matcher matcher = Pattern.compile("(?:^|[\\s])" + Pattern.quote(name) + "=\"([^\"]*)\"").matcher(tag);
         if (!matcher.find()) {
             return "";
         }
         String value = matcher.group(1);
-        return "null".equalsIgnoreCase(value) ? "" : value.trim();
+        return isNoiseValue(value) ? "" : value.trim();
     }
 
     private String valueAfterStrippingLabels(String combined, String uiLabel) {
