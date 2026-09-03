@@ -374,6 +374,17 @@ public class MobileAbstractComponents {
         tapAt(point.getX(), point.getY());
     }
 
+    public void tapVisibleRight(By locator, int seconds) {
+        Point point = waitUntilPointStable(seconds, d -> rightCenterIfVisible(d, locator));
+        tapAt(point.getX(), point.getY());
+    }
+
+    public void tapOnSameRowRight(By locator, int seconds) {
+        Point point = waitUntilPointStable(seconds, d -> centerPointIfVisible(d, locator));
+        Dimension window = driver.manage().window().getSize();
+        tapAt((int) (window.getWidth() * 0.87), point.getY());
+    }
+
     public void tapBottomMost(By locator, int seconds) {
         Point point = waitUntilPointStable(seconds, d -> bottomCenterIfVisible(d, locator));
         tapAt(point.getX(), point.getY());
@@ -417,6 +428,23 @@ public class MobileAbstractComponents {
         }
     }
 
+    private Point rightCenterIfVisible(WebDriver d, By locator) {
+        try {
+            for (WebElement element : d.findElements(locator)) {
+                Point center = centerIfShown(element);
+                if (center == null) {
+                    continue;
+                }
+                Dimension size = element.getSize();
+                int shift = size.getWidth() > 0 ? Math.max(size.getWidth() / 2 + 16, 24) : 40;
+                return new Point(center.getX() + shift, center.getY());
+            }
+            return null;
+        } catch (StaleElementReferenceException e) {
+            return null;
+        }
+    }
+
     private Point bottomCenterIfVisible(WebDriver d, By locator) {
         try {
             Point best = null;
@@ -444,13 +472,35 @@ public class MobileAbstractComponents {
             }
             Point location = element.getLocation();
             Dimension size = element.getSize();
-            if (size.getWidth() <= 0 || size.getHeight() <= 0) {
-                return null;
+            if (size.getWidth() > 0 && size.getHeight() > 0) {
+                return new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
             }
-            return new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+            return centerFromBounds(element);
         } catch (StaleElementReferenceException e) {
             return null;
         }
+    }
+
+    private Point centerFromBounds(WebElement element) {
+        String bounds = element.getDomAttribute("bounds");
+        if (bounds == null || bounds.isBlank()) {
+            bounds = element.getAttribute("bounds");
+        }
+        if (bounds == null || bounds.isBlank()) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]").matcher(bounds);
+        if (!matcher.find()) {
+            return null;
+        }
+        int left = Integer.parseInt(matcher.group(1));
+        int top = Integer.parseInt(matcher.group(2));
+        int right = Integer.parseInt(matcher.group(3));
+        int bottom = Integer.parseInt(matcher.group(4));
+        if (right <= left || bottom <= top) {
+            return null;
+        }
+        return new Point((left + right) / 2, (top + bottom) / 2);
     }
 
     public void tapAt(int x, int y) {
@@ -658,7 +708,9 @@ public class MobileAbstractComponents {
             return rawValue.replace("Lots", "").trim();
         }
 
-        if (label.equalsIgnoreCase("Initial Margin") || label.equalsIgnoreCase("Estimated Margin")) {
+        if (label.equalsIgnoreCase("Initial Margin")
+                || label.equalsIgnoreCase("Estimated Margin")
+                || label.equalsIgnoreCase("Est. Margin")) {
             String[] parts = rawValue.split("USD");
             return parts.length > 1 ? parts[1].trim().replace(",", "") : rawValue.replace(",", "");
         }

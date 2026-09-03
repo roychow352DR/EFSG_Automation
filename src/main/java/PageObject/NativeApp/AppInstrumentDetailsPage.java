@@ -17,6 +17,7 @@ import utils.GetPageElement;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class AppInstrumentDetailsPage {
 
@@ -140,11 +141,41 @@ public class AppInstrumentDetailsPage {
         return false;
     }
 
-    public void switchProfitStopLoss() throws InterruptedException {
-        if (driver instanceof AndroidDriver) {
-            Thread.sleep(2000);
-            stopLossSwitchAos.click();
+    public void switchProfitStopLoss() {
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+        waitForOrderTicket();
+        TimeoutException lastError = null;
+        for (By locator : tpslToggleLocators()) {
+            try {
+                if (isTpslLabelLocator(locator)) {
+                    abs.tapOnSameRowRight(locator, 10);
+                } else {
+                    abs.tapVisible(locator, 10);
+                }
+                return;
+            } catch (TimeoutException e) {
+                lastError = e;
+            }
+        }
+        throw lastError != null
+                ? lastError
+                : new TimeoutException("Take Profit and Stop Loss toggle was not visible");
+    }
+
+    private List<By> tpslToggleLocators() {
+        return List.of(
+                By.xpath("//android.widget.TextView[contains(@text,'Take Profit') and contains(@text,'Stop Loss')]"),
+                By.xpath("//*[contains(@text,'Take Profit') and contains(@text,'Stop Loss')]"),
+                By.xpath("//android.widget.Switch"),
+                By.xpath("//*[@checkable='true']")
+        );
+    }
+
+    private boolean isTpslLabelLocator(By locator) {
+        String locatorText = locator.toString();
+        return locatorText.contains("Take Profit") && locatorText.contains("Stop Loss");
     }
 
     public String getStopLossPrice(String direction, String symbolDecimal) {
@@ -407,14 +438,51 @@ public class AppInstrumentDetailsPage {
     }
 
     public void fillValueIntoTextField(String textFieldName, String value) throws InterruptedException {
-        if (driver instanceof AndroidDriver) {
-            switch (textFieldName) {
-                case "Lot Size" -> {
-                    abs.tapVisible(By.xpath("//android.widget.TextView[@text=\"" + value + "\"]/parent::android.view.ViewGroup"), 10);
-                    Thread.sleep(1000);
-                    lotSize = getPageElement.canonicalizeVolume(getInputFieldValue("Lots"));
-                }
+        if (!(driver instanceof AndroidDriver) || !"Lot Size".equals(textFieldName)) {
+            return;
+        }
+        TimeoutException lastError = null;
+        for (By locator : lotChipLocators(value)) {
+            try {
+                abs.tapBottomMost(locator, 8);
+                Thread.sleep(500);
+                lotSize = getInputFieldValue("Lots");
+                return;
+            } catch (TimeoutException e) {
+                lastError = e;
             }
+        }
+        throw lastError != null
+                ? lastError
+                : new TimeoutException("Lot size chip was not visible: " + value);
+    }
+
+    private List<By> lotChipLocators(String value) {
+        List<By> locators = new ArrayList<>();
+        for (String text : lotChipTexts(value)) {
+            locators.add(By.xpath("//android.widget.TextView[@text='" + text + "']"));
+            locators.add(By.xpath("//*[@text='" + text + "']"));
+            locators.add(By.xpath("//android.widget.TextView[@text='" + text + "']/parent::android.view.ViewGroup"));
+        }
+        return locators;
+    }
+
+    private List<String> lotChipTexts(String value) {
+        List<String> texts = new ArrayList<>();
+        texts.add(value.trim());
+        try {
+            double number = Double.parseDouble(value.trim());
+            addLotChipText(texts, String.valueOf(number));
+            addLotChipText(texts, String.format(Locale.US, "%.1f", number));
+            addLotChipText(texts, String.format(Locale.US, "%.2f", number));
+        } catch (NumberFormatException ignored) {
+        }
+        return texts;
+    }
+
+    private void addLotChipText(List<String> texts, String text) {
+        if (!texts.contains(text)) {
+            texts.add(text);
         }
     }
 
@@ -456,46 +524,66 @@ public class AppInstrumentDetailsPage {
         }
 
         String text = orderType.trim();
+        waitForOrderTicket();
         openOrderTypePicker(text);
         clickOrderTypeOption(text);
     }
 
-    private void openOrderTypePicker(String optionText) {
-        By[] dropdownLocators = {
-                By.xpath("//android.widget.TextView[@text='Market Order']/ancestor::android.view.ViewGroup[@clickable='true'][1]"),
-                By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup"),
-                By.xpath("//android.widget.TextView[@text='Order']/parent::android.view.ViewGroup"),
-                By.xpath("//android.widget.TextView[@text='Market Order']")
-        };
-
-        for (By locator : dropdownLocators) {
-            try {
-                WebElement dropdown = new WebDriverWait(driver, Duration.ofSeconds(8))
-                        .until(ExpectedConditions.visibilityOfElementLocated(locator));
-                abs.tapElement(dropdown);
-                if (isOrderTypeOptionVisible(optionText)) {
-                    return;
-                }
-                dropdown.click();
-                if (isOrderTypeOptionVisible(optionText)) {
-                    return;
-                }
-            } catch (Exception ignored) {
-                // try the next locator
-            }
+    private void waitForOrderTicket() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .until(ExpectedConditions.visibilityOfElementLocated(By.xpath(
+                            "//android.widget.TextView[@text='Market Order' or @text='Limit / Stop Order' or @text='Lots']"
+                    )));
+        } catch (TimeoutException e) {
+            throw new TimeoutException("Order ticket was not visible", e);
         }
-
-        throw new TimeoutException("Failed to open order type dropdown");
     }
 
-    private boolean isOrderTypeOptionVisible(String optionText) {
+    private void openOrderTypePicker(String optionText) {
+        if (isOrderTypeOptionVisible(optionText, 1)) {
+            return;
+        }
+        By marketOrderText = By.xpath("//android.widget.TextView[@text='Market Order']");
+        try {
+            abs.tapVisibleRight(marketOrderText, 8);
+            if (isOrderTypeOptionVisible(optionText, 5)) {
+                return;
+            }
+        } catch (TimeoutException ignored) {
+        }
+        TimeoutException lastError = null;
+        for (By locator : orderTypeTriggerLocators()) {
+            try {
+                abs.tapVisible(locator, 8);
+                if (isOrderTypeOptionVisible(optionText, 5)) {
+                    return;
+                }
+            } catch (TimeoutException e) {
+                lastError = e;
+            }
+        }
+        throw new TimeoutException("Failed to open order type dropdown", lastError);
+    }
+
+    private List<By> orderTypeTriggerLocators() {
+        return List.of(
+                By.xpath("//android.widget.TextView[@text='Market Order']/ancestor::android.view.ViewGroup[.//android.widget.TextView[@text='Order']][1]"),
+                By.xpath("//android.widget.TextView[@text='Market Order']/parent::android.view.ViewGroup"),
+                By.xpath("//android.widget.TextView[@text='Market Order']"),
+                By.xpath("//*[@text='Market Order']"),
+                By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup")
+        );
+    }
+
+    private boolean isOrderTypeOptionVisible(String optionText, int seconds) {
         By exact = By.xpath("//android.widget.TextView[@text=\"" + optionText + "\"]");
         By containsLimitStop = By.xpath(
                 "//android.widget.TextView[contains(@text,'Limit') and contains(@text,'Stop')]"
         );
 
         try {
-            new WebDriverWait(driver, Duration.ofSeconds(5))
+            new WebDriverWait(driver, Duration.ofSeconds(seconds))
                     .until(ExpectedConditions.or(
                             ExpectedConditions.visibilityOfElementLocated(exact),
                             ExpectedConditions.visibilityOfElementLocated(containsLimitStop)
@@ -507,24 +595,20 @@ public class AppInstrumentDetailsPage {
     }
 
     private void clickOrderTypeOption(String text) {
-        By[] optionLocators = {
-                By.xpath("//android.widget.TextView[@text=\"" + text + "\"]/parent::android.view.ViewGroup"),
+        TimeoutException lastError = null;
+        for (By locator : List.of(
                 By.xpath("//android.widget.TextView[@text=\"" + text + "\"]"),
+                By.xpath("//*[@text=\"" + text + "\"]"),
+                By.xpath("//android.widget.TextView[@text=\"" + text + "\"]/parent::android.view.ViewGroup"),
                 By.xpath("//android.widget.TextView[contains(@text,'Limit') and contains(@text,'Stop')]")
-        };
-
-        Exception lastError = null;
-        for (By locator : optionLocators) {
+        )) {
             try {
-                WebElement option = new WebDriverWait(driver, Duration.ofSeconds(8))
-                        .until(ExpectedConditions.visibilityOfElementLocated(locator));
-                abs.tapElement(option);
+                abs.tapVisible(locator, 8);
                 return;
-            } catch (Exception e) {
+            } catch (TimeoutException e) {
                 lastError = e;
             }
         }
-
         throw new TimeoutException("Failed to click order type option text: " + text, lastError);
     }
 
@@ -591,12 +675,21 @@ public class AppInstrumentDetailsPage {
         lotSize = symbolLotSize;
     }
 
+    private String displayedLotSize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String text = value.replaceAll("(?i)\\s*Lots?", "").trim().replace(",", "");
+        return abs.normalizePriceToDecimals(text, "2");
+    }
+
     public String getValidationValue(String label) {
         return switch (label) {
             case "Stop Loss Price", "Stop Loss" -> stopLossPrice;
             case "Take Profit Price", "Take Profit" -> takeProfitPrice;
             case "Direction" -> AppTradeView.selectedDirection;
-            case "Volume", "Lots" -> getPageElement.canonicalizeVolume(lotSize);
+            case "Lots" -> displayedLotSize(lotSize);
+            case "Volume" -> getPageElement.canonicalizeVolume(lotSize);
             case "Stop Order Price" -> stopOrderPrice;
             case "Validity" -> validity;
             case "Est. Margin", "Estimated Margin" -> estMargin;
@@ -622,8 +715,18 @@ public class AppInstrumentDetailsPage {
     }
 
     public boolean getToggleStatus() {
-        //return Boolean.parseBoolean(((RemoteWebElement) stopLossSwitchAos).getDomAttribute("checked"));
-        return Boolean.parseBoolean(stopLossSwitchAos.getDomAttribute("checked"));
+        List<WebElement> switches = driver.findElements(By.xpath("//android.widget.Switch"));
+        for (WebElement toggle : switches) {
+            String checked = toggle.getDomAttribute("checked");
+            if (checked == null || checked.isBlank() || "null".equalsIgnoreCase(checked)) {
+                checked = toggle.getAttribute("checked");
+            }
+            if (checked != null && !"null".equalsIgnoreCase(checked)) {
+                return Boolean.parseBoolean(checked);
+            }
+        }
+        return !driver.findElements(By.xpath(
+                "//android.widget.TextView[contains(@text,'Stop Loss (')]")).isEmpty();
     }
 
     public void adjustPrice(String ctaBtn, String priceType) {
