@@ -616,9 +616,7 @@ public class AppInstrumentDetailsPage {
 
     public void selectStopLimitOption(String option) {
         stopOrderType = option;
-        if (driver instanceof AndroidDriver) {
-            abs.tapVisible(By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup"), 10);
-        }
+        tapOptionChip(option, "Stop limit option");
     }
 
     public void scrollDown() {
@@ -629,9 +627,36 @@ public class AppInstrumentDetailsPage {
 
     public void selectValidity(String option) {
         validity = option;
-        if (driver instanceof AndroidDriver) {
-            abs.tapVisible(By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup"), 10);
+        tapOptionChip(option, "Validity");
+    }
+
+    private void tapOptionChip(String option, String name) {
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+        TimeoutException lastError = null;
+        for (int pass = 0; pass < 2; pass++) {
+            for (By locator : optionChipLocators(option)) {
+                try {
+                    abs.tapVisible(locator, pass == 0 ? 8 : 5);
+                    return;
+                } catch (TimeoutException e) {
+                    lastError = e;
+                }
+            }
+            abs.swipeUp(driver);
+        }
+        throw lastError != null
+                ? lastError
+                : new TimeoutException(name + " was not visible: " + option);
+    }
+
+    private List<By> optionChipLocators(String option) {
+        return List.of(
+                By.xpath("//android.widget.TextView[@text=\"" + option + "\"]"),
+                By.xpath("//*[@text=\"" + option + "\"]"),
+                By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup")
+        );
     }
 
     public List<String> stopOrderConfirmationPageValues() {
