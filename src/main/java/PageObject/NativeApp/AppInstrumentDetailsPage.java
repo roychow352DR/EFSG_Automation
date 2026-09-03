@@ -410,9 +410,9 @@ public class AppInstrumentDetailsPage {
         if (driver instanceof AndroidDriver) {
             switch (textFieldName) {
                 case "Lot Size" -> {
-                    driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + value + "\"]/parent::android.view.ViewGroup")).click();
+                    abs.tapVisible(By.xpath("//android.widget.TextView[@text=\"" + value + "\"]/parent::android.view.ViewGroup"), 10);
                     Thread.sleep(1000);
-                    lotSize = getInputFieldValue("Lots");
+                    lotSize = getPageElement.canonicalizeVolume(getInputFieldValue("Lots"));
                 }
             }
         }
@@ -423,33 +423,29 @@ public class AppInstrumentDetailsPage {
     }
 
     public String getDetailValue(String value) {
-        return abs.getDialogueValue(value);
+        getPageElement.waitAndCaptureIfNeeded(
+                By.xpath("//android.view.ViewGroup[@resource-id='RNE__Overlay']"), 10);
+        String uiLabel = getPageElement.mapUiLabel(value);
+        String rawValue = getPageElement.readLabelValueFast(uiLabel);
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new NoSuchElementException("Could not find value in hierarchy for label: " + uiLabel);
+        }
+        return getPageElement.normalizeByLabel(value, rawValue.trim(), "");
     }
 
     public String getDetailValue(String label, String symbolDecimal) {
         String uiLabel = getPageElement.mapUiLabel(label);
-
-        String rawValue = getPageElement.findValueOnSameRow(uiLabel);
-
-        if (rawValue == null || rawValue.isBlank()) {
-            rawValue = getPageElement.findValueByFollowingSibling(uiLabel);
-        }
-
-        if (rawValue == null || rawValue.isBlank()) {
-            rawValue = getPageElement.findValueByFollowingSiblingScoped(uiLabel);
-        }
-
-        if (rawValue == null || rawValue.isBlank()) {
-            rawValue = getPageElement.findValueFromPageSource(uiLabel);
-        }
-
+        String rawValue = getPageElement.readLabelValueFast(uiLabel);
         if (rawValue == null || rawValue.isBlank()) {
             throw new NoSuchElementException("Could not find value in hierarchy for label: " + uiLabel);
         }
-
         getPageElement.logInfo("Resolved raw value for " + uiLabel + ": " + rawValue);
-
         return getPageElement.normalizeByLabel(label, rawValue.trim(), symbolDecimal);
+    }
+
+    public void waitForConfirmationPopup() {
+        getPageElement.waitAndCapture(
+                By.xpath("//android.view.ViewGroup[@resource-id='RNE__Overlay']"), 10);
     }
 
 
@@ -537,7 +533,7 @@ public class AppInstrumentDetailsPage {
     public void selectStopLimitOption(String option) {
         stopOrderType = option;
         if (driver instanceof AndroidDriver) {
-            driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup")).click();
+            abs.tapVisible(By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup"), 10);
         }
     }
 
@@ -550,7 +546,7 @@ public class AppInstrumentDetailsPage {
     public void selectValidity(String option) {
         validity = option;
         if (driver instanceof AndroidDriver) {
-            driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup")).click();
+            abs.tapVisible(By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup"), 10);
         }
     }
 
@@ -600,7 +596,7 @@ public class AppInstrumentDetailsPage {
             case "Stop Loss Price", "Stop Loss" -> stopLossPrice;
             case "Take Profit Price", "Take Profit" -> takeProfitPrice;
             case "Direction" -> AppTradeView.selectedDirection;
-            case "Volume", "Lots" -> lotSize;
+            case "Volume", "Lots" -> getPageElement.canonicalizeVolume(lotSize);
             case "Stop Order Price" -> stopOrderPrice;
             case "Validity" -> validity;
             case "Est. Margin", "Estimated Margin" -> estMargin;
@@ -613,9 +609,10 @@ public class AppInstrumentDetailsPage {
         if (driver instanceof AndroidDriver) {
             if (label.equalsIgnoreCase("Lots")) {
                 return editTextFieldAos.getFirst().getText();
-            } else {
-                return abs.getLabelValue(label);
             }
+            String uiLabel = getPageElement.mapUiLabel(label);
+            String rawValue = getPageElement.readLabelValueFast(uiLabel);
+            return rawValue == null ? null : getPageElement.normalizeByLabel(label, rawValue, symbol);
         }
         return "label not found";
     }
@@ -674,6 +671,7 @@ public class AppInstrumentDetailsPage {
     }
 
     public void closeConfirmation() {
+        getPageElement.clearPageSourceCache();
         if (!(driver instanceof AndroidDriver)) {
             return;
         }

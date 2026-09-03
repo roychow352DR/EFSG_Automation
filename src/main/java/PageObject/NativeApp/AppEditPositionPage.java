@@ -75,9 +75,9 @@ public class AppEditPositionPage {
 
 
     public String getDisplayedValue(String label, String symbolDecimal) {
-        abs.waitUntilElementVisible(By.xpath("//*[@text='Edit Position']"));
+        getPageElement.waitAndCaptureIfNeeded(By.xpath("//*[@text='Edit Position']"), 10);
         String uiLabel = getPageElement.mapUiLabel(label);
-        String rawValue = getPageElement.resolveLabelValue(uiLabel);
+        String rawValue = getPageElement.readLabelValueFast(uiLabel);
         if (rawValue == null || rawValue.isBlank()) {
             throw new NoSuchElementException("Could not find value on Edit Position for label: " + uiLabel);
         }

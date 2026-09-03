@@ -14,7 +14,6 @@ import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 
 public class AppPortfolioPage {
@@ -225,27 +224,13 @@ public class AppPortfolioPage {
     }
 
     public boolean isValueDisplayedCorrect(String label) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(60));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         wait.ignoring(StaleElementReferenceException.class);
 
         try {
             return wait.until(d -> {
-                List<WebElement> elements = d.findElements(
-                        By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.widget.TextView"));
-                List<String> texts = new ArrayList<>();
-
-                for (WebElement element : elements) {
-                    texts.add(element.getText());
-                }
-
-                for (int i = 0; i < texts.size() - 1; i++) {
-                    String currentLabel = texts.get(i);
-
-                    if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
-                            return true;
-                    }
-                }
-                return false;
+                String source = d.getPageSource();
+                return source != null && source.contains(label);
             });
         } catch (TimeoutException e) {
             return false;

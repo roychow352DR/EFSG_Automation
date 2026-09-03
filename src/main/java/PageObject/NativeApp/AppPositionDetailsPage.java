@@ -54,9 +54,9 @@ public class AppPositionDetailsPage {
 
 
     public String getDetailValue(String label) {
-        abs.waitUntilElementVisible(By.xpath("//*[@text='Position Details']"));
+        getPageElement.waitAndCaptureIfNeeded(By.xpath("//*[@text='Position Details']"), 10);
         String uiLabel = getPageElement.mapPositionDetailsLabel(label);
-        String rawValue = getPageElement.resolveLabelValue(uiLabel);
+        String rawValue = getPageElement.readLabelValueFast(uiLabel);
         if (rawValue == null || rawValue.isBlank()) {
             throw new NoSuchElementException("Could not find value on Position Details for label: " + uiLabel);
         }

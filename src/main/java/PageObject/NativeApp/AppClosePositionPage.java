@@ -5,6 +5,7 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
@@ -12,6 +13,7 @@ import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.GetPageElement;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -23,10 +25,12 @@ public class AppClosePositionPage {
 
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
+    private final GetPageElement getPageElement;
 
     public AppClosePositionPage(AppiumDriver driver){
         this.driver = driver;
         this.abs = new MobileAbstractComponents(driver);
+        this.getPageElement = new GetPageElement(driver);
         PageFactory.initElements(new AppiumFieldDecorator(driver, Duration.ofSeconds(10)), this);
     }
 
@@ -93,7 +97,8 @@ public class AppClosePositionPage {
                     return text.get(i + 1).getText().split("USD")[1].trim().replace(",", "");
                 }
                 else if (value.equalsIgnoreCase("Floating P/L")) {
-                    return text.get(i + 1).getText().split(" ")[0].trim();
+                    String token = text.get(i + 1).getText().split(" ")[0].trim();
+                    return token.startsWith("+") ? token.substring(1) : token;
                 }
                 return text.get(i + 1).getText();
             }
@@ -140,38 +145,22 @@ public class AppClosePositionPage {
         }
 
         if (label.equalsIgnoreCase("Floating P/L")) {
-            return rawValue.split(" ")[0].trim();
+            String token = rawValue.split(" ")[0].trim();
+            return token.startsWith("+") ? token.substring(1) : token;
         }
 
         return rawValue;
     }
 
     public String getDetailValue(String label) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-        wait.ignoring(StaleElementReferenceException.class);
-
-        try {
-            return wait.until(d -> {
-                List<WebElement> elements = d.findElements(By.className("android.widget.TextView"));
-                List<String> texts = new ArrayList<>();
-
-                for (WebElement element : elements) {
-                    texts.add(element.getText());
-                }
-
-                for (int i = 0; i < texts.size() - 1; i++) {
-                    String currentLabel = texts.get(i);
-
-                    if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
-                        return normalizeConfirmationValue(label, texts.get(i + 1));
-                    }
-                }
-
-                return null;
-            });
-        } catch (TimeoutException e) {
-            return null;
+        getPageElement.waitAndCaptureIfNeeded(
+                By.xpath("//android.view.ViewGroup[@resource-id='RNE__Overlay']"), 10);
+        String uiLabel = getPageElement.mapUiLabel(label);
+        String rawValue = getPageElement.readLabelValueFast(uiLabel);
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new NoSuchElementException("Could not find value on Close Position for label: " + uiLabel);
         }
+        return normalizeConfirmationValue(label, rawValue);
     }
 
     public void confirmPositionClose() {

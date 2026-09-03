@@ -22,8 +22,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
 
 /**
  * MobileDriver class handles the initialization and configuration of mobile automation drivers.
@@ -32,8 +30,13 @@ import java.util.Properties;
 public class MobileDriver {
     private static final String APPIUM_SERVER_URL = "http://127.0.0.1:4723";
     private static final String APPIUM_JS_PATH = "//usr//local//lib//node_modules//appium//build//lib//main.js";
-    private static final Duration IMPLICIT_WAIT = Duration.ofSeconds(10);
-    private static final Duration EXPLICIT_WAIT = Duration.ofSeconds(30);
+    private static final Duration IMPLICIT_WAIT = Duration.ZERO;
+    private static final Duration APP_READY_WAIT = Duration.ofSeconds(15);
+    // Package is entity-specific; the RN launcher class is still CopyMaster MainActivity.
+    private static final String ANDROID_LAUNCH_ACTIVITY = "com.mfinance.copymaster.MainActivity";
+    private static final By ANDROID_FIRST_SCREEN = By.xpath(
+            "//*[@text='Home' or @text='Markets' or @text='Me' or @text='Sign Up / Login']"
+    );
     private static final Duration WDA_LAUNCH_TIMEOUT = Duration.ofSeconds(20);
     private static final String IOS_BUNDLE_ID = "com.efsg.eiehktrading.ios.sit";
     private static final String IOS_DEEPLINK = "eunify.eiehk.uat://app/tabDirectory?screen=Tab_Me";
@@ -105,150 +108,50 @@ public class MobileDriver {
         }
     }
 
-    private void waitForAppReady(AppiumDriver driver,String androidAppPackage) {
+    private void waitForAppReady(AppiumDriver driver, String androidAppPackage) {
         try {
-            // Customize these constants for your app
-
-            String androidMainActivity = "com.mfinance.copymaster.MainActivity";
-            String iosBundleId = "com.yourcompany.youriosapp";
-
-            // Example locators: pick stable elements that always appear on the first screen
-            By androidHomeRoot = By.id("com.emperorfs.ebltrading.android:id/home_root");
-            By iosHomeRoot = By.id("home_root_accessibility_id"); // example
-
-            Duration timeout = Duration.ofSeconds(30);
-
             if (driver instanceof AndroidDriver) {
-                waitForAndroidAppReady(
-                        driver,
-                        androidAppPackage,
-                        androidMainActivity,
-                        androidHomeRoot,
-                        timeout
-                );
-            } else if (driver instanceof IOSDriver) {
-//                waitForIosAppReady(
-//                        driver,
-//                        iosBundleId,
-//                        iosHomeRoot,
-//                        timeout
-//
+                waitForAndroidAppReady(driver, androidAppPackage);
             } else {
                 System.err.println("Unknown driver type; skipping app-ready wait");
             }
         } catch (Exception e) {
             System.err.println("Warning: Error while waiting for app to be ready: " + e.getMessage());
-            // Decide if you want to fail setup or just log
-            // throw e;
         }
     }
 
-    private void waitForAndroidAppReady(AppiumDriver driver,
-                                        String appPackage,
-                                        String expectedActivity,
-                                        By readyElementLocator,
-                                        Duration timeout) {
-
+    private void waitForAndroidAppReady(AppiumDriver driver, String appPackage) {
         System.out.println("Waiting for Android app to be ready...");
 
-        // 1. Check app state and activate if needed
         if (driver instanceof InteractsWithApps apps) {
             try {
                 var state = apps.queryAppState(appPackage);
                 System.out.println("Android app state: " + state);
-
-                // If app is not running or is in background, activate it
                 if (state.name().contains("NOT_RUNNING") || state.name().contains("RUNNING_IN_BACKGROUND")) {
                     System.out.println("App is not in foreground, activating app: " + appPackage);
-                    try {
-                        apps.activateApp(appPackage);
-                        Thread.sleep(2000); // Give app time to come to foreground
-                    } catch (Exception e) {
-                        System.err.println("Failed to activate app, trying to start activity via mobile command: " + e.getMessage());
-                        // If activateApp fails, try starting the activity using mobile command
-                        try {
-                            Map<String, Object> args = new HashMap<>();
-                            args.put("appPackage", appPackage);
-                            args.put("appActivity", expectedActivity);
-                            driver.executeScript("mobile: startActivity", args);
-                            Thread.sleep(2000);
-                        } catch (Exception ex) {
-                            System.err.println("Failed to start activity via mobile command: " + ex.getMessage());
-                        }
-                    }
+                    apps.activateApp(appPackage);
                 }
-
-                // Wait for app to be in RUNNING state (foreground)
-                new WebDriverWait(driver, timeout)
-                        .until(d -> {
-                            try {
-                                var currentState = apps.queryAppState(appPackage);
-                                System.out.println("Android app state: " + currentState);
-                                return currentState.name().contains("RUNNING") &&
-                                        !currentState.name().contains("BACKGROUND");
-                            } catch (Exception e) {
-                                System.err.println("Error querying Android app state: " + e.getMessage());
-                                return false;
-                            }
-                        });
+                new WebDriverWait(driver, APP_READY_WAIT).until(d -> {
+                    try {
+                        var currentState = apps.queryAppState(appPackage);
+                        return currentState.name().contains("RUNNING")
+                                && !currentState.name().contains("BACKGROUND");
+                    } catch (Exception e) {
+                        System.err.println("Error querying Android app state: " + e.getMessage());
+                        return false;
+                    }
+                });
             } catch (Exception e) {
                 System.err.println("Error checking/activating app state: " + e.getMessage());
             }
         }
 
-        // 2. Wait for main activity to be displayed
-        if (driver instanceof AndroidDriver androidDriver) {
-            long end = System.currentTimeMillis() + timeout.toMillis();
-            int attempts = 0;
-            while (System.currentTimeMillis() < end && attempts < 10) {
-                try {
-                    String current = androidDriver.currentActivity();
-                    System.out.println("Current activity: " + current);
-                    if (current != null && current.contains(expectedActivity)) {
-                        System.out.println("Expected activity found: " + expectedActivity);
-                        break;
-                    }
-                    // If still on launcher after 3 attempts, try to activate app again
-                    if (attempts >= 3 && current != null && current.contains("Launcher")) {
-                        System.out.println("Still on launcher, attempting to activate app again...");
-                        try {
-                            if (driver instanceof InteractsWithApps apps) {
-                                apps.activateApp(appPackage);
-                                Thread.sleep(2000);
-                            } else {
-                                // Fallback: use mobile command to start activity
-                                Map<String, Object> args = new HashMap<>();
-                                args.put("appPackage", appPackage);
-                                args.put("appActivity", expectedActivity);
-                                driver.executeScript("mobile: startActivity", args);
-                                Thread.sleep(2000);
-                            }
-                        } catch (Exception ex) {
-                            System.err.println("Failed to activate app: " + ex.getMessage());
-                        }
-                    }
-                    attempts++;
-                } catch (Exception e) {
-                    System.err.println("Error reading currentActivity: " + e.getMessage());
-                }
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
-        }
-
-        // 3. Wait for a stable root element on the first screen (optional)
-        if (readyElementLocator != null) {
-            try {
-                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-                wait.until(ExpectedConditions.visibilityOfElementLocated(readyElementLocator));
-                System.out.println("App ready element found");
-            } catch (Exception e) {
-                System.out.println("Ready element not found (app may still be usable): " + e.getMessage());
-            }
+        try {
+            new WebDriverWait(driver, APP_READY_WAIT)
+                    .until(ExpectedConditions.visibilityOfElementLocated(ANDROID_FIRST_SCREEN));
+            System.out.println("First screen is visible");
+        } catch (Exception e) {
+            System.out.println("First screen not found (app may still be usable): " + e.getMessage());
         }
     }
 
@@ -306,40 +209,17 @@ public class MobileDriver {
             driver.manage().timeouts().implicitlyWait(IMPLICIT_WAIT);
             System.out.println("Android driver initialized successfully. Session ID: " + driver.getSessionId());
 
-            // Explicitly ensure app is launched/activated after driver initialization
             try {
                 if (driver instanceof InteractsWithApps apps) {
                     var state = apps.queryAppState(androidPackage);
                     System.out.println("Initial app state after driver creation: " + state);
-
-                    // If app is not running in foreground, activate it
                     if (state.name().contains("NOT_RUNNING") || state.name().contains("RUNNING_IN_BACKGROUND")) {
                         System.out.println("Activating app to bring to foreground...");
                         apps.activateApp(androidPackage);
-                        Thread.sleep(2000);
-                    }
-                }
-
-                // If still not in foreground, try starting the activity using mobile command
-                if (driver instanceof AndroidDriver androidDriver) {
-                    String currentActivity = androidDriver.currentActivity();
-                    if (currentActivity == null || currentActivity.contains("Launcher") ||
-                            !currentActivity.contains("com.mfinance.copymaster.MainActivity")) {
-                        System.out.println("Starting app activity using mobile command...");
-                        try {
-                            Map<String, Object> args = new HashMap<>();
-                            args.put("appPackage", androidPackage);
-                            args.put("appActivity", "com.mfinance.copymaster.MainActivity");
-                            driver.executeScript("mobile: startActivity", args);
-                            Thread.sleep(3000);
-                        } catch (Exception ex) {
-                            System.err.println("Failed to start activity via mobile command: " + ex.getMessage());
-                        }
                     }
                 }
             } catch (Exception e) {
                 System.err.println("Warning: Error activating app after driver init: " + e.getMessage());
-                // Continue - waitForAppReady will handle it
             }
 
             // Wait for app to be ready (with error handling)
@@ -454,13 +334,11 @@ public class MobileDriver {
 
         // Use already installed app
         aosOptions.setAppPackage(androidPackage);
-        String mainActivity = "com.mfinance.copymaster.MainActivity";
-        aosOptions.setAppActivity(mainActivity);
-
-        // Add appWaitActivity to ensure Appium waits for the correct activity
-        aosOptions.setCapability("appWaitActivity", mainActivity);
+        aosOptions.setAppActivity(ANDROID_LAUNCH_ACTIVITY);
+        // Do not wait for a single activity name; splash or alias activities may appear first
+        aosOptions.setCapability("appWaitActivity", "*");
         aosOptions.setCapability("appWaitForLaunch", true);
-        aosOptions.setCapability("appWaitDuration", 30000); // 30 seconds
+        aosOptions.setCapability("appWaitDuration", (int) APP_READY_WAIT.toMillis());
         aosOptions.setCapability("appium:autoAcceptAlerts", true);
         aosOptions.setCapability("appium:autoDismissAlerts",true);
 
