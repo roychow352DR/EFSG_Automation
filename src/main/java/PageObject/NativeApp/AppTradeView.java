@@ -152,6 +152,7 @@ public class AppTradeView {
         for (By locator : directionLocators(direction)) {
             try {
                 abs.tapVisible(locator, 15);
+                waitForOrderTicket();
                 return;
             } catch (TimeoutException e) {
                 lastError = e;
@@ -160,6 +161,13 @@ public class AppTradeView {
         throw lastError != null
                 ? lastError
                 : new TimeoutException("Direction was not visible: " + direction);
+    }
+
+    private void waitForOrderTicket() {
+        new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.xpath(
+                        "//android.widget.TextView[@text='Market Order' or @text='Limit / Stop Order' or @text='Lots']"
+                )));
     }
 
     private List<By> directionLocators(String direction) {

@@ -23,7 +23,9 @@ public class AppLoginPage {
     private static final By HAVE_AN_ACCOUNT = By.xpath("//android.widget.TextView[contains(@text,'Have an account')]");
     private static final By LOGIN_TEXT = By.xpath("//*[@text='Login']");
     private static final By EDIT_TEXT = By.className("android.widget.EditText");
-    private static final By ME_TAB = By.xpath("//android.widget.TextView[@text='Me']");
+    private static final By ME_TAB = By.xpath("//*[@text='Me']");
+    private static final By LOGOUT = By.xpath("//*[@text='Logout' or @text='Log Out' or @text='Log out']");
+    private static final By CONFIRM = By.xpath("//*[@text='Confirm' or @text='OK']");
 
     public AppLoginPage(AppiumDriver driver) {
         this.driver = driver;
@@ -59,18 +61,23 @@ public class AppLoginPage {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
-        if (!openLoginPage()) {
-            System.out.println("Already logged in; skipping login");
-            return;
-        }
+        openLoginPage();
         fillCredential(username, password);
         clickLogin();
     }
 
-    private boolean openLoginPage() {
-        if (isLoginFormVisible(2)) {
-            return true;
+    private void openLoginPage() {
+        if (isLoginFormVisible(2) || openLoginFromGuestHome() || openLoginFromMeTab()) {
+            return;
         }
+        logoutLeftoverSession();
+        if (isLoginFormVisible(5) || openLoginFromGuestHome() || openLoginFromMeTab()) {
+            return;
+        }
+        throw new TimeoutException("Login page was not visible");
+    }
+
+    private boolean openLoginFromGuestHome() {
         if (tapIfPresent(SIGN_UP_LOGIN, 5)) {
             tapIfPresent(HAVE_AN_ACCOUNT, 10);
             return isLoginFormVisible(10);
@@ -78,11 +85,26 @@ public class AppLoginPage {
         if (tapIfPresent(HAVE_AN_ACCOUNT, 2)) {
             return isLoginFormVisible(10);
         }
-        if (tapIfPresent(ME_TAB, 5) && tapIfPresent(SIGN_UP_LOGIN, 8)) {
-            tapIfPresent(HAVE_AN_ACCOUNT, 10);
-            return isLoginFormVisible(10);
-        }
         return false;
+    }
+
+    private boolean openLoginFromMeTab() {
+        if (!tapIfPresent(ME_TAB, 5)) {
+            return false;
+        }
+        if (!tapIfPresent(SIGN_UP_LOGIN, 8)) {
+            return false;
+        }
+        tapIfPresent(HAVE_AN_ACCOUNT, 10);
+        return isLoginFormVisible(10);
+    }
+
+    private void logoutLeftoverSession() {
+        tapIfPresent(ME_TAB, 5);
+        for (int swipe = 0; swipe < 3 && !tapIfPresent(LOGOUT, 2); swipe++) {
+            abs.swipeUp(driver);
+        }
+        tapIfPresent(CONFIRM, 5);
     }
 
     private boolean isLoginFormVisible(int seconds) {
