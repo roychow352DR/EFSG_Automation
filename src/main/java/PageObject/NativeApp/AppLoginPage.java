@@ -4,7 +4,10 @@ import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -19,22 +22,12 @@ public class AppLoginPage {
     public BiometricsPage biometricsPage;
     private final MobileAbstractComponents abs;
 
-    private static final By SIGN_UP_LOGIN = By.xpath(
-            "//*[contains(@text,'Sign Up') and contains(@text,'Login') or contains(@text,'Sign up') and contains(@text,'Log')]"
-    );
-    private static final By HAVE_AN_ACCOUNT = By.xpath(
-            "//*[contains(@text,'Have an account') or contains(@text,'Log In') and contains(@text,'account')]"
+    private static final By SIGNUP_LOGIN_LINK = By.xpath(
+            "//android.widget.TextView[@text='Have an account? Log In']"
     );
     private static final By LOGIN_TEXT = By.xpath("//*[@text='Login' or @text='Log In' or @text='Log in']");
-    private static final By SIGNUP_TITLE = By.xpath("//*[@text='Signup' or @text='Sign Up']");
+    private static final By SIGNUP_TITLE = By.xpath("//*[@text='Signup']");
     private static final By EDIT_TEXT = By.className("android.widget.EditText");
-    private static final By ME_TAB = By.xpath("//*[@text='Me']");
-    private static final By LOGOUT = By.xpath(
-            "//*[@text='Logout' or @text='Log Out' or @text='Log out' or @text='Sign Out' or @text='Sign out']"
-    );
-    private static final By CONFIRM = By.xpath(
-            "//*[@text='Confirm' or @text='OK' or @text='Yes' or @text='Logout' or @text='Log Out']"
-    );
 
     public AppLoginPage(AppiumDriver driver) {
         this.driver = driver;
@@ -79,75 +72,36 @@ public class AppLoginPage {
         if (isLoginFormVisible(2)) {
             return;
         }
-        if (!isGuestEntryVisible(3)) {
-            logoutLeftoverSession();
+        try {
+            new AppHomePage(driver).navigateToSignupPage();
+        } catch (TimeoutException e) {
+            throw new TimeoutException("Login page was not visible", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new TimeoutException("Login page was not visible", e);
         }
-        if (isLoginFormVisible(5) || openLoginFromGuestHome() || openLoginFromMeTab()) {
+        if (isLoginFormVisible(2)) {
             return;
         }
-        throw new TimeoutException("Login page was not visible");
-    }
-
-    private boolean isGuestEntryVisible(int seconds) {
-        return isDisplayed(SIGN_UP_LOGIN, seconds) || isDisplayed(HAVE_AN_ACCOUNT, 1);
-    }
-
-    private boolean openLoginFromGuestHome() {
-        if (!tapIfPresent(SIGN_UP_LOGIN, 8)) {
-            return tapHaveAnAccountAndWait();
-        }
-        if (isLoginFormVisible(5)) {
-            return true;
-        }
-        return tapHaveAnAccountAndWait();
-    }
-
-    private boolean openLoginFromMeTab() {
-        tapMeTab();
-        if (!tapIfPresent(SIGN_UP_LOGIN, 8)) {
-            return false;
-        }
-        if (isLoginFormVisible(5)) {
-            return true;
-        }
-        return tapHaveAnAccountAndWait();
-    }
-
-    private boolean tapHaveAnAccountAndWait() {
-        for (int swipe = 0; swipe < 3; swipe++) {
-            if (tapIfPresent(HAVE_AN_ACCOUNT, 5)) {
-                return isLoginFormVisible(10);
-            }
-            abs.swipeUp(driver);
-        }
-        return isLoginFormVisible(5);
-    }
-
-    private void logoutLeftoverSession() {
-        tapMeTab();
-        for (int swipe = 0; swipe < 4 && !tapIfPresent(LOGOUT, 2); swipe++) {
-            abs.swipeUp(driver);
-        }
-        tapIfPresent(LOGOUT, 2);
-        tapIfPresent(CONFIRM, 5);
-        isGuestEntryVisible(8);
-    }
-
-    private void tapMeTab() {
-        try {
-            new AppFooter(driver).tapFooterButton("Me");
-        } catch (TimeoutException e) {
-            tapIfPresent(ME_TAB, 5);
+        new AppSignupPage(driver).navigateToLoginPage();
+        if (!isLoginFormVisible(15)) {
+            System.out.println("Login form not visible after Signup -> Log In. onScreenEditTexts="
+                    + onScreenCount(EDIT_TEXT)
+                    + " loginTitle=" + isOnScreen(LOGIN_TEXT)
+                    + " signupTitle=" + isOnScreen(SIGNUP_TITLE)
+                    + " haveAccountLink=" + isOnScreen(SIGNUP_LOGIN_LINK));
+            throw new TimeoutException("Login page was not visible");
         }
     }
 
     private boolean isLoginFormVisible(int seconds) {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(seconds)).until(d -> {
-                List<WebElement> fields = d.findElements(EDIT_TEXT);
-                boolean hasLogin = !d.findElements(LOGIN_TEXT).isEmpty();
-                boolean onSignup = !d.findElements(SIGNUP_TITLE).isEmpty();
-                return fields.size() >= 2 && hasLogin && !onSignup;
+                int fields = onScreenCount(EDIT_TEXT);
+                boolean loginTitle = isOnScreen(LOGIN_TEXT);
+                boolean signupLink = isOnScreen(SIGNUP_LOGIN_LINK);
+                // Signup stays in the RN tree after Log In; only reject it when the link is still on screen.
+                return fields >= 2 && loginTitle && !signupLink;
             });
             return true;
         } catch (TimeoutException e) {
@@ -155,27 +109,42 @@ public class AppLoginPage {
         }
     }
 
-    private boolean isDisplayed(By locator, int seconds) {
-        try {
-            new WebDriverWait(driver, Duration.ofSeconds(seconds)).until(d ->
-                    d.findElements(locator).stream().anyMatch(WebElement::isDisplayed));
-            return true;
-        } catch (TimeoutException e) {
-            return false;
+    private int onScreenCount(By locator) {
+        int count = 0;
+        for (WebElement element : driver.findElements(locator)) {
+            if (isOnScreen(element)) {
+                count++;
+            }
         }
+        return count;
     }
 
-    private boolean tapIfPresent(By locator, int seconds) {
-        try {
-            abs.tapBottomMost(locator, seconds);
-            return true;
-        } catch (TimeoutException e) {
-            try {
-                abs.tapVisible(locator, Math.min(seconds, 4));
+    private boolean isOnScreen(By locator) {
+        for (WebElement element : driver.findElements(locator)) {
+            if (isOnScreen(element)) {
                 return true;
-            } catch (TimeoutException ignored) {
+            }
+        }
+        return false;
+    }
+
+    private boolean isOnScreen(WebElement element) {
+        try {
+            if (!element.isDisplayed()) {
                 return false;
             }
+            Point location = element.getLocation();
+            Dimension size = element.getSize();
+            Dimension window = driver.manage().window().getSize();
+            if (size.getWidth() <= 0 || size.getHeight() <= 0) {
+                return false;
+            }
+            int right = location.getX() + size.getWidth();
+            int bottom = location.getY() + size.getHeight();
+            return right > 0 && location.getX() < window.getWidth()
+                    && bottom > 0 && location.getY() < window.getHeight();
+        } catch (StaleElementReferenceException e) {
+            return false;
         }
     }
 
@@ -193,7 +162,9 @@ public class AppLoginPage {
         if (driver instanceof AndroidDriver) {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
             List<WebElement> fields = wait.until(d -> {
-                List<WebElement> found = d.findElements(EDIT_TEXT);
+                List<WebElement> found = d.findElements(EDIT_TEXT).stream()
+                        .filter(this::isOnScreen)
+                        .toList();
                 return found.size() >= 2 ? found : null;
             });
             fields.get(0).clear();
