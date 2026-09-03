@@ -5,27 +5,27 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
-import org.openqa.selenium.StaleElementReferenceException;
-import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.GetPageElement;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 
 public class AppPendingOrderDetailsPage {
 
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
+    private final GetPageElement getPageElement;
 
     public AppPendingOrderDetailsPage(AppiumDriver driver){
         this.driver = driver;
         abs = new MobileAbstractComponents(driver);
+        this.getPageElement = new GetPageElement(driver);
         PageFactory.initElements(new AppiumFieldDecorator(driver, Duration.ofSeconds(10)), this);
     }
 
@@ -55,35 +55,13 @@ public class AppPendingOrderDetailsPage {
     }
 
     public String getDetailValue(String label) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-        wait.ignoring(StaleElementReferenceException.class);
-
-        try {
-            return wait.until(d -> {
-                List<WebElement> elements = d.findElements(By.className("android.widget.TextView"));
-                List<String> texts = new ArrayList<>();
-
-                for (WebElement element : elements) {
-                    texts.add(element.getText());
-                }
-
-                for (int i = 0; i < texts.size() - 1; i++) {
-                    String currentLabel = texts.get(i);
-
-                    if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
-                        if (currentLabel.equalsIgnoreCase("Product")){
-                            return productAos.getText();
-                        }
-                        else {
-                            return normalizeDetailValue(label, texts.get(i + 1));
-                        }
-                    }
-                }
-                return null;
-            });
-        } catch (TimeoutException e) {
-            return null;
+        getPageElement.waitAndCaptureIfNeeded(By.xpath("//*[@text='Pending Order Details']"), 10);
+        String uiLabel = getPageElement.mapUiLabel(label);
+        String rawValue = getPageElement.readLabelValueFast(uiLabel);
+        if (rawValue == null || rawValue.isBlank()) {
+            throw new NoSuchElementException("Could not find value on Pending Order Details for label: " + uiLabel);
         }
+        return normalizeDetailValue(label, rawValue);
     }
 
     public String normalizeDetailValue(String label, String rawValue) {
