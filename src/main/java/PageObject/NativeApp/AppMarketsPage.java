@@ -4,9 +4,12 @@ import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+
+import java.util.List;
 
 public class AppMarketsPage {
 
@@ -46,10 +49,29 @@ public class AppMarketsPage {
 
     public void tapSymbol(String symbol) {
         tradeSymbol = symbol;
-        if (driver instanceof AndroidDriver) {
-            By symbolSelected = By.xpath("//android.widget.TextView[@text=\""+symbol+"\"]/parent::android.view.ViewGroup");
-            abs.waitUntilElementClickable(symbolSelected).click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+        TimeoutException lastError = null;
+        for (By locator : symbolLocators(symbol)) {
+            try {
+                abs.tapVisible(locator, 15);
+                return;
+            } catch (TimeoutException e) {
+                lastError = e;
+            }
+        }
+        throw lastError != null
+                ? lastError
+                : new TimeoutException("Symbol was not visible: " + symbol);
+    }
+
+    private List<By> symbolLocators(String symbol) {
+        return List.of(
+                By.xpath("//android.widget.TextView[@text=\"" + symbol + "\"]"),
+                By.xpath("//*[@text=\"" + symbol + "\"]"),
+                By.xpath("//android.widget.TextView[@text=\"" + symbol + "\"]/parent::android.view.ViewGroup")
+        );
     }
 
 
