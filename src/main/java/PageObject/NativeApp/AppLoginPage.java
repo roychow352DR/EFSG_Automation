@@ -19,13 +19,22 @@ public class AppLoginPage {
     public BiometricsPage biometricsPage;
     private final MobileAbstractComponents abs;
 
-    private static final By SIGN_UP_LOGIN = By.xpath("//*[@text='Sign Up / Login']");
-    private static final By HAVE_AN_ACCOUNT = By.xpath("//android.widget.TextView[contains(@text,'Have an account')]");
-    private static final By LOGIN_TEXT = By.xpath("//*[@text='Login']");
+    private static final By SIGN_UP_LOGIN = By.xpath(
+            "//*[contains(@text,'Sign Up') and contains(@text,'Login') or contains(@text,'Sign up') and contains(@text,'Log')]"
+    );
+    private static final By HAVE_AN_ACCOUNT = By.xpath(
+            "//*[contains(@text,'Have an account') or contains(@text,'Log In') and contains(@text,'account')]"
+    );
+    private static final By LOGIN_TEXT = By.xpath("//*[@text='Login' or @text='Log In' or @text='Log in']");
+    private static final By SIGNUP_TITLE = By.xpath("//*[@text='Signup' or @text='Sign Up']");
     private static final By EDIT_TEXT = By.className("android.widget.EditText");
     private static final By ME_TAB = By.xpath("//*[@text='Me']");
-    private static final By LOGOUT = By.xpath("//*[@text='Logout' or @text='Log Out' or @text='Log out']");
-    private static final By CONFIRM = By.xpath("//*[@text='Confirm' or @text='OK']");
+    private static final By LOGOUT = By.xpath(
+            "//*[@text='Logout' or @text='Log Out' or @text='Log out' or @text='Sign Out' or @text='Sign out']"
+    );
+    private static final By CONFIRM = By.xpath(
+            "//*[@text='Confirm' or @text='OK' or @text='Yes' or @text='Logout' or @text='Log Out']"
+    );
 
     public AppLoginPage(AppiumDriver driver) {
         this.driver = driver;
@@ -67,52 +76,89 @@ public class AppLoginPage {
     }
 
     private void openLoginPage() {
-        if (isLoginFormVisible(2) || openLoginFromGuestHome() || openLoginFromMeTab()) {
+        if (isLoginFormVisible(2)) {
             return;
         }
-        logoutLeftoverSession();
+        if (!isGuestEntryVisible(3)) {
+            logoutLeftoverSession();
+        }
         if (isLoginFormVisible(5) || openLoginFromGuestHome() || openLoginFromMeTab()) {
             return;
         }
         throw new TimeoutException("Login page was not visible");
     }
 
+    private boolean isGuestEntryVisible(int seconds) {
+        return isDisplayed(SIGN_UP_LOGIN, seconds) || isDisplayed(HAVE_AN_ACCOUNT, 1);
+    }
+
     private boolean openLoginFromGuestHome() {
-        if (tapIfPresent(SIGN_UP_LOGIN, 5)) {
-            tapIfPresent(HAVE_AN_ACCOUNT, 10);
-            return isLoginFormVisible(10);
+        if (!tapIfPresent(SIGN_UP_LOGIN, 8)) {
+            return tapHaveAnAccountAndWait();
         }
-        if (tapIfPresent(HAVE_AN_ACCOUNT, 2)) {
-            return isLoginFormVisible(10);
+        if (isLoginFormVisible(5)) {
+            return true;
         }
-        return false;
+        return tapHaveAnAccountAndWait();
     }
 
     private boolean openLoginFromMeTab() {
-        if (!tapIfPresent(ME_TAB, 5)) {
-            return false;
-        }
+        tapMeTab();
         if (!tapIfPresent(SIGN_UP_LOGIN, 8)) {
             return false;
         }
-        tapIfPresent(HAVE_AN_ACCOUNT, 10);
-        return isLoginFormVisible(10);
+        if (isLoginFormVisible(5)) {
+            return true;
+        }
+        return tapHaveAnAccountAndWait();
+    }
+
+    private boolean tapHaveAnAccountAndWait() {
+        for (int swipe = 0; swipe < 3; swipe++) {
+            if (tapIfPresent(HAVE_AN_ACCOUNT, 5)) {
+                return isLoginFormVisible(10);
+            }
+            abs.swipeUp(driver);
+        }
+        return isLoginFormVisible(5);
     }
 
     private void logoutLeftoverSession() {
-        tapIfPresent(ME_TAB, 5);
-        for (int swipe = 0; swipe < 3 && !tapIfPresent(LOGOUT, 2); swipe++) {
+        tapMeTab();
+        for (int swipe = 0; swipe < 4 && !tapIfPresent(LOGOUT, 2); swipe++) {
             abs.swipeUp(driver);
         }
+        tapIfPresent(LOGOUT, 2);
         tapIfPresent(CONFIRM, 5);
+        isGuestEntryVisible(8);
+    }
+
+    private void tapMeTab() {
+        try {
+            new AppFooter(driver).tapFooterButton("Me");
+        } catch (TimeoutException e) {
+            tapIfPresent(ME_TAB, 5);
+        }
     }
 
     private boolean isLoginFormVisible(int seconds) {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(seconds)).until(d -> {
                 List<WebElement> fields = d.findElements(EDIT_TEXT);
-                return fields.size() >= 2 && !d.findElements(LOGIN_TEXT).isEmpty();
+                boolean hasLogin = !d.findElements(LOGIN_TEXT).isEmpty();
+                boolean onSignup = !d.findElements(SIGNUP_TITLE).isEmpty();
+                return fields.size() >= 2 && hasLogin && !onSignup;
             });
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private boolean isDisplayed(By locator, int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(seconds)).until(d ->
+                    d.findElements(locator).stream().anyMatch(WebElement::isDisplayed));
             return true;
         } catch (TimeoutException e) {
             return false;
@@ -121,10 +167,15 @@ public class AppLoginPage {
 
     private boolean tapIfPresent(By locator, int seconds) {
         try {
-            abs.tapVisible(locator, seconds);
+            abs.tapBottomMost(locator, seconds);
             return true;
         } catch (TimeoutException e) {
-            return false;
+            try {
+                abs.tapVisible(locator, Math.min(seconds, 4));
+                return true;
+            } catch (TimeoutException ignored) {
+                return false;
+            }
         }
     }
 
