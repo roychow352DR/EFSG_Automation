@@ -6,9 +6,12 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.nativekey.AndroidKey;
 import io.appium.java_client.android.nativekey.KeyEvent;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+
+import java.util.List;
 
 public class AppSignupPage {
     private final AppiumDriver driver;
@@ -61,8 +64,23 @@ public class AppSignupPage {
     }
 
     public void navigateToLoginPage() {
-        if (driver instanceof AndroidDriver) {
-            abs.tapVisible(By.xpath("//android.widget.TextView[contains(@text,'Have an account')]"), 15);
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        TimeoutException lastError = null;
+        for (By locator : List.of(
+                By.xpath("//android.widget.TextView[@text='Have an account? Log In']"),
+                By.xpath("//android.widget.TextView[contains(@text,'Have an account')]")
+        )) {
+            try {
+                abs.tapVisibleRight(locator, 12);
+                return;
+            } catch (TimeoutException e) {
+                lastError = e;
+            }
+        }
+        if (lastError != null) {
+            throw lastError;
         }
     }
 
