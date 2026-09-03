@@ -7,8 +7,10 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,10 +24,80 @@ public class GetPageElement {
 
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
+    private String pageSourceCache;
 
     public GetPageElement(AppiumDriver driver){
         this.driver = driver;
         this.abs = new MobileAbstractComponents(driver);
+    }
+
+    public void capturePageSource() {
+        try {
+            pageSourceCache = driver.getPageSource();
+        } catch (Exception e) {
+            pageSourceCache = null;
+            logWarn("Could not capture page source: " + e.getMessage());
+        }
+    }
+
+    public void waitAndCapture(By locator, int seconds) {
+        new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                .ignoring(StaleElementReferenceException.class)
+                .until(ExpectedConditions.visibilityOfElementLocated(locator));
+        capturePageSource();
+    }
+
+    public void waitAndCaptureIfNeeded(By locator, int seconds) {
+        if (pageSourceCache != null && !pageSourceCache.isBlank()) {
+            return;
+        }
+        waitAndCapture(locator, seconds);
+    }
+
+    public void clearPageSourceCache() {
+        pageSourceCache = null;
+    }
+
+    private String pageSource() {
+        if (pageSourceCache != null && !pageSourceCache.isBlank()) {
+            return pageSourceCache;
+        }
+        try {
+            return driver.getPageSource();
+        } catch (Exception e) {
+            logWarn("Could not read page source: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public String readLabelValueFast(String uiLabel) {
+        boolean ownSnapshot = pageSourceCache == null;
+        if (ownSnapshot) {
+            capturePageSource();
+        }
+        try {
+            String value = plausible(uiLabel, findValueOnSameRowFromSource(uiLabel));
+            if (value == null) {
+                value = plausible(uiLabel, findValueBetweenAdjacentLabels(uiLabel));
+            }
+            if (value == null) {
+                value = plausible(uiLabel, findValueFromPageSource(uiLabel));
+            }
+            if (value == null && ("Direction".equals(uiLabel) || "Side".equals(uiLabel))) {
+                value = plausible(uiLabel, findDirectionValueFromSource());
+            }
+            if (value == null && ("Volume".equals(uiLabel) || "Qty".equals(uiLabel))) {
+                value = plausible(uiLabel, findVolumeValueFromSource());
+            }
+            if (value == null) {
+                value = plausible(uiLabel, findValueByFollowingSiblingScoped(uiLabel));
+            }
+            return value;
+        } finally {
+            if (ownSnapshot) {
+                clearPageSourceCache();
+            }
+        }
     }
 
     private boolean isSameElement(WebElement a, WebElement b) {
@@ -72,7 +144,7 @@ public class GetPageElement {
         rawValue = rawValue.trim();
 
         if ("Qty".equals(label) || "Volume".equals(label)) {
-            rawValue = rawValue.replace(" Lots", "").replace(" lots", "").trim();
+            return canonicalizeVolume(rawValue);
         }
 
         if ("N/A".equalsIgnoreCase(rawValue)) {
@@ -254,22 +326,6 @@ public class GetPageElement {
         return safeAttr(el, "className") + "|" + safeAttr(el, "bounds") + "|" + extractBestText(el);
     }
 
-    private void printElementDetails(WebElement el, String prefix) {
-        System.out.println(
-                prefix
-                        + " | class=\"" + safeAttr(el, "className") + "\""
-                        + " | text=\"" + safeText(el) + "\""
-                        + " | textAttr=\"" + safeAttr(el, "text") + "\""
-                        + " | contentDesc=\"" + safeAttr(el, "contentDescription") + "\""
-                        + " | hint=\"" + safeAttr(el, "hint") + "\""
-                        + " | resourceId=\"" + safeAttr(el, "resourceId") + "\""
-                        + " | clickable=\"" + safeAttr(el, "clickable") + "\""
-                        + " | enabled=\"" + safeAttr(el, "enabled") + "\""
-                        + " | selected=\"" + safeAttr(el, "selected") + "\""
-                        + " | bounds=\"" + safeAttr(el, "bounds") + "\""
-        );
-    }
-
     private Rect parseBounds(String bounds) {
         if (bounds == null || bounds.isBlank()) {
             return null;
@@ -330,18 +386,15 @@ public class GetPageElement {
     private record DirectionHit(String direction, Rect rect) {
     }
 
+    private record VolumeHit(String token, Rect rect) {
+    }
+
     public String resolveLabelValue(String uiLabel) {
         includeUnimportantViews();
-        waitForLabel(uiLabel);
-        try {
-            return new WebDriverWait(driver, Duration.ofSeconds(20))
-                    .pollingEvery(Duration.ofMillis(400))
-                    .ignoring(StaleElementReferenceException.class)
-                    .until(d -> readLabelValueOnce(uiLabel));
-        } catch (TimeoutException e) {
-            logWarn("Could not resolve value for label [" + uiLabel + "] after waiting");
-            return null;
+        if (pageSourceCache == null) {
+            waitForLabel(uiLabel);
         }
+        return readLabelValueFast(uiLabel);
     }
 
     private String readLabelValueOnce(String uiLabel) {
@@ -349,10 +402,7 @@ public class GetPageElement {
             return plausible(uiLabel, findDirectionValue());
         }
         if ("Volume".equals(uiLabel) || "Qty".equals(uiLabel)) {
-            String volume = plausible(uiLabel, findVolumeValue());
-            if (volume != null) {
-                return volume;
-            }
+            return plausible(uiLabel, findVolumeValue());
         }
         String value = plausible(uiLabel, findValueFromParentRow(uiLabel));
         if (value == null) {
@@ -396,10 +446,17 @@ public class GetPageElement {
     }
 
     private String directionBesideLabel(Rect labelRect) {
+        return pickDirectionBesideLabel(labelRect, allDirectionHits());
+    }
+
+    private String findDirectionValueFromSource() {
+        return pickDirectionBesideLabel(labelBoundsFromPageSource("Direction"), directionHitsFromPageSource());
+    }
+
+    private String pickDirectionBesideLabel(Rect labelRect, List<DirectionHit> hits) {
         if (labelRect == null) {
             return null;
         }
-        List<DirectionHit> hits = allDirectionHits();
         String best = null;
         int bestRight = Integer.MIN_VALUE;
         int bestScore = Integer.MAX_VALUE;
@@ -439,12 +496,7 @@ public class GetPageElement {
 
     private List<DirectionHit> directionHitsFromPageSource() {
         List<DirectionHit> hits = new ArrayList<>();
-        String source;
-        try {
-            source = driver.getPageSource();
-        } catch (Exception e) {
-            return hits;
-        }
+        String source = pageSource();
         if (source == null || source.isBlank()) {
             return hits;
         }
@@ -473,12 +525,7 @@ public class GetPageElement {
     }
 
     private Rect labelBoundsFromPageSource(String uiLabel) {
-        String source;
-        try {
-            source = driver.getPageSource();
-        } catch (Exception e) {
-            return null;
-        }
+        String source = pageSource();
         if (source == null || source.isBlank()) {
             return null;
         }
@@ -601,82 +648,153 @@ public class GetPageElement {
         if (withLots.find()) {
             return withLots.group(0).trim();
         }
-        Matcher numeric = Pattern.compile("(?i)^\\d+(?:[.,]\\d+)?$").matcher(text);
+        Matcher numeric = Pattern.compile("^\\d+(?:[.,]\\d+)?$").matcher(text);
         return numeric.matches() ? text : null;
+    }
+
+    public String canonicalizeVolume(String rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+        String text = rawValue.replace('\u00A0', ' ').replaceAll("(?i)\\s*Lots?", "").trim();
+        if (text.contains(",") && !text.contains(".")) {
+            text = text.replace(',', '.');
+        } else {
+            text = text.replace(",", "");
+        }
+        try {
+            return new BigDecimal(text).stripTrailingZeros().toPlainString();
+        } catch (Exception e) {
+            return text;
+        }
     }
 
     private String findVolumeValue() {
         Rect labelRect = labelBounds("Volume");
-        String best = null;
-        int bestScore = Integer.MAX_VALUE;
-        List<WebElement> matches = driver.findElements(By.xpath(
-                "//*[contains(@text,'Lot') or contains(@text,'lot') or contains(@content-desc,'Lot')]"
-        ));
-        if (matches.isEmpty()) {
-            matches = driver.findElements(By.xpath("//*[contains(@text,'.') or contains(@text,',')]"));
+        if (labelRect == null) {
+            labelRect = labelBoundsFromPageSource("Volume");
         }
+        String fromRow = volumeBesideLabel(labelRect);
+        if (fromRow != null) {
+            logInfo("Found Volume from accessibility node: " + fromRow);
+            return fromRow;
+        }
+        return null;
+    }
+
+    private String volumeBesideLabel(Rect labelRect) {
+        return pickVolumeBesideLabel(labelRect, allVolumeHits());
+    }
+
+    private String findVolumeValueFromSource() {
+        return pickVolumeBesideLabel(labelBoundsFromPageSource("Volume"), volumeHitsFromPageSource());
+    }
+
+    private String pickVolumeBesideLabel(Rect labelRect, List<VolumeHit> hits) {
+        if (labelRect == null) {
+            return null;
+        }
+        String bestLots = null;
+        String bestNumeric = null;
+        int bestLotsRight = Integer.MIN_VALUE;
+        int bestNumericRight = Integer.MIN_VALUE;
+        for (VolumeHit hit : hits) {
+            if (isLotChipHit(hit, hits) || !isVolumeValueRect(labelRect, hit)) {
+                continue;
+            }
+            boolean hasLots = hit.token().toLowerCase().contains("lot");
+            if (hasLots && hit.rect().right >= bestLotsRight) {
+                bestLotsRight = hit.rect().right;
+                bestLots = hit.token();
+            } else if (!hasLots && hit.rect().right >= bestNumericRight) {
+                bestNumericRight = hit.rect().right;
+                bestNumeric = hit.token();
+            }
+        }
+        return bestLots != null ? bestLots : bestNumeric;
+    }
+
+    private boolean isVolumeValueRect(Rect labelRect, VolumeHit hit) {
+        Rect rect = hit.rect();
+        if (rect == null) {
+            return false;
+        }
+        if (!isOnCompactRow(labelRect, rect)) {
+            return false;
+        }
+        boolean toRight = rect.left >= labelRect.right - 20;
+        boolean rowContainer = rect.height() <= 80
+                && rect.left <= labelRect.left + 16
+                && rect.right > labelRect.right
+                && hit.token().toLowerCase().contains("lot");
+        return toRight || rowContainer;
+    }
+
+    private boolean isLotChipHit(VolumeHit hit, List<VolumeHit> all) {
+        int sameRow = 0;
+        for (VolumeHit other : all) {
+            if (Math.abs(other.rect().centerY() - hit.rect().centerY()) <= 24) {
+                sameRow++;
+            }
+        }
+        return sameRow >= 3;
+    }
+
+    private List<VolumeHit> allVolumeHits() {
+        List<VolumeHit> hits = new ArrayList<>();
+        List<WebElement> matches = driver.findElements(By.xpath(
+                "//*[@text or @content-desc or @hint]"
+        ));
         for (WebElement match : matches) {
             try {
-                String token = extractVolumeToken(firstNonBlank(extractBestText(match), safeAttr(match, "text")));
-                if (token == null) {
-                    continue;
-                }
-                if (labelRect == null) {
-                    logInfo("Found Volume from accessibility node: " + token);
-                    return token;
-                }
+                String token = extractVolumeToken(firstNonBlank(
+                        extractBestText(match),
+                        safeAttr(match, "text"),
+                        safeAttr(match, "hint")
+                ));
                 Rect rect = parseBounds(safeAttr(match, "bounds"));
-                if (rect == null) {
-                    continue;
-                }
-                int verticalDelta = Math.abs(rect.centerY() - labelRect.centerY());
-                boolean sameRow = verticalDelta <= Math.max(50, labelRect.height());
-                boolean toRight = rect.left >= labelRect.right - 20;
-                if (!sameRow || !toRight) {
-                    continue;
-                }
-                int score = verticalDelta * 100 + Math.abs(rect.left - labelRect.right);
-                if (score < bestScore) {
-                    bestScore = score;
-                    best = token;
+                if (token != null && rect != null) {
+                    hits.add(new VolumeHit(token, rect));
                 }
             } catch (StaleElementReferenceException ignored) {
             }
         }
-        if (best != null) {
-            logInfo("Found Volume from accessibility node: " + best);
-            return best;
-        }
+        hits.addAll(volumeHitsFromPageSource());
+        return hits;
+    }
 
-        String source;
-        try {
-            source = driver.getPageSource();
-        } catch (Exception e) {
-            return null;
-        }
+    private List<VolumeHit> volumeHitsFromPageSource() {
+        List<VolumeHit> hits = new ArrayList<>();
+        String source = pageSource();
         if (source == null || source.isBlank()) {
-            return null;
+            return hits;
         }
-        int from = source.indexOf("text=\"Volume\"");
-        String window = from >= 0
-                ? source.substring(from, Math.min(source.length(), from + 4000))
-                : source;
-        for (String next : Arrays.asList("Contract Value", "Open Price", "Current Price", "Initial Margin")) {
-            int at = window.indexOf("text=\"" + next + "\"");
-            if (at > 0) {
-                window = window.substring(0, at);
-                break;
+        Matcher tag = Pattern.compile("<[^>]+>").matcher(source);
+        while (tag.find()) {
+            String node = tag.group();
+            Matcher bounds = Pattern.compile(
+                    "bounds=\"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]\""
+            ).matcher(node);
+            if (!bounds.find()) {
+                continue;
+            }
+            Rect rect = new Rect(
+                    Integer.parseInt(bounds.group(1)),
+                    Integer.parseInt(bounds.group(2)),
+                    Integer.parseInt(bounds.group(3)),
+                    Integer.parseInt(bounds.group(4))
+            );
+            Matcher attr = Pattern.compile(
+                    "(?:text|content-desc|contentDescription|name|hint)=\"([^\"]+)\""
+            ).matcher(node);
+            while (attr.find()) {
+                String token = extractVolumeToken(attr.group(1));
+                if (token != null) {
+                    hits.add(new VolumeHit(token, rect));
+                }
             }
         }
-        Matcher attr = Pattern.compile("(?:text|content-desc|contentDescription|name)=\"([^\"]+)\"").matcher(window);
-        while (attr.find()) {
-            String token = extractVolumeToken(attr.group(1));
-            if (token != null) {
-                logInfo("Found Volume from page source: " + token);
-                return token;
-            }
-        }
-        return null;
+        return hits;
     }
 
     private String plausible(String uiLabel, String value) {
@@ -685,10 +803,10 @@ public class GetPageElement {
 
     private void waitForLabel(String uiLabel) {
         try {
-            new WebDriverWait(driver, Duration.ofSeconds(15))
+            new WebDriverWait(driver, Duration.ofSeconds(8))
                     .ignoring(StaleElementReferenceException.class)
                     .until(d -> !d.findElements(
-                            By.xpath("//android.widget.TextView[@text=\"" + uiLabel + "\"]")
+                            By.xpath("//*[@text=\"" + uiLabel + "\"]")
                     ).isEmpty());
         } catch (TimeoutException e) {
             logWarn("Label was not visible: " + uiLabel);
@@ -714,8 +832,13 @@ public class GetPageElement {
     }
 
     public String findValueOnSameRow(String uiLabel) {
+        String fromSource = findValueOnSameRowFromSource(uiLabel);
+        if (fromSource != null) {
+            return fromSource;
+        }
+
         List<WebElement> labels = driver.findElements(
-                By.xpath("//android.widget.TextView[@text=\"" + uiLabel + "\"]")
+                By.xpath("//*[@text=\"" + uiLabel + "\"]")
         );
         if (labels.isEmpty()) {
             return null;
@@ -728,13 +851,9 @@ public class GetPageElement {
 
         String bestValue = null;
         int bestScore = Integer.MAX_VALUE;
-
         List<WebElement> candidates = driver.findElements(By.xpath(
-                "//android.widget.ScrollView//*[@text or @content-desc]"
+                "//*[@text=\"" + uiLabel + "\"]/following-sibling::*[@text or @content-desc]"
         ));
-        if (candidates.isEmpty()) {
-            candidates = driver.findElements(By.xpath("//*[@text or @content-desc]"));
-        }
 
         for (WebElement el : candidates) {
             try {
@@ -777,11 +896,9 @@ public class GetPageElement {
             return null;
         }
 
-        String source;
-        try {
-            source = driver.getPageSource();
-        } catch (Exception e) {
-            logWarn("Could not read page source for label [" + uiLabel + "]: " + e.getMessage());
+        String source = pageSource();
+        if (source == null || source.isBlank()) {
+            logWarn("Could not read page source for label [" + uiLabel + "]");
             return null;
         }
 
@@ -808,10 +925,8 @@ public class GetPageElement {
     }
 
     private String nextKnownLabel(String uiLabel) {
-        String source;
-        try {
-            source = driver.getPageSource();
-        } catch (Exception e) {
+        String source = pageSource();
+        if (source == null || source.isBlank()) {
             return null;
         }
 
@@ -975,10 +1090,8 @@ public class GetPageElement {
     }
 
     public String findValueOnSameRowFromSource(String uiLabel) {
-        String source;
-        try {
-            source = driver.getPageSource();
-        } catch (Exception e) {
+        String source = pageSource();
+        if (source == null || source.isBlank()) {
             return null;
         }
 
@@ -1189,8 +1302,7 @@ public class GetPageElement {
     public String findValueByFollowingSibling(String uiLabel) {
         List<By> locators = Arrays.asList(
                 By.xpath("//android.widget.TextView[@text=\"" + uiLabel + "\"]/following-sibling::android.widget.TextView"),
-                By.xpath("//*[@text=\"" + uiLabel + "\"]/following-sibling::android.widget.TextView"),
-                By.xpath("//android.widget.TextView[@text=\"" + uiLabel + "\"]/following::android.widget.TextView")
+                By.xpath("//*[@text=\"" + uiLabel + "\"]/following-sibling::*[@text or @content-desc]")
         );
 
         for (By locator : locators) {
@@ -1198,7 +1310,6 @@ public class GetPageElement {
                 List<WebElement> matches = driver.findElements(locator);
                 for (WebElement el : matches) {
                     String text = extractBestText(el);
-                    printElementDetails(el, "followingSiblingMatch");
                     if (text == null || text.isBlank() || uiLabel.equals(text)) {
                         continue;
                     }
@@ -1218,7 +1329,7 @@ public class GetPageElement {
 
     public String findValueFromPageSource(String uiLabel) {
         try {
-            String source = driver.getPageSource();
+            String source = pageSource();
             String value = extractValueForLabelFromXml(source, uiLabel);
             if (value != null && !value.isBlank()) {
                 logInfo("Found value for label [" + uiLabel + "] from page source: " + value);

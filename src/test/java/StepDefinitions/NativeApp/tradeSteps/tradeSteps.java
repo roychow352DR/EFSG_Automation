@@ -46,11 +46,13 @@ public class tradeSteps extends BaseTest {
     }
 
     @Then("the user sees the value {string} is displayed correctly with the user input value on the confirmation pop up")
-    public void the_user_sees_the_value_is_displayed_correctly_with_the_user_input_value_on_the_confirmation_pop_up(String value) throws InterruptedException {
-        Thread.sleep(2000);
-        Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value),
-                appPoManager.getAppTradeView().getValidationValue(value));
-        //appPoManager.getAppTradeView().closeConfirmationPopUp();
+    public void the_user_sees_the_value_is_displayed_correctly_with_the_user_input_value_on_the_confirmation_pop_up(String value) {
+        String decimal = tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol);
+        appPoManager.getAppInstrumentDetailsPage().waitForConfirmationPopup();
+        Assert.assertEquals(
+                appPoManager.getAppInstrumentDetailsPage().getDetailValue(value, decimal),
+                appPoManager.getAppInstrumentDetailsPage().getValidationValue(value)
+        );
     }
 
     @And("the user fills in the text field {string} with value {string} on the instrument details page")
@@ -124,31 +126,41 @@ public class tradeSteps extends BaseTest {
     }
 
     @Then("the user sees stop order values are displayed correctly with the user input value on the confirmation pop up")
-    public void the_user_sees_stop_order_values_are_displayed_correctly_with_the_user_input_value_on_the_confirmation_pop_up() throws InterruptedException {
+    public void the_user_sees_stop_order_values_are_displayed_correctly_with_the_user_input_value_on_the_confirmation_pop_up() {
+        String decimal = tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol);
+        appPoManager.getAppInstrumentDetailsPage().waitForConfirmationPopup();
         for (String value : appPoManager.getAppTradeView().stopOrderConfirmationPageValues()) {
-            Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value),
-                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
+            Assert.assertEquals(
+                    appPoManager.getAppInstrumentDetailsPage().getDetailValue(value, decimal),
+                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(value)
+            );
         }
         appPoManager.getAppInstrumentDetailsPage().closeConfirmation();
     }
 
     @Then("the user sees stop order values are displayed correctly with the user input value on the cancel order confirmation pop up")
-    public void the_user_sees_stop_order_values_are_displayed_correctly_with_the_user_input_value_on_the_cancel_order_confirmation_pop_up() throws InterruptedException {
-        Thread.sleep(2000);
+    public void the_user_sees_stop_order_values_are_displayed_correctly_with_the_user_input_value_on_the_cancel_order_confirmation_pop_up() {
+        String decimal = tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol);
+        appPoManager.getAppInstrumentDetailsPage().waitForConfirmationPopup();
         for (String value : appPoManager.getAppTradeView().stopOrderConfirmationPageValues()) {
-            Assert.assertEquals(appPoManager.getAppTradeView().getDetailValue(value),
-                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
+            Assert.assertEquals(
+                    appPoManager.getAppInstrumentDetailsPage().getDetailValue(value, decimal),
+                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(value)
+            );
         }
         appPoManager.getAppTradeView().closeDialogue();
         appPoManager.getAppTradeView().cancelOrder();
     }
 
     @Then("the user sees market order values are displayed correctly with the user input value on the confirmation pop up")
-    public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_confirmation_pop_up() throws InterruptedException {
-        Thread.sleep(3000);
+    public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_confirmation_pop_up() {
+        String decimal = tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol);
+        appPoManager.getAppInstrumentDetailsPage().waitForConfirmationPopup();
         for (String value : appPoManager.getAppInstrumentDetailsPage().marketOrderConfirmationPageValues()) {
-            Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getDetailValue(value,tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
-                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
+            Assert.assertEquals(
+                    appPoManager.getAppInstrumentDetailsPage().getDetailValue(value, decimal),
+                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(value)
+            );
         }
         appPoManager.getAppInstrumentDetailsPage().closeConfirmation();
     }
@@ -169,15 +181,16 @@ public class tradeSteps extends BaseTest {
     }
 
     @Then("the user sees market order values are displayed correctly with the user input value on the position details page")
-    public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_position_details_page() throws InterruptedException {
-        Thread.sleep(3000);
+    public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_position_details_page() {
+        String decimal = tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol);
+        appPoManager.getAppTradeView().waitForPositionDetails();
         for (String value : appPoManager.getAppTradeView().marketOrderConfirmationPageValues()) {
             String expected = appPoManager.getAppEditPositionPage().getValidationValue(value);
             if (expected == null) {
                 expected = appPoManager.getAppInstrumentDetailsPage().getValidationValue(value);
             }
             Assert.assertEquals(
-                    appPoManager.getAppTradeView().getPositionValueByLabel(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
+                    appPoManager.getAppTradeView().getPositionValueByLabel(value, decimal),
                     expected
             );
         }
@@ -568,8 +581,7 @@ public class tradeSteps extends BaseTest {
     }
 
     @Then("the user sees correct value {string} on the confirmation pop up of close position page")
-    public void the_user_sees_correct_value_on_the_confirmation_pop_up_of_close_position_page(String label) throws InterruptedException {
-        Thread.sleep(1000);
+    public void the_user_sees_correct_value_on_the_confirmation_pop_up_of_close_position_page(String label) {
         Assert.assertEquals(appPoManager.getAppClosePositionPage().getDetailValue(label),
                 appPoManager.getAppClosePositionPage().getFloatingPnL(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
         appPoManager.getAppClosePositionPage().confirmPositionClose();
