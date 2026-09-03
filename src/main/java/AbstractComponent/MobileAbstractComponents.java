@@ -370,17 +370,37 @@ public class MobileAbstractComponents {
     }
 
     public void tapVisible(By locator, int seconds) {
-        Point point = new WebDriverWait(driver, Duration.ofSeconds(seconds))
-                .ignoring(StaleElementReferenceException.class)
-                .until(d -> centerPointIfVisible(d, locator));
+        Point point = waitUntilPointStable(seconds, d -> centerPointIfVisible(d, locator));
         tapAt(point.getX(), point.getY());
     }
 
     public void tapBottomMost(By locator, int seconds) {
-        Point point = new WebDriverWait(driver, Duration.ofSeconds(seconds))
-                .ignoring(StaleElementReferenceException.class)
-                .until(d -> bottomCenterIfVisible(d, locator));
+        Point point = waitUntilPointStable(seconds, d -> bottomCenterIfVisible(d, locator));
         tapAt(point.getX(), point.getY());
+    }
+
+    private Point waitUntilPointStable(int seconds, java.util.function.Function<WebDriver, Point> finder) {
+        final Point[] previous = {null};
+        return new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                .pollingEvery(Duration.ofMillis(200))
+                .ignoring(StaleElementReferenceException.class)
+                .until(d -> {
+                    Point current = finder.apply(d);
+                    if (current == null) {
+                        previous[0] = null;
+                        return null;
+                    }
+                    if (previous[0] != null && isSamePoint(previous[0], current)) {
+                        return current;
+                    }
+                    previous[0] = current;
+                    return null;
+                });
+    }
+
+    private boolean isSamePoint(Point first, Point second) {
+        return Math.abs(first.getX() - second.getX()) <= 2
+                && Math.abs(first.getY() - second.getY()) <= 2;
     }
 
     private Point centerPointIfVisible(WebDriver d, By locator) {
@@ -434,9 +454,30 @@ public class MobileAbstractComponents {
     }
 
     public void tapAt(int x, int y) {
+        Dimension window = driver.manage().window().getSize();
+        int safeX = Math.max(1, Math.min(x, window.getWidth() - 2));
+        int safeY = Math.max(1, Math.min(y, window.getHeight() - 2));
+        InvalidElementStateException lastError = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                performTap(safeX, safeY);
+                return;
+            } catch (InvalidElementStateException e) {
+                lastError = e;
+                try {
+                    Thread.sleep(250);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+        }
+        throw lastError;
+    }
+
+    private void performTap(int x, int y) {
         PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
         Sequence tap = new Sequence(finger, 1);
-
         tap.addAction(finger.createPointerMove(
                 Duration.ZERO,
                 PointerInput.Origin.viewport(),
@@ -446,7 +487,6 @@ public class MobileAbstractComponents {
         tap.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
         tap.addAction(new Pause(finger, Duration.ofMillis(80)));
         tap.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-
         driver.perform(Collections.singletonList(tap));
     }
 
