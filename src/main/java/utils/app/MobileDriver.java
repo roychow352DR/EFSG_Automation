@@ -122,36 +122,40 @@ public class MobileDriver {
 
     private void waitForAndroidAppReady(AppiumDriver driver, String appPackage) {
         System.out.println("Waiting for Android app to be ready...");
+        waitUntilAppInForeground(driver, appPackage);
+        waitForFirstScreen(driver);
+    }
 
-        if (driver instanceof InteractsWithApps apps) {
-            try {
-                var state = apps.queryAppState(appPackage);
-                System.out.println("Android app state: " + state);
-                if (state.name().contains("NOT_RUNNING") || state.name().contains("RUNNING_IN_BACKGROUND")) {
-                    System.out.println("App is not in foreground, activating app: " + appPackage);
-                    apps.activateApp(appPackage);
-                }
-                new WebDriverWait(driver, APP_READY_WAIT).until(d -> {
-                    try {
-                        var currentState = apps.queryAppState(appPackage);
-                        return currentState.name().contains("RUNNING")
-                                && !currentState.name().contains("BACKGROUND");
-                    } catch (Exception e) {
-                        System.err.println("Error querying Android app state: " + e.getMessage());
-                        return false;
-                    }
-                });
-            } catch (Exception e) {
-                System.err.println("Error checking/activating app state: " + e.getMessage());
-            }
+    private void waitUntilAppInForeground(AppiumDriver driver, String appPackage) {
+        if (!(driver instanceof InteractsWithApps apps)) {
+            return;
         }
+        try {
+            new WebDriverWait(driver, APP_READY_WAIT).until(d -> {
+                try {
+                    var currentState = apps.queryAppState(appPackage);
+                    System.out.println("Android app state: " + currentState);
+                    return currentState.name().contains("RUNNING")
+                            && !currentState.name().contains("BACKGROUND");
+                } catch (Exception e) {
+                    System.err.println("Error querying Android app state: " + e.getMessage());
+                    return false;
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("Error waiting for Android app foreground: " + e.getMessage());
+        }
+    }
 
+    private boolean waitForFirstScreen(AppiumDriver driver) {
         try {
             new WebDriverWait(driver, APP_READY_WAIT)
                     .until(ExpectedConditions.visibilityOfElementLocated(ANDROID_FIRST_SCREEN));
             System.out.println("First screen is visible");
+            return true;
         } catch (Exception e) {
-            System.out.println("First screen not found (app may still be usable): " + e.getMessage());
+            System.err.println("First screen not visible after launch: " + e.getMessage());
+            return false;
         }
     }
 
