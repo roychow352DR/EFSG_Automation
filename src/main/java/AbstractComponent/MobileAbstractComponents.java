@@ -630,7 +630,8 @@ public class MobileAbstractComponents {
         }
 
         if (label.equalsIgnoreCase("Floating P/L")) {
-            return rawValue.split(" ")[0].trim();
+            String token = rawValue.split(" ")[0].trim();
+            return token.startsWith("+") ? token.substring(1) : token;
         }
 
         return rawValue;
