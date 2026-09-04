@@ -412,7 +412,7 @@ public class AppTradeView {
     }
 
     public void waitForPositionDetails() {
-        getPageElement.waitAndCapture(By.xpath("//*[@text='Position Details']"), 10);
+        getPageElement.waitAndCapturePositionDetails();
     }
 
 
@@ -507,26 +507,31 @@ public class AppTradeView {
     }
 
     private void tapListTab(String tabName) {
+        waitForTradeRowArea();
         try {
-            Point point = new WebDriverWait(driver, Duration.ofSeconds(6))
+            Point point = new WebDriverWait(driver, Duration.ofSeconds(8))
                     .ignoring(StaleElementReferenceException.class)
                     .until(d -> compactTabPoint(tabName));
             abs.tapAt(point.getX(), point.getY());
             return;
         } catch (TimeoutException ignored) {
         }
-        List<By> locators = Arrays.asList(
+        TimeoutException lastError = null;
+        for (By locator : List.of(
                 By.xpath("//android.widget.TextView[@text='" + tabName + "']"),
                 By.xpath("//*[@text='" + tabName + "']"),
                 By.xpath("//android.widget.TextView[@text='" + tabName + "']/parent::android.view.ViewGroup")
-        );
-        for (By locator : locators) {
+        )) {
             try {
-                abs.tapVisible(locator, 6);
+                abs.tapVisible(locator, 8);
                 return;
-            } catch (TimeoutException ignored) {
+            } catch (TimeoutException e) {
+                lastError = e;
             }
         }
+        throw lastError != null
+                ? lastError
+                : new TimeoutException("List tab was not visible: " + tabName);
     }
 
     private Point compactTabPoint(String tabName) {
@@ -539,15 +544,21 @@ public class AppTradeView {
             }
             Point location = el.getLocation();
             Dimension size = el.getSize();
-            if (size.getHeight() < 8 || size.getHeight() > 100) {
+            if (size.getHeight() > 100) {
                 continue;
             }
-            if (size.getWidth() <= 0 || size.getWidth() > (int) (window.getWidth() * 0.7)) {
+            if (size.getWidth() > (int) (window.getWidth() * 0.7)) {
                 continue;
+            }
+            int x = location.getX();
+            int y = location.getY();
+            if (size.getWidth() > 0 && size.getHeight() > 0) {
+                x += size.getWidth() / 2;
+                y += size.getHeight() / 2;
             }
             if (location.getY() < bestY) {
                 bestY = location.getY();
-                best = new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+                best = new Point(x, y);
             }
         }
         return best;
@@ -1309,12 +1320,7 @@ public class AppTradeView {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
-        List<By> locators = Arrays.asList(
-                By.xpath("//android.widget.TextView[@text=\"" + tabName + "\"]/parent::android.view.ViewGroup"),
-                By.xpath("//android.widget.TextView[@text=\"" + tabName + "\"]"),
-                positionsTabAos
-        );
-        clickRowCta(locators);
+        tapListTab(tabName);
     }
 
     public int getNumberOfPositions(){
@@ -1369,9 +1375,10 @@ public class AppTradeView {
     }
 
     public void selectList(String listName){
-        if (driver instanceof AndroidDriver) {
-            driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + listName + "\"]/parent::android.view.ViewGroup")).click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+        tapListTab(listName);
     }
 
 
