@@ -41,9 +41,16 @@ public class GetPageElement {
     }
 
     public void waitAndCapture(By locator, int seconds) {
+        includeUnimportantViews();
         new WebDriverWait(driver, Duration.ofSeconds(seconds))
                 .ignoring(StaleElementReferenceException.class)
                 .until(ExpectedConditions.visibilityOfElementLocated(locator));
+        capturePageSource();
+    }
+
+    public void waitAndCapturePositionDetails() {
+        waitAndCapture(By.xpath("//*[@text='Position Details']"), 10);
+        waitForLabel("Direction");
         capturePageSource();
     }
 
@@ -76,23 +83,12 @@ public class GetPageElement {
             capturePageSource();
         }
         try {
-            String value = null;
-            if ("Direction".equals(uiLabel) || "Side".equals(uiLabel)) {
-                value = plausible(uiLabel, findDirectionValueFromSource());
-            } else if ("Volume".equals(uiLabel) || "Qty".equals(uiLabel)) {
-                value = plausible(uiLabel, resolveVolumeValue());
-            }
-            if (value == null) {
-                value = plausible(uiLabel, findValueOnSameRowFromSource(uiLabel));
-            }
-            if (value == null) {
-                value = plausible(uiLabel, findValueBetweenAdjacentLabels(uiLabel));
-            }
-            if (value == null) {
-                value = plausible(uiLabel, findValueFromPageSource(uiLabel));
-            }
-            if (value == null) {
-                value = plausible(uiLabel, findValueByFollowingSiblingScoped(uiLabel));
+            String value = readLabelValueFromSnapshot(uiLabel);
+            if (value == null && ("Direction".equals(uiLabel) || "Side".equals(uiLabel)
+                    || "Volume".equals(uiLabel) || "Qty".equals(uiLabel))) {
+                waitForLabel(uiLabel);
+                capturePageSource();
+                value = readLabelValueFromSnapshot(uiLabel);
             }
             return value;
         } finally {
@@ -100,6 +96,28 @@ public class GetPageElement {
                 clearPageSourceCache();
             }
         }
+    }
+
+    private String readLabelValueFromSnapshot(String uiLabel) {
+        String value = null;
+        if ("Direction".equals(uiLabel) || "Side".equals(uiLabel)) {
+            value = plausible(uiLabel, findDirectionValueFromSource());
+        } else if ("Volume".equals(uiLabel) || "Qty".equals(uiLabel)) {
+            value = plausible(uiLabel, resolveVolumeValue());
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findValueOnSameRowFromSource(uiLabel));
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findValueBetweenAdjacentLabels(uiLabel));
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findValueFromPageSource(uiLabel));
+        }
+        if (value == null) {
+            value = plausible(uiLabel, findValueByFollowingSiblingScoped(uiLabel));
+        }
+        return value;
     }
 
     private boolean isSameElement(WebElement a, WebElement b) {
@@ -335,7 +353,7 @@ public class GetPageElement {
 
         Pattern p = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]");
         Matcher m = p.matcher(bounds);
-        if (!m.matches()) {
+        if (!m.find()) {
             return null;
         }
 
@@ -452,7 +470,65 @@ public class GetPageElement {
     }
 
     private String findDirectionValueFromSource() {
+        String between = directionBetweenAdjacentLabels();
+        if (between != null) {
+            logInfo("Found Direction between adjacent labels: " + between);
+            return between;
+        }
         return pickDirectionBesideLabel(labelBoundsFromPageSource("Direction"), directionHitsFromPageSource());
+    }
+
+    private String directionBetweenAdjacentLabels() {
+        String source = pageSource();
+        if (source == null || source.isBlank()) {
+            return null;
+        }
+        int headerAt = source.indexOf("text=\"Position Details\"");
+        String section = headerAt >= 0 ? source.substring(headerAt) : source;
+        String nextLabel = nextKnownLabelIn(section, "Direction");
+        if (nextLabel == null) {
+            return extractDirectionToken(sourceAfterLabel(section, "Direction"));
+        }
+        Matcher window = Pattern.compile(
+                Pattern.quote("text=\"Direction\"") + "(.*?)" + Pattern.quote("text=\"" + nextLabel + "\""),
+                Pattern.DOTALL
+        ).matcher(section);
+        if (window.find()) {
+            String found = extractDirectionToken(window.group(1));
+            if (found != null) {
+                return found;
+            }
+        }
+        return extractDirectionToken(sourceAfterLabel(section, "Direction"));
+    }
+
+    private String sourceAfterLabel(String source, String uiLabel) {
+        String marker = "text=\"" + uiLabel + "\"";
+        int from = source.indexOf(marker);
+        if (from < 0) {
+            return null;
+        }
+        int end = Math.min(source.length(), from + 2500);
+        return source.substring(from, end);
+    }
+
+    private String extractDirectionToken(String xmlFragment) {
+        if (xmlFragment == null || xmlFragment.isBlank()) {
+            return null;
+        }
+        Matcher token = Pattern.compile(
+                "(?:text|content-desc|contentDescription|name)=\"\\s*(BUY|SELL|Buy|Sell)\\s*\""
+        ).matcher(xmlFragment);
+        if (token.find()) {
+            return normalizeDirection(token.group(1));
+        }
+        Matcher combined = Pattern.compile(
+                "(?:text|content-desc|contentDescription|name)=\"[^\"]*\\b(BUY|SELL|Buy|Sell)\\b[^\"]*\""
+        ).matcher(xmlFragment);
+        if (combined.find()) {
+            return normalizeDirection(combined.group(1));
+        }
+        return null;
     }
 
     private String pickDirectionBesideLabel(Rect labelRect, List<DirectionHit> hits) {
@@ -506,7 +582,7 @@ public class GetPageElement {
         while (tag.find()) {
             String node = tag.group();
             Matcher dir = Pattern.compile(
-                    "(?:text|content-desc|contentDescription|name)=\"(BUY|SELL|Buy|Sell)\""
+                    "(?:text|content-desc|contentDescription|name)=\"\\s*(BUY|SELL|Buy|Sell)\\s*\""
             ).matcher(node);
             Matcher bounds = Pattern.compile(
                     "bounds=\"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]\""
@@ -531,6 +607,7 @@ public class GetPageElement {
         if (source == null || source.isBlank()) {
             return null;
         }
+        Rect header = headerBoundsFromPageSource();
         Matcher tag = Pattern.compile("<[^>]+>").matcher(source);
         Rect best = null;
         int bestScore = Integer.MAX_VALUE;
@@ -551,16 +628,56 @@ public class GetPageElement {
                     Integer.parseInt(bounds.group(3)),
                     Integer.parseInt(bounds.group(4))
             );
-            if (!isCompactLabelRect(rect)) {
+            if (!isUsableLabelRect(rect)) {
                 continue;
             }
-            int score = rect.top * 10 + rect.height();
+            if (header != null && rect.bottom < header.top) {
+                continue;
+            }
+            int score = rect.top * 10 + Math.max(rect.height(), 0);
+            if (header != null && rect.top >= header.bottom) {
+                score -= 100000;
+            }
             if (score < bestScore) {
                 bestScore = score;
                 best = rect;
             }
         }
         return best;
+    }
+
+    private Rect headerBoundsFromPageSource() {
+        String source = pageSource();
+        if (source == null || source.isBlank()) {
+            return null;
+        }
+        for (String header : Arrays.asList(
+                "Position Details",
+                "Edit Position",
+                "Pending Order Details",
+                "Modify Order"
+        )) {
+            Matcher tag = Pattern.compile("<[^>]+>").matcher(source);
+            while (tag.find()) {
+                String node = tag.group();
+                if (!node.contains("text=\"" + header + "\"")) {
+                    continue;
+                }
+                Matcher bounds = Pattern.compile(
+                        "bounds=\"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]\""
+                ).matcher(node);
+                if (!bounds.find()) {
+                    continue;
+                }
+                return new Rect(
+                        Integer.parseInt(bounds.group(1)),
+                        Integer.parseInt(bounds.group(2)),
+                        Integer.parseInt(bounds.group(3)),
+                        Integer.parseInt(bounds.group(4))
+                );
+            }
+        }
+        return null;
     }
 
     private boolean isTicketToggleHit(DirectionHit hit, List<DirectionHit> all) {
@@ -587,12 +704,16 @@ public class GetPageElement {
         if (rect == null || isLikelyTradeCta(rect)) {
             return false;
         }
-        boolean toRight = rect.left >= labelRect.right - 20;
-        return toRight && isOnCompactRow(labelRect, rect);
+        boolean toRight = rect.left >= labelRect.right - 24 || rect.centerX() > labelRect.centerX();
+        boolean sameRow = isOnCompactRow(labelRect, rect);
+        boolean justBelow = rect.top >= labelRect.top - 12
+                && rect.top <= labelRect.bottom + 96
+                && rect.centerX() > labelRect.left;
+        return (toRight && sameRow) || justBelow;
     }
 
     private boolean isOnCompactRow(Rect labelRect, Rect rect) {
-        int slop = Math.min(48, Math.max(24, labelRect.height()));
+        int slop = Math.max(48, Math.max(24, labelRect.height()));
         return Math.abs(rect.centerY() - labelRect.centerY()) <= slop;
     }
 
@@ -617,12 +738,16 @@ public class GetPageElement {
     }
 
     private boolean isCompactLabelRect(Rect rect) {
+        return isUsableLabelRect(rect);
+    }
+
+    private boolean isUsableLabelRect(Rect rect) {
         int height = rect.height();
         int width = rect.width();
         int screenWidth = screenWidth();
-        boolean compactHeight = height >= 8 && height <= 120;
-        boolean compactWidth = width > 0 && (screenWidth == 0 || width < (int) (screenWidth * 0.75));
-        return compactHeight && compactWidth;
+        boolean compactHeight = height <= 160;
+        boolean compactWidth = screenWidth == 0 || width < (int) (screenWidth * 0.9);
+        return compactHeight && compactWidth && (width > 0 || height > 0 || rect.top > 0);
     }
 
     private int screenWidth() {
@@ -980,7 +1105,10 @@ public class GetPageElement {
     }
 
     private String nextKnownLabel(String uiLabel) {
-        String source = pageSource();
+        return nextKnownLabelIn(pageSource(), uiLabel);
+    }
+
+    private String nextKnownLabelIn(String source, String uiLabel) {
         if (source == null || source.isBlank()) {
             return null;
         }
@@ -1017,9 +1145,6 @@ public class GetPageElement {
                 "Validity",
                 "Target Price",
                 "Order Type",
-                "Product Name",
-                "Status",
-                "Estimated Margin",
                 "Est. Margin"
         );
 
@@ -1437,8 +1562,8 @@ public class GetPageElement {
                 }
                 return text.trim();
             }
-        } catch (StaleElementReferenceException e) {
-            logWarn("Stale scoped sibling for label [" + uiLabel + "]");
+        } catch (Exception e) {
+            logWarn("Scoped sibling failed for label [" + uiLabel + "]: " + e.getMessage());
         }
         return null;
     }
