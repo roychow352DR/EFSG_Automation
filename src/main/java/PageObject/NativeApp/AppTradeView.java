@@ -468,22 +468,21 @@ public class AppTradeView {
         waitForTradeRowArea();
         revealListForCurrentOrder();
         switch (buttonName) {
-            case "detail" -> openRowDetails();
-            case "close" -> tapCloseRowCta();
-            case "edit" -> openEditPosition();
+            case "detail" -> retryOnStale(this::openRowDetails);
+            case "close" -> retryOnStale(this::tapCloseRowCta);
+            case "edit" -> retryOnStale(this::openEditPosition);
         }
     }
 
     private void openEditPosition() {
-        if (!tryClickRowCta(rowEditLocators())) {
-            revealOtherOrderList();
-            clickBottomRowCta(rowEditLocators());
-        }
-        if (isEditOrModifyOpen(8)) {
+        waitForFirstListRow();
+        if (tapFirstRowCta("edit") && isEditOrModifyOpen(8)) {
             return;
         }
-        abs.swipeUp(driver);
-        clickBottomRowCta(rowEditLocators());
+        if (!tryClickRowCta(rowEditLocators())) {
+            revealOtherOrderList();
+            tryClickRowCta(rowEditLocators());
+        }
         if (!isEditOrModifyOpen(8)) {
             throw new TimeoutException("Edit or Modify page did not open after tapping the edit CTA");
         }
@@ -539,29 +538,51 @@ public class AppTradeView {
         Point best = null;
         int bestY = Integer.MAX_VALUE;
         for (WebElement el : driver.findElements(By.xpath("//*[@text='" + tabName + "']"))) {
-            if (!el.isDisplayed()) {
-                continue;
-            }
-            Point location = el.getLocation();
-            Dimension size = el.getSize();
-            if (size.getHeight() > 100) {
-                continue;
-            }
-            if (size.getWidth() > (int) (window.getWidth() * 0.7)) {
-                continue;
-            }
-            int x = location.getX();
-            int y = location.getY();
-            if (size.getWidth() > 0 && size.getHeight() > 0) {
-                x += size.getWidth() / 2;
-                y += size.getHeight() / 2;
-            }
-            if (location.getY() < bestY) {
-                bestY = location.getY();
-                best = new Point(x, y);
+            try {
+                if (!el.isDisplayed()) {
+                    continue;
+                }
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (size.getHeight() > 100) {
+                    continue;
+                }
+                if (size.getWidth() > (int) (window.getWidth() * 0.7)) {
+                    continue;
+                }
+                int x = location.getX();
+                int y = location.getY();
+                if (size.getWidth() > 0 && size.getHeight() > 0) {
+                    x += size.getWidth() / 2;
+                    y += size.getHeight() / 2;
+                }
+                if (location.getY() < bestY) {
+                    bestY = location.getY();
+                    best = new Point(x, y);
+                }
+            } catch (StaleElementReferenceException ignored) {
             }
         }
         return best;
+    }
+
+    private void retryOnStale(Runnable action) {
+        StaleElementReferenceException lastError = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                action.run();
+                return;
+            } catch (StaleElementReferenceException e) {
+                lastError = e;
+                try {
+                    Thread.sleep(250);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+        }
+        throw lastError;
     }
 
     private boolean tryClickRowCta(List<By> locators) {
@@ -574,13 +595,15 @@ public class AppTradeView {
     }
 
     private void openRowDetails() {
-        clickBottomRowCta(rowDetailLocators());
-        if (isRowDetailsOpen(10)) {
+        waitForFirstListRow();
+        if (tapFirstRowCta("detail") && isRowDetailsOpen(8)) {
             return;
         }
-        abs.swipeUp(driver);
-        clickBottomRowCta(rowDetailLocators());
-        if (!isRowDetailsOpen(10)) {
+        if (tapFirstRowCta("detail") && isRowDetailsOpen(6)) {
+            return;
+        }
+        tryClickRowCta(rowDetailLocators());
+        if (!isRowDetailsOpen(8)) {
             throw new TimeoutException("Details page did not open after tapping the detail CTA");
         }
     }
@@ -648,9 +671,12 @@ public class AppTradeView {
 
     private boolean isRowDetailsOpen(int seconds) {
         try {
-            new WebDriverWait(driver, Duration.ofSeconds(seconds)).until(d ->
-                    !d.findElements(By.xpath("//*[@text='Position Details']")).isEmpty()
-                            || !d.findElements(By.xpath("//*[@text='Pending Order Details']")).isEmpty()
+            new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d ->
+                    !d.findElements(By.xpath(
+                            "//*[@text='Position Details' or @text='Pending Order Details' or @text='Position Detail']"
+                    )).isEmpty()
             );
             return true;
         } catch (TimeoutException e) {
@@ -673,14 +699,7 @@ public class AppTradeView {
     }
 
     private List<By> rowDetailLocators() {
-        List<By> locators = new ArrayList<>(rowCtaLocators(3, detailsButton));
-        locators.add(By.xpath(
-                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]"
-                        + "/android.view.ViewGroup/android.view.ViewGroup[last()]/android.view.ViewGroup"));
-        locators.add(By.xpath(
-                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup"
-                        + "/android.view.ViewGroup/android.view.ViewGroup[last()]"));
-        return locators;
+        return rowCtaLocators(3, detailsButton);
     }
 
     private List<By> rowCtaLocators(int index, By... extras) {
@@ -704,6 +723,8 @@ public class AppTradeView {
             try {
                 abs.tapVisible(locator);
                 return;
+            } catch (StaleElementReferenceException e) {
+                lastError = new TimeoutException("Row CTA went stale", e);
             } catch (TimeoutException e) {
                 lastError = e;
             }
@@ -731,6 +752,8 @@ public class AppTradeView {
                     .until(d -> listRowCtaPoint(locators));
             abs.tapAt(point.getX(), point.getY());
             return true;
+        } catch (StaleElementReferenceException e) {
+            return false;
         } catch (TimeoutException e) {
             return false;
         }
@@ -759,17 +782,194 @@ public class AppTradeView {
         return inList != null ? inList : bottomMost;
     }
 
-    private List<Point> visibleCtaPoints(List<By> locators) {
-        List<Point> points = new ArrayList<>();
-        for (By locator : locators) {
-            for (WebElement element : driver.findElements(locator)) {
-                Point point = visibleCenter(element);
-                if (point != null) {
-                    points.add(point);
+    private boolean tapFirstRowCta(String buttonName) {
+        try {
+            Point point = new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> firstRowCtaPoint(buttonName));
+            System.out.println("Tapping " + buttonName + " CTA at " + point.getX() + "," + point.getY());
+            abs.tapAt(point.getX(), point.getY());
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private void waitForFirstListRow() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(12))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> firstListRowBounds() != null);
+        } catch (TimeoutException ignored) {
+        }
+    }
+
+    private Point firstRowCtaPoint(String buttonName) {
+        int[] row = firstListRowBounds();
+        if (row == null) {
+            return null;
+        }
+        int top = row[1];
+        int width = row[2];
+        int height = row[3];
+        List<Point> icons = compactIconsOnRow(top, top + height);
+        if (icons.size() >= 3) {
+            return switch (buttonName) {
+                case "close" -> icons.get(icons.size() - 3);
+                case "edit" -> icons.get(icons.size() - 2);
+                default -> icons.get(icons.size() - 1);
+            };
+        }
+        if (icons.size() == 1 && "detail".equals(buttonName)) {
+            return icons.getFirst();
+        }
+        Dimension window = driver.manage().window().getSize();
+        double ratio = switch (buttonName) {
+            case "close" -> 0.70;
+            case "edit" -> 0.83;
+            default -> 0.94;
+        };
+        return new Point((int) (window.getWidth() * ratio), top + height / 2);
+    }
+
+    private int[] firstListRowBounds() {
+        int[] fromSymbol = rowBoundsAroundSymbol();
+        if (fromSymbol != null) {
+            return fromSymbol;
+        }
+        int minY = listAreaTopY();
+        Dimension window = driver.manage().window().getSize();
+        int[] best = null;
+        int bestY = Integer.MAX_VALUE;
+        for (WebElement el : driver.findElements(By.xpath(
+                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup"))) {
+            try {
+                if (!el.isDisplayed()) {
+                    continue;
+                }
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (location.getY() < minY - 20) {
+                    continue;
+                }
+                if (size.getHeight() < 56 || size.getHeight() > 400) {
+                    continue;
+                }
+                if (size.getWidth() < (int) (window.getWidth() * 0.55)) {
+                    continue;
+                }
+                if (location.getY() < bestY) {
+                    bestY = location.getY();
+                    best = new int[]{location.getX(), location.getY(), size.getWidth(), size.getHeight()};
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return best;
+    }
+
+    private int[] rowBoundsAroundSymbol() {
+        String symbol = AppMarketsPage.tradeSymbol;
+        if (symbol == null || symbol.isBlank()) {
+            return null;
+        }
+        int minY = listAreaTopY();
+        Dimension window = driver.manage().window().getSize();
+        int bestY = Integer.MAX_VALUE;
+        int[] best = null;
+        for (WebElement el : driver.findElements(By.xpath("//*[@text='" + symbol + "']"))) {
+            try {
+                if (!el.isDisplayed()) {
+                    continue;
+                }
+                Point location = el.getLocation();
+                if (location.getY() < minY - 10) {
+                    continue;
+                }
+                Dimension size = el.getSize();
+                int top = Math.max(minY, location.getY() - 16);
+                int height = Math.max(size.getHeight() + 48, 88);
+                if (location.getY() < bestY) {
+                    bestY = location.getY();
+                    best = new int[]{0, top, window.getWidth(), height};
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return best;
+    }
+
+    private List<Point> compactIconsOnRow(int rowTop, int rowBottom) {
+        Dimension window = driver.manage().window().getSize();
+        int minX = (int) (window.getWidth() * 0.52);
+        List<Point> raw = new ArrayList<>();
+        for (By locator : List.of(
+                By.className("android.widget.ImageView"),
+                By.xpath("//android.widget.ScrollView//android.view.ViewGroup")
+        )) {
+            for (WebElement el : driver.findElements(locator)) {
+                try {
+                    Point location = el.getLocation();
+                    Dimension size = el.getSize();
+                    if (size.getWidth() < 20 || size.getWidth() > 120) {
+                        continue;
+                    }
+                    if (size.getHeight() < 20 || size.getHeight() > 120) {
+                        continue;
+                    }
+                    int centerX = location.getX() + size.getWidth() / 2;
+                    int centerY = location.getY() + size.getHeight() / 2;
+                    if (centerY < rowTop - 6 || centerY > rowBottom + 6 || centerX < minX) {
+                        continue;
+                    }
+                    raw.add(new Point(centerX, centerY));
+                } catch (StaleElementReferenceException ignored) {
                 }
             }
         }
+        raw.sort(Comparator.comparingInt(Point::getX));
+        List<Point> clustered = new ArrayList<>();
+        for (Point point : raw) {
+            if (clustered.isEmpty()
+                    || Math.abs(point.getX() - clustered.getLast().getX()) > 24) {
+                clustered.add(point);
+            }
+        }
+        return clustered;
+    }
+
+    private List<Point> visibleCtaPoints(List<By> locators) {
+        List<Point> points = new ArrayList<>();
+        Dimension window = driver.manage().window().getSize();
+        int maxWidth = (int) (window.getWidth() * 0.22);
+        for (By locator : locators) {
+            try {
+                for (WebElement element : driver.findElements(locator)) {
+                    Point point = compactCtaCenter(element, maxWidth);
+                    if (point != null) {
+                        points.add(point);
+                    }
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
         return points;
+    }
+
+    private Point compactCtaCenter(WebElement element, int maxWidth) {
+        Point point = visibleCenter(element);
+        if (point == null) {
+            return null;
+        }
+        try {
+            Dimension size = element.getSize();
+            if (size.getWidth() > maxWidth || size.getHeight() > 140) {
+                return null;
+            }
+            return point;
+        } catch (StaleElementReferenceException e) {
+            return point;
+        }
     }
 
     private int listAreaTopY() {
@@ -904,12 +1104,14 @@ public class AppTradeView {
     }
 
     private void tapCloseRowCta() {
+        waitForFirstListRow();
+        if (tapFirstRowCta("close")
+                && (isPendingOrderFlow() || isCancelOrderPromptVisible() || isClosePositionPageOpen(6))) {
+            return;
+        }
         if (!tryClickRowCta(rowCloseLocators())) {
             revealOtherOrderList();
-            if (!tryClickRowCta(rowCloseLocators())) {
-                abs.swipeUp(driver);
-                clickBottomRowCta(rowCloseLocators());
-            }
+            tryClickRowCta(rowCloseLocators());
         }
         if (isPendingOrderFlow() || isCancelOrderPromptVisible()) {
             return;
@@ -1253,16 +1455,18 @@ public class AppTradeView {
     }
 
     public void captureVisibleRowPrice() {
-        List<WebElement> texts = driver.findElements(By.xpath(
+        By rowTexts = By.xpath(
                 "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]" +
                         "/android.view.ViewGroup/android.widget.TextView"
-        ));
-        String price = firstPriceLikeText(texts);
-        if (price == null) {
-            return;
+        );
+        try {
+            String price = new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> firstPriceLikeText(d.findElements(rowTexts)));
+            openPositionOpenPrice = price;
+            openOrderTargetPrice = price;
+        } catch (TimeoutException ignored) {
         }
-        openPositionOpenPrice = price;
-        openOrderTargetPrice = price;
     }
 
     public void getOpenPositionOpenPrice() {
@@ -1290,9 +1494,12 @@ public class AppTradeView {
             return null;
         }
         for (WebElement element : texts) {
-            String text = element.getText();
-            if (text != null && text.trim().matches("\\d+[.,]\\d+")) {
-                return text.trim();
+            try {
+                String text = element.getText();
+                if (text != null && text.trim().matches("\\d+[.,]\\d+")) {
+                    return text.trim();
+                }
+            } catch (StaleElementReferenceException ignored) {
             }
         }
         return null;
