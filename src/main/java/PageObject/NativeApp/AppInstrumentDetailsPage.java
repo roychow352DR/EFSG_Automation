@@ -6,6 +6,7 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -18,6 +19,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AppInstrumentDetailsPage {
 
@@ -154,14 +157,18 @@ public class AppInstrumentDetailsPage {
                 } else {
                     abs.tapVisible(locator, 10);
                 }
+                waitForTpslExpanded(8);
                 return;
             } catch (TimeoutException e) {
                 lastError = e;
             }
         }
+        if (waitForTpslExpanded(2)) {
+            return;
+        }
         throw lastError != null
                 ? lastError
-                : new TimeoutException("Take Profit and Stop Loss toggle was not visible");
+                : new TimeoutException("Stop Loss field was not visible after switching Take Profit and Stop Loss on");
     }
 
     private List<By> tpslToggleLocators() {
@@ -178,39 +185,247 @@ public class AppInstrumentDetailsPage {
         return locatorText.contains("Take Profit") && locatorText.contains("Stop Loss");
     }
 
-    public String getStopLossPrice(String direction, String symbolDecimal) {
-        String price = "";
-        WebElement text;
-        selectedDirection = direction;
-        switch (selectedDirection) {
-            case "BUY" -> {
-                text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Stop Loss (≤\")]"));
-                price = Float.toString(Float.parseFloat(text.getText().split("≤")[1].trim().split("\\)")[0]));
+    private boolean waitForTpslExpanded(int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(Math.max(1, seconds)))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !tpslFieldLabels("Stop Loss").isEmpty());
+            return true;
+        } catch (RuntimeException e) {
+            getPageElement.logInfo("TPSL expand wait did not confirm Stop Loss field: " + e.getMessage());
+        }
+        try {
+            abs.swipeUp(driver);
+        } catch (RuntimeException e) {
+            getPageElement.logInfo("Skip TPSL reveal swipe: " + e.getMessage());
+        }
+        try {
+            return !tpslFieldLabels("Stop Loss").isEmpty();
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private String readTpslConstraintPrice(String fieldName, String sign, String altSign) {
+        revealTpslField(fieldName);
+        WebElement label = tpslFieldLabel(fieldName);
+        String combined = tpslLabelText(label) + " " + nearbyConstraintText(label);
+        String price = extractConstraintNumber(combined, sign, altSign);
+        if (price == null) {
+            throw new NoSuchElementException("Could not read " + fieldName + " constraint from: " + combined);
+        }
+        getPageElement.logInfo("Read " + fieldName + " constraint price: " + price);
+        return price;
+    }
+
+    private WebElement tpslEditField(String fieldName) {
+        revealTpslField(fieldName);
+        WebElement label = tpslFieldLabel(fieldName);
+        int[] labelBounds = parseBounds(elementAttribute(label, "bounds"));
+        WebElement closest = null;
+        int bestScore = Integer.MAX_VALUE;
+        for (WebElement field : driver.findElements(By.className("android.widget.EditText"))) {
+            int[] fieldBounds = parseBounds(elementAttribute(field, "bounds"));
+            if (labelBounds == null || fieldBounds == null) {
+                continue;
             }
-            case "SELL" -> {
-                text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Stop Loss (≥\")]"));
-                price = Float.toString(Float.parseFloat(text.getText().split("≥")[1].trim().split("\\)")[0]));
+            int labelCenterY = (labelBounds[1] + labelBounds[3]) / 2;
+            int fieldCenterY = (fieldBounds[1] + fieldBounds[3]) / 2;
+            int verticalGap = fieldCenterY - labelCenterY;
+            if (verticalGap < -24) {
+                continue;
+            }
+            int score = Math.abs(verticalGap) * 100 + Math.abs(fieldBounds[0] - labelBounds[0]);
+            if (score < bestScore) {
+                bestScore = score;
+                closest = field;
             }
         }
+        if (closest == null) {
+            throw new NoSuchElementException("Could not find EditText for " + fieldName);
+        }
+        return closest;
+    }
+
+    private void revealTpslField(String fieldName) {
+        for (int swipe = 0; swipe < 4; swipe++) {
+            if (!tpslFieldLabels(fieldName).isEmpty()) {
+                return;
+            }
+            abs.swipeUp(driver);
+        }
+        throw new NoSuchElementException(fieldName + " field was not visible after expanding TPSL");
+    }
+
+    private WebElement tpslFieldLabel(String fieldName) {
+        List<WebElement> labels = tpslFieldLabels(fieldName);
+        if (labels.isEmpty()) {
+            throw new NoSuchElementException("Could not find field label for " + fieldName);
+        }
+        return labels.getLast();
+    }
+
+    private List<WebElement> tpslFieldLabels(String fieldName) {
+        List<WebElement> found = new ArrayList<>();
+        String otherField = fieldName.equals("Stop Loss") ? "Take Profit" : "Stop Loss";
+        List<By> locators = List.of(
+                By.xpath("//*[contains(@text,'" + fieldName + "')]"),
+                By.xpath("//*[contains(@content-desc,'" + fieldName + "')]")
+        );
+        for (By locator : locators) {
+            for (WebElement el : driver.findElements(locator)) {
+                try {
+                    String text = tpslLabelText(el);
+                    if (!isDedicatedTpslFieldLabel(text, fieldName, otherField)) {
+                        continue;
+                    }
+                    found.add(el);
+                } catch (RuntimeException ignored) {
+                }
+            }
+            if (!found.isEmpty()) {
+                return found;
+            }
+        }
+        return found;
+    }
+
+    private boolean isDedicatedTpslFieldLabel(String text, String fieldName, String otherField) {
+        if (text == null || text.isBlank() || !text.contains(fieldName)) {
+            return false;
+        }
+        String lower = text.toLowerCase(Locale.ROOT);
+        if (text.contains("&") || lower.contains(" and ") || lower.contains("/")) {
+            return false;
+        }
+        return !text.contains(otherField);
+    }
+
+    private String tpslLabelText(WebElement element) {
+        String text = firstNonBlank(safeLabelText(element), elementAttribute(element, "content-desc"));
+        return text == null ? "" : text.trim();
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank() && !"null".equalsIgnoreCase(value)) {
+                return value;
+            }
+        }
+        return "";
+    }
+
+    private String nearbyConstraintText(WebElement label) {
+        int[] labelBounds = parseBounds(elementAttribute(label, "bounds"));
+        if (labelBounds == null) {
+            return "";
+        }
+        StringBuilder extra = new StringBuilder();
+        int labelCenterY = (labelBounds[1] + labelBounds[3]) / 2;
+        for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
+            try {
+                int[] bounds = parseBounds(elementAttribute(el, "bounds"));
+                if (bounds == null) {
+                    continue;
+                }
+                int centerY = (bounds[1] + bounds[3]) / 2;
+                if (Math.abs(centerY - labelCenterY) > 48 && bounds[1] > labelBounds[3] + 80) {
+                    continue;
+                }
+                if (Math.abs(centerY - labelCenterY) > 48 && bounds[1] < labelBounds[1] - 20) {
+                    continue;
+                }
+                extra.append(' ').append(safeLabelText(el));
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return extra.toString();
+    }
+
+    private String extractConstraintNumber(String text, String sign, String altSign) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String normalized = text.replace('\u00A0', ' ')
+                .replace('\u2266', '\u2264')
+                .replace('\u2267', '\u2265');
+        boolean preferLower = "\u2264".equals(sign) || "<=".equals(sign) || "<".equals(sign);
+        String[] tokens = preferLower
+                ? new String[]{sign, altSign, "\u2264", "<=", "<"}
+                : new String[]{sign, altSign, "\u2265", ">=", ">"};
+        int idx = -1;
+        for (String token : tokens) {
+            if (token == null || token.isBlank()) {
+                continue;
+            }
+            idx = normalized.indexOf(token);
+            if (idx >= 0) {
+                break;
+            }
+        }
+        if (idx < 0) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("(\\d+(?:[.,]\\d+)?)").matcher(normalized.substring(idx));
+        if (!matcher.find()) {
+            return null;
+        }
+        return matcher.group(1).replace(",", "");
+    }
+
+    private String safeLabelText(WebElement element) {
+        try {
+            String text = element.getText();
+            return text == null ? "" : text.trim();
+        } catch (StaleElementReferenceException e) {
+            return "";
+        }
+    }
+
+    private String elementAttribute(WebElement element, String name) {
+        try {
+            String value = element.getAttribute(name);
+            if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) {
+                return null;
+            }
+            return value;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private int[] parseBounds(String bounds) {
+        if (bounds == null || bounds.isBlank()) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]").matcher(bounds);
+        if (!matcher.find()) {
+            return null;
+        }
+        return new int[]{
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                Integer.parseInt(matcher.group(3)),
+                Integer.parseInt(matcher.group(4))
+        };
+    }
+
+    public String getStopLossPrice(String direction, String symbolDecimal) {
+        selectedDirection = direction;
+        boolean buy = direction.equalsIgnoreCase("BUY");
+        String price = readTpslConstraintPrice("Stop Loss", buy ? "≤" : "≥", buy ? "<=" : ">=");
         String formattedPrice = abs.normalizePriceToDecimals(price, symbolDecimal);
         stopLossPrice = formattedPrice;
         return formattedPrice;
     }
 
     public String getTakeProfitPrice(String direction, String symbolDecimal) {
-        String price = "";
-        WebElement text;
         selectedDirection = direction;
-        switch (selectedDirection) {
-            case "BUY" -> {
-                text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Take Profit (≥\")]"));
-                price = Float.toString(Float.parseFloat(text.getText().split("≥")[1].trim().split("\\)")[0]));
-            }
-            case "SELL" -> {
-                text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Take Profit (≤\")]"));
-                price = Float.toString(Float.parseFloat(text.getText().split("≤")[1].trim().split("\\)")[0]));
-            }
-        }
+        boolean buy = direction.equalsIgnoreCase("BUY");
+        String price = readTpslConstraintPrice("Take Profit", buy ? "≥" : "≤", buy ? ">=" : "<=");
         String formattedPrice = abs.normalizePriceToDecimals(price, symbolDecimal);
         takeProfitPrice = formattedPrice;
         return formattedPrice;
@@ -265,22 +480,12 @@ public class AppInstrumentDetailsPage {
         if (driver instanceof AndroidDriver) {
             switch (textFieldName) {
                 case "Stop Loss" -> {
-                    if (!SCROLLED) {
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, marketStopLossTextFieldAos, getStopLossPrice(direction, decimal));
-                        //  marketStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
-                    } else {
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLimitStopLossTextFieldAos, getStopLossPrice(direction, decimal));
-                        //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
-                    }
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, tpslEditField("Stop Loss"),
+                            getStopLossPrice(direction, decimal));
                 }
                 case "Take Profit" -> {
-                    if (!SCROLLED) {
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, marketTakeProfitTextFieldAos, getTakeProfitPrice(direction, decimal));
-                        //  marketTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
-                    } else {
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLimitTakeProfitTextFieldAos, getTakeProfitPrice(direction, decimal));
-                        // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
-                    }
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, tpslEditField("Take Profit"),
+                            getTakeProfitPrice(direction, decimal));
                 }
                 case "Lot Size" -> {
                     editTextFieldAos.getFirst().clear();
@@ -305,17 +510,7 @@ public class AppInstrumentDetailsPage {
                     } else {
                         enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) + priceDifVal);
                     }
-                    if (!SCROLLED) {
-                        abs.waitUntilElementFind(marketStopLossTextFieldAos);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, marketStopLossTextFieldAos,
-                                enterPrice);
-                        //  marketStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
-                    } else {
-                        abs.waitUntilElementFind(editTextFieldAos.get(1));
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1),
-                                enterPrice);
-                        //  stopLimitStopLossTextFieldAos.sendKeys(getStopLossPrice(direction, decimal));
-                    }
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, tpslEditField("Stop Loss"), enterPrice);
                     stopLossPrice = abs.normalizePriceToDecimals(enterPrice,decimal);
                 }
                 case "Take Profit" -> {
@@ -324,17 +519,7 @@ public class AppInstrumentDetailsPage {
                     } else {
                         enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - priceDifVal);
                     }
-                    if (!SCROLLED) {
-                        abs.waitUntilElementFind(marketTakeProfitTextFieldAos);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, marketTakeProfitTextFieldAos,
-                                enterPrice);
-                        //  marketTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
-                    } else {
-                        abs.waitUntilElementFind(editTextFieldAos.getLast());
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getLast(),
-                                enterPrice);
-                        // stopLimitTakeProfitTextFieldAos.sendKeys(getTakeProfitPrice(direction, decimal));
-                    }
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, tpslEditField("Take Profit"), enterPrice);
                     takeProfitPrice = abs.normalizePriceToDecimals(enterPrice,decimal);
                 }
                 case "Lot Size" -> {
