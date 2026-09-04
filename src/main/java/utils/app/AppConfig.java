@@ -15,9 +15,9 @@ public class AppConfig {
         return switch (entity) {
             case "EBL_MT5" -> switch (env) {
                 case "mt5uat" ->
-                        System.getProperty("user.dir") + "/src/main/resources/com.emperorfs.ebltrading.android_uat-0.0.301-0102.apk";
+                        System.getProperty("user.dir") + "/src/main/resources/com.emperorfs.ebltrading.android_uat-0.0.303-0720.apk";
                 case "bauuat" ->
-                        System.getProperty("user.dir") + "/src/main/resources/com.emperorfs.ebltrading.android_uat-0.0.301-1222.apk";
+                        System.getProperty("user.dir") + "/src/main/resources/com.emperorfs.ebltrading.android_uat-0.0.303-0720.apk";
                 default -> "";
             };
             case "EIEHK" -> switch (env) {
