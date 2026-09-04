@@ -18,10 +18,18 @@ import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.ScreenOrientation;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Locale;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * MobileDriver class handles the initialization and configuration of mobile automation drivers.
@@ -354,10 +362,10 @@ public class MobileDriver {
         aosOptions.setCapability("skipUnlock", true);
         aosOptions.setCapability("skipServerInstallation", false);
 
-        // Handle app path configuration
+        // Handle app path configuration. A .zip is unpacked first so Appium receives a real APK.
         if (androidAppPath != null && !androidAppPath.isBlank()) {
-            File appFile = new File(androidAppPath);
-            if (appFile.exists()) {
+            File appFile = resolveAndroidAppFile(androidAppPath);
+            if (appFile != null && appFile.isFile()) {
                 aosOptions.setApp(appFile.getAbsolutePath());
                 System.out.println("Android app path set: " + appFile.getAbsolutePath());
                 return;
@@ -372,6 +380,79 @@ public class MobileDriver {
         }
         System.out.println("Launching installed Android app: " + androidPackage
                 + " / " + ANDROID_LAUNCH_ACTIVITY);
+    }
+
+    private File resolveAndroidAppFile(String androidAppPath) {
+        File source = new File(androidAppPath);
+        if (!source.isFile()) {
+            return null;
+        }
+        if (source.getName().toLowerCase(Locale.ROOT).endsWith(".zip")) {
+            return extractApkFromZip(source);
+        }
+        return source;
+    }
+
+    private File extractApkFromZip(File zipFile) {
+        File outputDir = new File(System.getProperty("user.dir"), "target/extracted-apk");
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            throw new IllegalStateException("Could not create APK extract directory: " + outputDir.getAbsolutePath());
+        }
+        String apkEntryName = findApkEntryName(zipFile);
+        File apkFile = new File(outputDir, new File(apkEntryName).getName());
+        if (apkFile.isFile() && apkFile.length() > 0 && apkFile.lastModified() >= zipFile.lastModified()) {
+            System.out.println("Reusing extracted APK: " + apkFile.getAbsolutePath());
+            return apkFile;
+        }
+        System.out.println("Extracting APK from zip: " + zipFile.getAbsolutePath());
+        try (ZipFile zip = new ZipFile(zipFile)) {
+            ZipEntry entry = zip.getEntry(apkEntryName);
+            if (entry == null) {
+                throw new IllegalArgumentException("APK entry missing in zip: " + apkEntryName);
+            }
+            try (InputStream in = zip.getInputStream(entry)) {
+                Files.copy(in, apkFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to extract APK from zip: " + zipFile.getAbsolutePath(), e);
+        }
+        if (!apkFile.isFile() || apkFile.length() == 0) {
+            throw new IllegalStateException("Extracted APK is empty: " + apkFile.getAbsolutePath());
+        }
+        System.out.println("Extracted APK: " + apkFile.getAbsolutePath());
+        return apkFile;
+    }
+
+    private String findApkEntryName(File zipFile) {
+        try (ZipFile zip = new ZipFile(zipFile)) {
+            String found = null;
+            long bestSize = -1;
+            Enumeration<? extends ZipEntry> entries = zip.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                String name = entry.getName().replace('\\', '/');
+                String baseName = name.substring(name.lastIndexOf('/') + 1);
+                if (name.contains("__MACOSX") || baseName.startsWith("._")) {
+                    continue;
+                }
+                if (!baseName.toLowerCase(Locale.ROOT).endsWith(".apk")) {
+                    continue;
+                }
+                if (entry.getSize() >= bestSize) {
+                    bestSize = entry.getSize();
+                    found = entry.getName();
+                }
+            }
+            if (found == null) {
+                throw new IllegalArgumentException("ZIP does not contain an APK: " + zipFile.getAbsolutePath());
+            }
+            return found;
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not read zip: " + zipFile.getAbsolutePath(), e);
+        }
     }
 
     /**
