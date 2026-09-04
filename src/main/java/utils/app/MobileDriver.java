@@ -328,9 +328,6 @@ public class MobileDriver {
         // device emulator name
         aosOptions.setDeviceName("AndroidDevice");
 
-        boolean noReset = Boolean.parseBoolean(System.getProperty("noReset", "false"));
-        String deviceName = System.getProperty("deviceName", "Android Device");
-
         // Set basic capabilities
         aosOptions.setPlatformName("Android");
         aosOptions.setAutomationName("UiAutomator2");
@@ -363,26 +360,18 @@ public class MobileDriver {
             if (appFile.exists()) {
                 aosOptions.setApp(appFile.getAbsolutePath());
                 System.out.println("Android app path set: " + appFile.getAbsolutePath());
-            } else {
-                String errorMsg = "Provided Android app path does not exist: " + androidAppPath;
-                System.err.println(errorMsg);
-                if (!noReset) {
-                    // When noReset is false, app path is required for installation
-                    throw new IllegalArgumentException(errorMsg + ". App path is required when noReset is false.");
-                } else {
-                    // When noReset is true, we can try to use existing installed app
-                    System.out.println("Warning: App path not found, but noReset=true. Attempting to use existing installed app.");
-                }
+                return;
             }
+            System.out.println("Android APK not found: " + androidAppPath);
         } else {
-            if (!noReset) {
-                // When noReset is false, app path is mandatory
-                throw new IllegalArgumentException("Android app path is required when noReset is false. Provided path: " + androidAppPath);
-            } else {
-                // When noReset is true, we can use existing installed app
-                System.out.println("No app path provided, but noReset=true. Using existing installed app.");
-            }
+            System.out.println("Android APK path was not provided");
         }
+        if (androidPackage == null || androidPackage.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Cannot launch Android app: APK file is missing and app package is empty");
+        }
+        System.out.println("Launching installed Android app: " + androidPackage
+                + " / " + ANDROID_LAUNCH_ACTIVITY);
     }
 
     /**
