@@ -63,7 +63,10 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees a new open position is displayed at the position tab of app trade view")
     public void the_user_sees_a_new_open_position_is_displayed_at_the_position_tab_of_app_trade_view() throws InterruptedException {
-        Assert.assertEquals(appPoManager.getAppTradeView().getNumberOfPositions(),AppTradeView.positionsCount+1);
+        Assert.assertTrue(
+                appPoManager.getAppTradeView().isNewOpenPositionDisplayed(),
+                "New open position was not shown on the Positions tab"
+        );
         appPoManager.getAppTradeView().closePosition();
 
     }
@@ -116,7 +119,10 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees a new pending order is displayed at the pending order tab of app trade view")
     public void the_user_sees_a_new_pending_order_is_displayed_at_the_pending_order_tab_of_app_trade_view() throws InterruptedException {
-        Assert.assertEquals(appPoManager.getAppTradeView().getNumberOfPendingOrders(),AppTradeView.pendingOrdersCount+1);
+        Assert.assertTrue(
+                appPoManager.getAppTradeView().isNewPendingOrderDisplayed(),
+                "New pending order was not shown on the Pending Orders tab"
+        );
         appPoManager.getAppTradeView().cancelOrder();
     }
 
@@ -673,12 +679,12 @@ public class tradeSteps extends BaseTest {
 
     @And("the total count of the positions is retrieved on the app trade view")
     public void the_total_count_of_the_positions_is_retrieved_on_the_app_trade_view() {
-        AppTradeView.positionsCount = appPoManager.getAppTradeView().getNumberOfPositions();
+        AppTradeView.positionsCount = appPoManager.getAppTradeView().captureOpenPositionCount();
     }
 
     @And("the total count of the pending order is retrieved on the app trade view")
     public void the_total_count_of_the_pending_order_is_retrieved_on_the_app_trade_view() {
-        AppTradeView.pendingOrdersCount = appPoManager.getAppTradeView().getNumberOfPendingOrders();
+        AppTradeView.pendingOrdersCount = appPoManager.getAppTradeView().capturePendingOrderCount();
     }
 
     @And("the user selects list {string} on the app trade view")

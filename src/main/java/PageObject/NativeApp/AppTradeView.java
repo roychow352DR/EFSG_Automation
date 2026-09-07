@@ -56,6 +56,8 @@ public class AppTradeView {
     public static String editPrice;
     public static int positionsCount = 0;
     public static int pendingOrdersCount = 0;
+    public static String firstPositionRowText = "";
+    public static String firstPendingOrderRowText = "";
 
     public static void resetCapturedOrderValues() {
         stopLossPrice = null;
@@ -71,6 +73,8 @@ public class AppTradeView {
         editPrice = null;
         positionsCount = 0;
         pendingOrdersCount = 0;
+        firstPositionRowText = "";
+        firstPendingOrderRowText = "";
     }
 
     public AppTradeView(AppiumDriver driver) {
@@ -1060,14 +1064,39 @@ public class AppTradeView {
     }
 
     public void cancelOrder() {
-        if (driver instanceof AndroidDriver) {
-            clickBottomRowCta(rowCloseLocators());
-            if (AppSettingPage.isTradeConfirmNeeded) {
-                abs.waitUntilElementClickable(cancelOrderButtonAos).click();
-            } else {
-                System.out.println("Pending order cancelled");
-            }
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        waitUntilOverlayGone();
+        tapListTab("Pending Orders");
+        waitForFirstListRow();
+        if (!tapFirstRowCta("close") && !tryClickRowCta(rowCloseLocators())) {
+            throw new TimeoutException("Pending order close CTA was not visible");
+        }
+        confirmCancelPendingOrderDialogue();
+    }
 
+    private void confirmCancelPendingOrderDialogue() {
+        By overlayCancel = By.xpath(
+                "//android.view.ViewGroup[@resource-id='RNE__Overlay']//*[@text='Cancel Order']"
+        );
+        By cancelLabel = By.xpath("//*[@text='Cancel Order']");
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !d.findElements(overlayCancel).isEmpty()
+                            || !d.findElements(cancelLabel).isEmpty());
+            try {
+                abs.tapBottomMost(overlayCancel, 8);
+            } catch (TimeoutException e) {
+                abs.tapBottomMost(cancelLabel, 8);
+            }
+            getPageElement.logInfo("Tapped Cancel Order on the confirmation dialogue");
+        } catch (TimeoutException e) {
+            if (AppSettingPage.isTradeConfirmNeeded) {
+                throw new TimeoutException("Cancel Order confirmation dialogue was not shown", e);
+            }
+            System.out.println("Pending order cancelled without confirmation dialogue");
         }
     }
 
@@ -1076,8 +1105,20 @@ public class AppTradeView {
             return;
         }
         leaveEditPositionIfOpen();
+        waitUntilOverlayGone();
+        tapListTab("Positions");
+        dismissCancelOrderPromptIfShown();
         if (!isClosePositionPageOpen(2)) {
             openClosePositionPage();
+        }
+        if (isCancelOrderPromptVisible()) {
+            getPageElement.logInfo("Close CTA opened Cancel Order; dismissing and retrying on Positions");
+            dismissCancelOrderPromptIfShown();
+            tapListTab("Positions");
+            openClosePositionPage();
+        }
+        if (!isClosePositionPageOpen(5)) {
+            throw new TimeoutException("Close Position page did not open after tapping the close CTA");
         }
         tapClosePositionSubmit();
         if (AppSettingPage.isTradeConfirmNeeded) {
@@ -1135,18 +1176,108 @@ public class AppTradeView {
     }
 
     private void openClosePositionPage() {
-        if (!tryClickRowCta(rowCloseLocators())) {
-            revealOtherOrderList();
-            clickBottomRowCta(rowCloseLocators());
-        }
-        if (isClosePositionPageOpen(8)) {
+        waitForFirstListRow();
+        if (tapFirstOpenPositionCloseCta() && isClosePositionPageOpen(8)) {
             return;
         }
-        abs.swipeUp(driver);
-        clickBottomRowCta(rowCloseLocators());
-        if (!isClosePositionPageOpen(8)) {
-            throw new TimeoutException("Close Position page did not open after tapping the close CTA");
+        if (isCancelOrderPromptVisible()) {
+            return;
         }
+        if (tryClickRowCta(rowCloseLocators()) && isClosePositionPageOpen(8)) {
+            return;
+        }
+    }
+
+    private boolean tapFirstOpenPositionCloseCta() {
+        try {
+            Point point = new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> firstOpenPositionClosePoint());
+           // getPageElement.logInfo("Tapping position close CTA at " + point.getX() + "," + point.getY());
+            abs.tapAt(point.getX(), point.getY());
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private Point firstOpenPositionClosePoint() {
+        int[] row = firstOpenPositionRowBounds();
+        if (row == null) {
+            return null;
+        }
+        int top = row[1];
+        int height = row[3];
+        List<Point> icons = compactIconsOnRow(top, top + height);
+        if (icons.size() >= 3) {
+            return icons.get(icons.size() - 3);
+        }
+        Dimension window = driver.manage().window().getSize();
+        return new Point((int) (window.getWidth() * 0.70), top + height / 2);
+    }
+
+    private int[] firstOpenPositionRowBounds() {
+        int minY = listAreaTopY();
+        Dimension window = driver.manage().window().getSize();
+        int[] best = null;
+        int bestY = Integer.MAX_VALUE;
+        for (WebElement el : driver.findElements(By.xpath(
+                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup"))) {
+            try {
+                if (!el.isDisplayed()) {
+                    continue;
+                }
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (location.getY() < minY - 20) {
+                    continue;
+                }
+                if (size.getHeight() < 56 || size.getHeight() > 400) {
+                    continue;
+                }
+                if (size.getWidth() < (int) (window.getWidth() * 0.55)) {
+                    continue;
+                }
+                if (rowLooksLikePending(location.getY(), location.getY() + size.getHeight())) {
+                    continue;
+                }
+                if (location.getY() < bestY) {
+                    bestY = location.getY();
+                    best = new int[]{location.getX(), location.getY(), size.getWidth(), size.getHeight()};
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return best;
+    }
+
+    private boolean rowLooksLikePending(int top, int bottom) {
+        for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
+            try {
+                Point location = el.getLocation();
+                if (location.getY() < top - 8 || location.getY() > bottom + 8) {
+                    continue;
+                }
+                String text = el.getText();
+                if (text == null || text.isBlank()) {
+                    continue;
+                }
+                String lower = text.toLowerCase(Locale.ROOT);
+                if (lower.contains("stop") || lower.contains("limit") || lower.contains("pending")) {
+                    return true;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return false;
+    }
+
+    private void dismissCancelOrderPromptIfShown() {
+        if (!isCancelOrderPromptVisible()) {
+            return;
+        }
+        pressAndroidBack();
+        waitUntilOverlayGone();
     }
 
     private void confirmClosePositionDialogue() {
@@ -1176,6 +1307,9 @@ public class AppTradeView {
     }
 
     private void tapClosePositionSubmit() {
+        if (isCancelOrderPromptVisible()) {
+            throw new TimeoutException("Cancel Order dialogue was shown instead of Close Position");
+        }
         try {
             Point tapPoint = new WebDriverWait(driver, Duration.ofSeconds(8))
                     .ignoring(StaleElementReferenceException.class)
@@ -1530,55 +1664,226 @@ public class AppTradeView {
         tapListTab(tabName);
     }
 
-    public int getNumberOfPositions(){
-        By rowsOnPositionTab = By.xpath(
-                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup"
-        );
-        if (driver instanceof AndroidDriver) {
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(100));
-            final int[] previous = {-1};
-            final int[] stable = {0};
-
-            return wait.until(d -> {
-                int current = d.findElements(rowsOnPositionTab).size();
-
-                if (current == previous[0]) {
-                    stable[0]++;
-                } else {
-                    previous[0] = current;
-                    stable[0] = 0;
-                }
-
-                return stable[0] >= 2 ? current : null;
-            });
-        }
-        return 0;
-
+    public int captureOpenPositionCount() {
+        waitUntilOverlayGone();
+        tapListTab("Positions");
+        positionsCount = countVisiblePositionRowsStable();
+        firstPositionRowText = firstPositionFingerprint();
+        getPageElement.logInfo("Cached positionsCount=" + positionsCount
+                + ", firstRow=[" + firstPositionRowText + "]");
+        return positionsCount;
     }
 
-    public int getNumberOfPendingOrders(){
-        By rowsOnPendingOrders = By.xpath(
-                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup"
-        );
-        if (driver instanceof AndroidDriver) {
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(100));
-            final int[] previous = {-1};
-            final int[] stable = {0};
-
-            return wait.until(d -> {
-                int current = d.findElements(rowsOnPendingOrders).size();
-
-                if (current == previous[0]) {
-                    stable[0]++;
-                } else {
-                    previous[0] = current;
-                    stable[0] = 0;
-                }
-
-                return stable[0] >= 2 ? current : null;
-            });
+    public boolean isNewOpenPositionDisplayed() {
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
         }
-        return 0;
+        waitUntilOverlayGone();
+        tapListTab("Positions");
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(20))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> isCreatedPositionOnList());
+            String afterRow = firstPositionFingerprint();
+            int afterCount = countVisiblePositionRows();
+            getPageElement.logInfo("After order: visibleRows=" + afterCount
+                    + " cachedCount=" + positionsCount
+                    + " firstRow=[" + afterRow + "]");
+            return true;
+        } catch (TimeoutException e) {
+            getPageElement.logInfo("New position not found. cachedCount=" + positionsCount
+                    + " visibleRows=" + countVisiblePositionRows()
+                    + " cachedFirstRow=[" + firstPositionRowText + "]"
+                    + " currentFirstRow=[" + firstPositionFingerprint() + "]");
+            return false;
+        }
+    }
+
+    public int getNumberOfPositions() {
+        if (!(driver instanceof AndroidDriver)) {
+            return 0;
+        }
+        waitUntilOverlayGone();
+        tapListTab("Positions");
+        return countVisiblePositionRowsStable();
+    }
+
+    private int countVisiblePositionRowsStable() {
+        waitForFirstListRow();
+        return countVisiblePositionRows();
+    }
+
+    private int countVisiblePositionRows() {
+        int fromDirection = countDirectionLabelsInList();
+        if (fromDirection > 0) {
+            return fromDirection;
+        }
+        return countWideListRows();
+    }
+
+    private int countDirectionLabelsInList() {
+        int minY = listAreaTopY();
+        Dimension window = driver.manage().window().getSize();
+        int maxLabelWidth = (int) (window.getWidth() * 0.4);
+        Set<Integer> rows = new TreeSet<>();
+        for (WebElement el : driver.findElements(By.xpath("//*[@text='BUY' or @text='SELL']"))) {
+            try {
+                if (!el.isDisplayed()) {
+                    continue;
+                }
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (location.getY() < minY - 10) {
+                    continue;
+                }
+                if (size.getHeight() > 80 || size.getWidth() > maxLabelWidth) {
+                    continue;
+                }
+                rows.add(Math.round(location.getY() / 20f) * 20);
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return rows.size();
+    }
+
+    private int countWideListRows() {
+        int minY = listAreaTopY();
+        Dimension window = driver.manage().window().getSize();
+        Set<Integer> rows = new TreeSet<>();
+        for (WebElement el : driver.findElements(By.xpath(
+                "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup"))) {
+            try {
+                if (!el.isDisplayed()) {
+                    continue;
+                }
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (location.getY() < minY - 20) {
+                    continue;
+                }
+                if (size.getHeight() < 56 || size.getHeight() > 400) {
+                    continue;
+                }
+                if (size.getWidth() < (int) (window.getWidth() * 0.55)) {
+                    continue;
+                }
+                rows.add(Math.round(location.getY() / 20f) * 20);
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return rows.size();
+    }
+
+    private String firstPositionFingerprint() {
+        int[] row = firstListRowBounds();
+        if (row == null) {
+            return "";
+        }
+        String symbol = AppMarketsPage.tradeSymbol;
+        StringBuilder text = new StringBuilder();
+        int top = row[1];
+        int bottom = row[1] + row[3];
+        for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
+            try {
+                Point location = el.getLocation();
+                if (location.getY() < top - 8 || location.getY() > bottom + 8) {
+                    continue;
+                }
+                String value = el.getText();
+                if (isStablePositionToken(value, symbol)) {
+                    text.append(value.trim()).append('|');
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return text.toString();
+    }
+
+    private boolean isStablePositionToken(String value, String symbol) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        String text = value.trim();
+        if (text.equalsIgnoreCase("BUY") || text.equalsIgnoreCase("SELL")) {
+            return true;
+        }
+        if (symbol != null && !symbol.isBlank() && text.contains(symbol)) {
+            return true;
+        }
+        if (text.matches("\\d{1,2}:\\d{2}(?::\\d{2})?")) {
+            return true;
+        }
+        return text.matches("0\\.\\d+");
+    }
+
+    private boolean isCreatedPositionOnList() {
+        int visibleRows = countVisiblePositionRows();
+        if (visibleRows > positionsCount) {
+            return true;
+        }
+        String currentRow = firstPositionFingerprint();
+        if (currentRow.isBlank() || currentRow.equals(firstPositionRowText)) {
+            return false;
+        }
+        String direction = selectedDirection;
+        return direction == null || direction.isBlank() || currentRow.contains(direction);
+    }
+
+    public int capturePendingOrderCount() {
+        waitUntilOverlayGone();
+        tapListTab("Pending Orders");
+        pendingOrdersCount = countVisiblePositionRowsStable();
+        firstPendingOrderRowText = firstPositionFingerprint();
+        getPageElement.logInfo("Cached pendingOrdersCount=" + pendingOrdersCount
+                + ", firstRow=[" + firstPendingOrderRowText + "]");
+        return pendingOrdersCount;
+    }
+
+    public boolean isNewPendingOrderDisplayed() {
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
+        }
+        waitUntilOverlayGone();
+        tapListTab("Pending Orders");
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(20))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> isCreatedPendingOrderOnList());
+            String afterRow = firstPositionFingerprint();
+            int afterCount = countVisiblePositionRows();
+            getPageElement.logInfo("After pending order: visibleRows=" + afterCount
+                    + " cachedCount=" + pendingOrdersCount
+                    + " firstRow=[" + afterRow + "]");
+            return true;
+        } catch (TimeoutException e) {
+            getPageElement.logInfo("New pending order not found. cachedCount=" + pendingOrdersCount
+                    + " visibleRows=" + countVisiblePositionRows()
+                    + " cachedFirstRow=[" + firstPendingOrderRowText + "]"
+                    + " currentFirstRow=[" + firstPositionFingerprint() + "]");
+            return false;
+        }
+    }
+
+    public int getNumberOfPendingOrders() {
+        if (!(driver instanceof AndroidDriver)) {
+            return 0;
+        }
+        waitUntilOverlayGone();
+        tapListTab("Pending Orders");
+        return countVisiblePositionRowsStable();
+    }
+
+    private boolean isCreatedPendingOrderOnList() {
+        int visibleRows = countVisiblePositionRows();
+        if (visibleRows > pendingOrdersCount) {
+            return true;
+        }
+        String currentRow = firstPositionFingerprint();
+        if (currentRow.isBlank() || currentRow.equals(firstPendingOrderRowText)) {
+            return false;
+        }
+        String direction = selectedDirection;
+        return direction == null || direction.isBlank() || currentRow.contains(direction);
     }
 
     public void selectList(String listName){
