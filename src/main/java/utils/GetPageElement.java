@@ -11,6 +11,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -163,7 +164,7 @@ public class GetPageElement {
 
         rawValue = rawValue.trim();
 
-        if ("Qty".equals(label) || "Volume".equals(label)) {
+        if ("Qty".equals(label) || "Volume".equals(label) || "Lots".equals(label)) {
             return canonicalizeVolume(rawValue);
         }
 
@@ -794,7 +795,7 @@ public class GetPageElement {
             text = text.replace(",", "");
         }
         try {
-            return new BigDecimal(text).stripTrailingZeros().toPlainString();
+            return new BigDecimal(text).setScale(2, RoundingMode.HALF_UP).toPlainString();
         } catch (Exception e) {
             return text;
         }

@@ -11,6 +11,8 @@ import org.testng.Assert;
 import utils.BaseTest;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class tradeSteps extends BaseTest {
 
@@ -454,7 +456,8 @@ public class tradeSteps extends BaseTest {
     @Then("the user sees the lots value is decreased by default step size on the close position page")
     public void the_user_sees_the_lots_value_is_decreased_by_default_step_size_on_the_close_position_page() throws InterruptedException {
         Assert.assertEquals(appPoManager.getAppClosePositionPage().getEditFieldVal(),
-                String.valueOf(Float.parseFloat(appPoManager.getAppInstrumentDetailsPage().getValidationValue("Volume")) - Float.parseFloat(tradeSymbolConfig.getStepSize())));
+                lotsAfterStep(AppClosePositionPage.lotsBeforeAdjust,
+                        tradeSymbolConfig.getStepSize(), -1));
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -462,6 +465,13 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_the_lots_value_is_increased_by_default_step_size_on_the_close_position_page() throws InterruptedException {
         Assert.assertEquals(appPoManager.getAppClosePositionPage().getEditFieldVal(), appPoManager.getAppInstrumentDetailsPage().getValidationValue("Volume"));
         appPoManager.getAppTradeView().closePosition();
+    }
+
+    private String lotsAfterStep(String currentLots, String stepSize, int direction) {
+        return new BigDecimal(currentLots.trim())
+                .add(new BigDecimal(stepSize.trim()).multiply(BigDecimal.valueOf(direction)))
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString();
     }
 
     @And("the user places a TPSL pending order with direction {string} and order type {string} on the instrument details page")

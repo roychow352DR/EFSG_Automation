@@ -3,10 +3,7 @@ package StepDefinitions;
 import Data.QASEConfig;
 import Data.GlobalConfig;
 import Data.TradeRecord;
-import PageObject.NativeApp.AppEditPositionPage;
-import PageObject.NativeApp.AppInstrumentDetailsPage;
-import PageObject.NativeApp.AppModifyOrderPage;
-import PageObject.NativeApp.AppTradeView;
+import PageObject.NativeApp.*;
 import io.appium.java_client.InteractsWithApps;
 import io.cucumber.java.*;
 import org.openqa.selenium.NoSuchSessionException;
@@ -47,7 +44,7 @@ public class Hooks extends BaseTest {
 
     public static String productEntity;
 
-   @BeforeAll
+    @BeforeAll
     public static void createQaseTestRun() throws IOException, InterruptedException {
         initializeConfigurations();
         setupQaseTestRun();
@@ -98,6 +95,7 @@ public class Hooks extends BaseTest {
         AppTradeView.resetCapturedOrderValues();
         AppEditPositionPage.resetCapturedOrderValues();
         AppModifyOrderPage.resetCapturedOrderValues();
+        AppClosePositionPage.resetCapturedOrderValues();
         TradeRecord.isOpenPosition = false;
     }
 
