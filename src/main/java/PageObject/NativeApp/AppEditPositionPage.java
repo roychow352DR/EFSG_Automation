@@ -5,6 +5,8 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
@@ -13,7 +15,10 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.GetPageElement;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -92,24 +97,128 @@ public class AppEditPositionPage {
     }
 
     public void adjustPrice(String ctaBtn, String priceType) {
-        if (driver instanceof AndroidDriver) {
-            if (ctaBtn.equalsIgnoreCase("+")) {
-                switch (priceType) {
-                    case "Stop Loss" -> stopLossPlusBtnAos.click();
-                    case "Take Profit" -> takeProfitPlusBtnAos.click();
-                }
-            } else if (ctaBtn.equalsIgnoreCase("-")) {
-                switch (priceType) {
-                    case "Stop Loss" -> stopLossMinusBtnAos.click();
-                    case "Take Profit" -> takeProfitMinusBtnAos.click();
-                }
-            } else if (ctaBtn.equalsIgnoreCase("✕")) {
-                switch (priceType) {
-                    case "Stop Loss" -> stopLossClearBtnAos.click();
-                    case "Take Profit" -> takeProfitClearBtnAos.click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        Point point = priceStepperPoint(priceType, ctaBtn);
+        getPageElement.logInfo("Tapping " + ctaBtn + " on " + priceType + " at " + point.getX() + "," + point.getY());
+        abs.tapAt(point.getX(), point.getY());
+    }
+
+    private Point priceStepperPoint(String fieldName, String ctaBtn) {
+        WebElement field = priceField(fieldName);
+        int[] fieldBounds = parseBounds(elementAttribute(field, "bounds"));
+        if (fieldBounds == null) {
+            throw new NoSuchElementException("Could not read bounds for " + fieldName);
+        }
+        int fieldCenterY = (fieldBounds[1] + fieldBounds[3]) / 2;
+        int fieldLeft = fieldBounds[0];
+        int fieldRight = fieldBounds[2];
+        List<int[]> left = new ArrayList<>();
+        List<int[]> right = new ArrayList<>();
+        for (int[] bounds : compactControlsOnRow(fieldCenterY)) {
+            int centerX = (bounds[0] + bounds[2]) / 2;
+            if (centerX < fieldLeft) {
+                left.add(bounds);
+            } else if (centerX > fieldRight) {
+                right.add(bounds);
+            }
+        }
+        left.sort(Comparator.comparingInt(bounds -> bounds[0]));
+        right.sort(Comparator.comparingInt(bounds -> bounds[0]));
+
+        String action = normalizeStepperAction(ctaBtn);
+        if ("plus".equals(action)) {
+            if (!right.isEmpty()) {
+                return controlCenter(right.getFirst());
+            }
+            return new Point(fieldRight + 36, fieldCenterY);
+        }
+        if ("minus".equals(action)) {
+            if (!left.isEmpty()) {
+                return controlCenter(left.getLast());
+            }
+            return new Point(Math.max(8, fieldLeft - 36), fieldCenterY);
+        }
+        if ("clear".equals(action)) {
+            if (right.size() >= 2) {
+                return controlCenter(right.getLast());
+            }
+            if (right.size() == 1) {
+                return new Point(right.getFirst()[2] + 26, fieldCenterY);
+            }
+            return new Point(fieldRight + 160, fieldCenterY);
+        }
+        throw new IllegalArgumentException("Unsupported stepper button: " + ctaBtn);
+    }
+
+    private String normalizeStepperAction(String ctaBtn) {
+        if (ctaBtn == null || ctaBtn.isBlank()) {
+            throw new IllegalArgumentException("Stepper button was empty");
+        }
+        String text = ctaBtn.trim();
+        if (text.equals("+") || text.equalsIgnoreCase("plus")) {
+            return "plus";
+        }
+        if (text.equals("-") || text.equalsIgnoreCase("minus")) {
+            return "minus";
+        }
+        if (text.equals("✕") || text.equals("×") || text.equalsIgnoreCase("x")
+                || text.equals("?") || text.equalsIgnoreCase("clear")) {
+            return "clear";
+        }
+        return text.toLowerCase(Locale.ROOT);
+    }
+
+    private List<int[]> compactControlsOnRow(int rowCenterY) {
+        List<int[]> found = new ArrayList<>();
+        List<By> locators = List.of(
+                By.xpath("//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']"),
+                By.xpath("//*[@text='+' or @text='-' or @text='✕' or @text='×' or @text='x' or @text='X']"),
+                By.className("android.widget.ImageView")
+        );
+        for (By locator : locators) {
+            for (WebElement el : driver.findElements(locator)) {
+                try {
+                    int[] bounds = parseBounds(elementAttribute(el, "bounds"));
+                    if (bounds == null) {
+                        continue;
+                    }
+                    int width = bounds[2] - bounds[0];
+                    int height = bounds[3] - bounds[1];
+                    if (width < 18 || width > 96 || height < 18 || height > 96) {
+                        continue;
+                    }
+                    int centerY = (bounds[1] + bounds[3]) / 2;
+                    if (Math.abs(centerY - rowCenterY) > 48) {
+                        continue;
+                    }
+                    if (alreadyHasSimilarControl(found, bounds)) {
+                        continue;
+                    }
+                    found.add(bounds);
+                } catch (StaleElementReferenceException ignored) {
                 }
             }
         }
+        return found;
+    }
+
+    private boolean alreadyHasSimilarControl(List<int[]> found, int[] bounds) {
+        int centerX = (bounds[0] + bounds[2]) / 2;
+        int centerY = (bounds[1] + bounds[3]) / 2;
+        for (int[] existing : found) {
+            int existingX = (existing[0] + existing[2]) / 2;
+            int existingY = (existing[1] + existing[3]) / 2;
+            if (Math.abs(existingX - centerX) <= 12 && Math.abs(existingY - centerY) <= 12) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Point controlCenter(int[] bounds) {
+        return new Point((bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2);
     }
 
     public void fillInTextField(String textFieldName, String direction, String decimal, int priceDifVal) {
@@ -209,11 +318,15 @@ public class AppEditPositionPage {
     }
 
     private String elementAttribute(WebElement element, String name) {
-        String value = element.getDomAttribute(name);
-        if (value == null || value.isBlank()) {
-            value = element.getDomProperty(name);
+        try {
+            String value = element.getAttribute(name);
+            if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) {
+                return null;
+            }
+            return value;
+        } catch (RuntimeException e) {
+            return null;
         }
-        return value;
     }
 
     private int[] parseBounds(String bounds) {
@@ -221,7 +334,7 @@ public class AppEditPositionPage {
             return null;
         }
         Matcher matcher = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]").matcher(bounds);
-        if (!matcher.matches()) {
+        if (!matcher.find()) {
             return null;
         }
         return new int[]{

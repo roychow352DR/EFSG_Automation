@@ -6,6 +6,9 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AndroidFindBy;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
@@ -15,6 +18,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AppPortfolioPage {
 
@@ -99,9 +104,52 @@ public class AppPortfolioPage {
     }
 
     public void clickButton(String buttonName) {
-        if (driver instanceof AndroidDriver) {
-            driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup")).click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+        waitForPortfolioPage();
+        TimeoutException lastError = null;
+        for (By locator : portfolioButtonLocators(buttonName)) {
+            try {
+                abs.tapBottomMost(locator, 8);
+                return;
+            } catch (TimeoutException e) {
+                lastError = e;
+            }
+        }
+        throw lastError != null
+                ? lastError
+                : new TimeoutException("Button was not visible on the portfolio page: " + buttonName);
+    }
+
+    private void waitForPortfolioPage() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .until(d -> !d.findElements(By.xpath(
+                            "//*[@text='Open Positions' or @text='Pending Orders' or @text='Portfolio'"
+                                    + " or contains(@text,'Show all') or contains(@text,'Show All')]"
+                    )).isEmpty());
+        } catch (TimeoutException ignored) {
+        }
+    }
+
+    private List<By> portfolioButtonLocators(String buttonName) {
+        List<By> locators = List.of(
+                By.xpath("//android.widget.TextView[@text='" + buttonName + "']"),
+                By.xpath("//*[@text='" + buttonName + "']"),
+                By.xpath("//*[contains(@text,'" + buttonName + "')]"),
+                By.xpath("//*[contains(@content-desc,'" + buttonName + "')]")
+        );
+        if (!buttonName.equalsIgnoreCase("Show all")) {
+            return locators;
+        }
+        return List.of(
+                By.xpath("//android.widget.TextView[@text='Show all']"),
+                By.xpath("//android.widget.TextView[@text='Show All']"),
+                By.xpath("//*[@text='Show all' or @text='Show All']"),
+                By.xpath("//*[contains(@text,'Show all') or contains(@text,'Show All')]"),
+                By.xpath("//*[contains(@content-desc,'Show all') or contains(@content-desc,'Show All')]")
+        );
     }
 
     public String getTitleAos() {
@@ -118,9 +166,104 @@ public class AppPortfolioPage {
     }
 
     public void tapBack() {
-        if (driver instanceof AndroidDriver) {
-            backButtonAos.click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+        waitForFilteringPage();
+        Point point = headerBackPoint();
+        abs.tapAt(point.getX(), point.getY());
+    }
+
+    private void waitForFilteringPage() {
+        new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(d -> !d.findElements(By.xpath("//android.widget.TextView[@text='Show']")).isEmpty());
+    }
+
+    private Point headerBackPoint() {
+        for (By locator : List.of(
+                By.xpath("//*[@content-desc='Back']"),
+                By.xpath("//*[@content-desc='Navigate up']"),
+                By.xpath("//*[@content-desc='back']")
+        )) {
+            Point labeled = firstVisibleCenter(locator);
+            if (labeled != null) {
+                return labeled;
+            }
+        }
+        Point chevron = topLeftClickableChevron();
+        if (chevron != null) {
+            return chevron;
+        }
+        Dimension window = driver.manage().window().getSize();
+        return new Point(Math.max(40, window.getWidth() / 14), Math.max(80, (int) (window.getHeight() * 0.08)));
+    }
+
+    private Point topLeftClickableChevron() {
+        Point best = null;
+        int bestScore = Integer.MAX_VALUE;
+        for (WebElement el : driver.findElements(
+                By.xpath("//android.view.ViewGroup[@clickable='true']"))) {
+            try {
+                int[] bounds = parseBounds(elementAttribute(el, "bounds"));
+                if (bounds == null) {
+                    continue;
+                }
+                int width = bounds[2] - bounds[0];
+                int height = bounds[3] - bounds[1];
+                if (bounds[0] > 160 || bounds[1] > 400 || bounds[2] > 280) {
+                    continue;
+                }
+                if (width < 40 || width > 160 || height < 40 || height > 220) {
+                    continue;
+                }
+                int score = bounds[0] * 10 + bounds[1];
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = new Point((bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2);
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return best;
+    }
+
+    private Point firstVisibleCenter(By locator) {
+        for (WebElement el : driver.findElements(locator)) {
+            int[] bounds = parseBounds(elementAttribute(el, "bounds"));
+            if (bounds == null || bounds[2] <= bounds[0] || bounds[3] <= bounds[1]) {
+                continue;
+            }
+            return new Point((bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2);
+        }
+        return null;
+    }
+
+    private String elementAttribute(WebElement element, String name) {
+        try {
+            String value = element.getAttribute(name);
+            if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) {
+                return null;
+            }
+            return value;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private int[] parseBounds(String bounds) {
+        if (bounds == null || bounds.isBlank()) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]").matcher(bounds);
+        if (!matcher.find()) {
+            return null;
+        }
+        return new int[]{
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                Integer.parseInt(matcher.group(3)),
+                Integer.parseInt(matcher.group(4))
+        };
     }
 
     public boolean tabIsSelected(String tabName) {

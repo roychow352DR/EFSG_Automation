@@ -6,6 +6,7 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
@@ -899,7 +900,7 @@ public class AppInstrumentDetailsPage {
             case "Take Profit Price", "Take Profit" -> takeProfitPrice;
             case "Direction" -> AppTradeView.selectedDirection;
             case "Lots" -> displayedLotSize(lotSize);
-            case "Volume" -> getPageElement.canonicalizeVolume(lotSize);
+            case "Volume" -> displayedLotSize(lotSize);
             case "Stop Order Price" -> stopOrderPrice;
             case "Validity" -> validity;
             case "Est. Margin", "Estimated Margin" -> estMargin;
@@ -940,34 +941,137 @@ public class AppInstrumentDetailsPage {
     }
 
     public void adjustPrice(String ctaBtn, String priceType) {
-        if (driver instanceof AndroidDriver) {
-            if (ctaBtn.equalsIgnoreCase("+")) {
-                switch (priceType) {
-                    case "Stop Loss" -> stopLossPlusBtnAos.click();
-                    case "Take Profit" -> takeProfitPlusBtnAos.click();
-                }
-            } else if (ctaBtn.equalsIgnoreCase("-")) {
-                switch (priceType) {
-                    case "Stop Loss" -> stopLossMinusBtnAos.click();
-                    case "Take Profit" -> takeProfitMinusBtnAos.click();
-                }
-            } else if (ctaBtn.equalsIgnoreCase("✕")) {
-                switch (priceType) {
-                    case "Stop Loss" -> stopLossClearBtnAos.click();
-                    case "Take Profit" -> takeProfitClearBtnAos.click();
-                }
-            }
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+        Point point = tpslStepperPoint(priceType, ctaBtn);
+        getPageElement.logInfo("Tapping " + ctaBtn + " on " + priceType + " at " + point.getX() + "," + point.getY());
+        abs.tapAt(point.getX(), point.getY());
     }
 
     public void clearPrice(String priceType) {
-        if (driver instanceof AndroidDriver) {
-            switch (priceType) {
-                case "Stop Loss" -> stopLossClearBtnAos.click();
-                case "Take Profit" -> takeProfitClearBtnAos.click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        Point point = tpslStepperPoint(priceType, "✕");
+        abs.tapAt(point.getX(), point.getY());
+    }
+
+    private Point tpslStepperPoint(String fieldName, String ctaBtn) {
+        WebElement field = tpslEditField(fieldName);
+        int[] fieldBounds = parseBounds(elementAttribute(field, "bounds"));
+        if (fieldBounds == null) {
+            throw new NoSuchElementException("Could not read bounds for " + fieldName);
+        }
+        int fieldCenterY = (fieldBounds[1] + fieldBounds[3]) / 2;
+        int fieldLeft = fieldBounds[0];
+        int fieldRight = fieldBounds[2];
+        List<int[]> controls = compactControlsOnRow(fieldCenterY);
+        if (ctaBtn.equals("+")) {
+            int[] plus = rightmostControlToTheRight(controls, fieldRight);
+            if (plus != null) {
+                return controlCenter(plus);
+            }
+            return new Point(fieldRight + 36, fieldCenterY);
+        }
+        if (ctaBtn.equals("-")) {
+            int[] minus = leftmostControlToTheLeft(controls, fieldLeft);
+            if (minus != null) {
+                return controlCenter(minus);
+            }
+            return new Point(Math.max(8, fieldLeft - 36), fieldCenterY);
+        }
+        int[] clear = controlBetween(controls, fieldRight, fieldRight + 120);
+        if (clear != null) {
+            return controlCenter(clear);
+        }
+        Point plusPoint = tpslStepperPoint(fieldName, "+");
+        return new Point(Math.max(fieldRight + 16, plusPoint.getX() - 48), fieldCenterY);
+    }
+
+    private List<int[]> compactControlsOnRow(int rowCenterY) {
+        List<int[]> found = new ArrayList<>();
+        List<By> locators = List.of(
+                By.xpath("//*[@text='+' or @text='-' or @text='✕' or @text='×' or @text='x' or @text='X']"),
+                By.className("android.widget.ImageView"),
+                By.xpath("//android.widget.ScrollView//android.view.ViewGroup")
+        );
+        for (By locator : locators) {
+            for (WebElement el : driver.findElements(locator)) {
+                try {
+                    int[] bounds = parseBounds(elementAttribute(el, "bounds"));
+                    if (bounds == null) {
+                        continue;
+                    }
+                    int width = bounds[2] - bounds[0];
+                    int height = bounds[3] - bounds[1];
+                    if (width < 18 || width > 96 || height < 18 || height > 96) {
+                        continue;
+                    }
+                    int centerY = (bounds[1] + bounds[3]) / 2;
+                    if (Math.abs(centerY - rowCenterY) > 40) {
+                        continue;
+                    }
+                    found.add(bounds);
+                } catch (StaleElementReferenceException ignored) {
+                }
             }
         }
+        return found;
     }
+
+    private int[] rightmostControlToTheRight(List<int[]> controls, int fieldRight) {
+        int[] best = null;
+        int bestX = Integer.MIN_VALUE;
+        for (int[] bounds : controls) {
+            int centerX = (bounds[0] + bounds[2]) / 2;
+            if (centerX <= fieldRight - 4) {
+                continue;
+            }
+            if (centerX > bestX) {
+                bestX = centerX;
+                best = bounds;
+            }
+        }
+        return best;
+    }
+
+    private int[] leftmostControlToTheLeft(List<int[]> controls, int fieldLeft) {
+        int[] best = null;
+        int bestX = Integer.MAX_VALUE;
+        for (int[] bounds : controls) {
+            int centerX = (bounds[0] + bounds[2]) / 2;
+            if (centerX >= fieldLeft + 4) {
+                continue;
+            }
+            if (centerX < bestX) {
+                bestX = centerX;
+                best = bounds;
+            }
+        }
+        return best;
+    }
+
+    private int[] controlBetween(List<int[]> controls, int minX, int maxX) {
+        int[] best = null;
+        int bestX = Integer.MAX_VALUE;
+        for (int[] bounds : controls) {
+            int centerX = (bounds[0] + bounds[2]) / 2;
+            if (centerX < minX || centerX > maxX) {
+                continue;
+            }
+            if (centerX < bestX) {
+                bestX = centerX;
+                best = bounds;
+            }
+        }
+        return best;
+    }
+
+    private Point controlCenter(int[] bounds) {
+        return new Point((bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2);
+    }
+
 
     public boolean getCheckboxStatus(String checkboxLabel) {
         if (driver instanceof AndroidDriver) {
