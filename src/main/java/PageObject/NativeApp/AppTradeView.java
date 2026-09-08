@@ -479,11 +479,59 @@ public class AppTradeView {
     }
 
     private void openEditPosition() {
-        waitForFirstListRow();
-        if (tapFirstOpenPositionCta("edit") && isEditOrModifyOpen(10)) {
-            return;
+        waitUntilOverlayGone();
+        waitForTradeRowArea();
+        if (!isPendingOrderFlow()) {
+            ensurePositionsList();
+        }
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            leaveWrongPageAfterEditTap();
+            waitForFirstListRow();
+            waitForOpenPositionCtas();
+            if (tapFirstOpenPositionCta("edit") && isEditOrModifyOpen(8)) {
+                return;
+            }
+            getPageElement.logInfo("Edit CTA attempt " + attempt + " did not open Edit or Modify");
+            if (!isPendingOrderFlow() && firstOpenPositionRowBounds() == null) {
+                tapListTab("Positions");
+            }
         }
         throw new TimeoutException("Edit or Modify page did not open after tapping the edit CTA");
+    }
+
+    private void ensurePositionsList() {
+        if (firstOpenPositionRowBounds() != null) {
+            return;
+        }
+        tapListTab("Positions");
+    }
+
+    private void leaveWrongPageAfterEditTap() {
+        if (isHeaderPresent("Edit Position") || isHeaderPresent("Modify Order")) {
+            return;
+        }
+        if (isHeaderPresent("Close Position") || isHeaderPresent("Position Details")
+                || isHeaderPresent("Pending Order Details")) {
+            tapBackChevron();
+        }
+    }
+
+    private void waitForOpenPositionCtas() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> {
+                        int[] row = firstOpenPositionRowBounds();
+                        if (row == null) {
+                            row = firstListRowBounds();
+                        }
+                        if (row == null) {
+                            return false;
+                        }
+                        return compactIconsOnRow(row[1], row[1] + row[3]).size() >= 3;
+                    });
+        } catch (TimeoutException ignored) {
+        }
     }
 
     private boolean isEditOrModifyOpen(int seconds) {
@@ -885,21 +933,23 @@ public class AppTradeView {
         int minX = (int) (window.getWidth() * 0.52);
         List<Point> raw = new ArrayList<>();
         for (By locator : List.of(
+                By.xpath("//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']"),
                 By.className("android.widget.ImageView"),
                 By.xpath("//android.widget.ScrollView//android.view.ViewGroup")
         )) {
             for (WebElement el : driver.findElements(locator)) {
                 try {
-                    Point location = el.getLocation();
-                    Dimension size = el.getSize();
-                    if (size.getWidth() < 20 || size.getWidth() > 120) {
+                    int[] box = visibleBox(el);
+                    if (box == null) {
                         continue;
                     }
-                    if (size.getHeight() < 20 || size.getHeight() > 120) {
+                    int width = box[2] - box[0];
+                    int height = box[3] - box[1];
+                    if (width < 20 || width > 120 || height < 20 || height > 120) {
                         continue;
                     }
-                    int centerX = location.getX() + size.getWidth() / 2;
-                    int centerY = location.getY() + size.getHeight() / 2;
+                    int centerX = (box[0] + box[2]) / 2;
+                    int centerY = (box[1] + box[3]) / 2;
                     if (centerY < rowTop - 6 || centerY > rowBottom + 6 || centerX < minX) {
                         continue;
                     }
@@ -917,6 +967,56 @@ public class AppTradeView {
             }
         }
         return clustered;
+    }
+
+    private int[] visibleBox(WebElement element) {
+        int[] bounds = parseBounds(elementAttribute(element, "bounds"));
+        if (bounds != null && bounds[2] > bounds[0] && bounds[3] > bounds[1]) {
+            return bounds;
+        }
+        try {
+            Point location = element.getLocation();
+            Dimension size = element.getSize();
+            if (size.getWidth() <= 0 || size.getHeight() <= 0) {
+                return null;
+            }
+            return new int[]{
+                    location.getX(),
+                    location.getY(),
+                    location.getX() + size.getWidth(),
+                    location.getY() + size.getHeight()
+            };
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private String elementAttribute(WebElement element, String name) {
+        try {
+            String value = element.getAttribute(name);
+            if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) {
+                return null;
+            }
+            return value;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private int[] parseBounds(String bounds) {
+        if (bounds == null || bounds.isBlank()) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]").matcher(bounds);
+        if (!matcher.find()) {
+            return null;
+        }
+        return new int[]{
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                Integer.parseInt(matcher.group(3)),
+                Integer.parseInt(matcher.group(4))
+        };
     }
 
     private List<Point> visibleCtaPoints(List<By> locators) {
