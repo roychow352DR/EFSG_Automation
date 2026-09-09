@@ -4,13 +4,14 @@ import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.GetPageElement;
 
@@ -260,7 +261,7 @@ public class AppEditPositionPage {
     }
 
     private WebElement priceField(String priceType) {
-        abs.waitUntilElementVisible(By.xpath("//*[@text='Edit Position']"));
+        abs.waitUntilElementVisible(By.xpath("//*[@text='Edit Position' or @content-desc='Edit Position']"));
         WebElement label = priceLabel(priceType);
         int[] labelBounds = parseBounds(elementAttribute(label, "bounds"));
 
@@ -423,20 +424,80 @@ public class AppEditPositionPage {
     }
 
     public String getHeaderText() {
-        if (driver instanceof AndroidDriver) {
-            By locator = By.xpath("//*[@text='Edit Position']");
-
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-            WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
-
-            String text = element.getText();
-            if (text == null || text.trim().isEmpty()) {
-                text = elementAttribute(element, "text");
-            }
-
-            return text;
+        WebElement header = waitForEditPositionHeader();
+        if (header == null) {
+            return "";
         }
-        return "";
+        String text = header.getText();
+        if (text == null || text.trim().isEmpty()) {
+            text = elementAttribute(header, "text");
+        }
+        if (text == null || text.trim().isEmpty()) {
+            text = elementAttribute(header, "content-desc");
+        }
+        return text == null ? "" : text.trim();
+    }
+
+    private WebElement waitForEditPositionHeader() {
+        if (!(driver instanceof AndroidDriver)) {
+            return null;
+        }
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+        wait.ignoring(StaleElementReferenceException.class);
+        return wait.until(d -> visibleEditPositionHeader());
+    }
+
+    private WebElement visibleEditPositionHeader() {
+        return firstPageTitle("Edit Position");
+    }
+
+    private WebElement firstPageTitle(String title) {
+        Dimension window = driver.manage().window().getSize();
+        int maxHeaderY = (int) (window.getHeight() * 0.45);
+        int maxHeaderWidth = (int) (window.getWidth() * 0.75);
+        WebElement compact = null;
+        WebElement any = null;
+        int bestCompactY = Integer.MAX_VALUE;
+        int bestAnyY = Integer.MAX_VALUE;
+        for (WebElement el : driver.findElements(By.xpath(
+                "//*[@text='" + title + "' or @content-desc='" + title + "' or contains(@text,'" + title + "')]"
+        ))) {
+            try {
+                String text = firstNonBlank(
+                        el.getText(),
+                        elementAttribute(el, "text"),
+                        elementAttribute(el, "content-desc")
+                );
+                if (text == null || !text.trim().equals(title)) {
+                    continue;
+                }
+                int[] box = parseBounds(elementAttribute(el, "bounds"));
+                int top = box == null ? Integer.MAX_VALUE / 2 : box[1];
+                int width = box == null ? 0 : box[2] - box[0];
+                int height = box == null ? 0 : box[3] - box[1];
+                if (top < bestAnyY) {
+                    bestAnyY = top;
+                    any = el;
+                }
+                if (box != null && top <= maxHeaderY && width <= maxHeaderWidth && height <= 140) {
+                    if (top < bestCompactY) {
+                        bestCompactY = top;
+                        compact = el;
+                    }
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return compact != null ? compact : any;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 
     public void tapButtonOnDialogue(String btnName) {

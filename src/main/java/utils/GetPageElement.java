@@ -89,7 +89,9 @@ public class GetPageElement {
                     || "Volume".equals(uiLabel) || "Qty".equals(uiLabel)
                     || "Price".equals(uiLabel))) {
                 if ("Price".equals(uiLabel)) {
-                    waitForConfirmationPrice();
+                    if (ownSnapshot) {
+                        waitForConfirmationPrice();
+                    }
                 } else {
                     waitForLabel(uiLabel);
                 }
@@ -1658,35 +1660,40 @@ public class GetPageElement {
 
     private boolean isConfirmationPriceReady() {
         if (!driver.findElements(By.xpath(
-                "//android.view.ViewGroup[@resource-id='RNE__Overlay']//*[@text='Price']"
+                "//*[@resource-id='RNE__Overlay']//*[@text='Price' or @text='Target Price'"
+                        + " or @text='Open Price' or @text='Current Price' or @text='Order Price'"
+                        + " or @text='Stop Order Price' or @text='Execution Price']"
         )).isEmpty()) {
             return true;
         }
-        boolean confirmationChrome = !driver.findElements(By.xpath(
-                "//*[@text=\"Don't Show Again\" or @text='Confirm Order' or @text='Order Confirmation']"
+        boolean overlayVisible = !driver.findElements(By.xpath(
+                "//*[@resource-id='RNE__Overlay']"
         )).isEmpty();
-        return confirmationChrome && !confirmationPriceNodes().isEmpty();
+        if (!overlayVisible) {
+            return false;
+        }
+        boolean confirmationChrome = !driver.findElements(By.xpath(
+                "//*[@text=\"Don't Show Again\" or @text='Confirm Order' or @text='Order Confirmation'"
+                        + " or @text='Confirmation' or @text='Modify Order' or @text='Close Position'"
+                        + " or @text='Edit Position']"
+        )).isEmpty();
+        return confirmationChrome && (!confirmationPriceNodes().isEmpty() || overlayVisible);
     }
 
     private List<WebElement> confirmationPriceNodes() {
-        List<WebElement> overlayNodes = driver.findElements(By.xpath(
-                "//android.view.ViewGroup[@resource-id='RNE__Overlay']"
-                        + "//*[@text='Price' or @text='Open Price' or @text='Current Price'"
-                        + " or @text='Order Price' or @text='Execution Price'"
+        String pricePredicate =
+                "*[@text='Price' or @text='Target Price' or @text='Open Price' or @text='Current Price'"
+                        + " or @text='Order Price' or @text='Execution Price' or @text='Stop Order Price'"
                         + " or starts-with(@text,'Price ')]"
                         + "[not(contains(@text,'Take Profit')) and not(contains(@text,'Stop Loss'))"
-                        + " and not(contains(@text,'≥')) and not(contains(@text,'≤'))]"
+                        + " and not(contains(@text,'≥')) and not(contains(@text,'≤'))]";
+        List<WebElement> overlayNodes = driver.findElements(By.xpath(
+                "//android.view.ViewGroup[@resource-id='RNE__Overlay']//" + pricePredicate
         ));
         if (!overlayNodes.isEmpty()) {
             return overlayNodes;
         }
-        return driver.findElements(By.xpath(
-                "//*[@text='Price' or @text='Open Price' or @text='Current Price'"
-                        + " or @text='Order Price' or @text='Execution Price'"
-                        + " or starts-with(@text,'Price ')]"
-                        + "[not(contains(@text,'Take Profit')) and not(contains(@text,'Stop Loss'))"
-                        + " and not(contains(@text,'≥')) and not(contains(@text,'≤'))]"
-        ));
+        return driver.findElements(By.xpath("//" + pricePredicate));
     }
 
     private String readConfirmationPriceValue() {
@@ -1702,7 +1709,14 @@ public class GetPageElement {
     }
 
     private String readPriceAliasFromSnapshot() {
-        for (String alias : List.of("Open Price", "Current Price", "Order Price", "Execution Price")) {
+        for (String alias : List.of(
+                "Target Price",
+                "Open Price",
+                "Current Price",
+                "Order Price",
+                "Stop Order Price",
+                "Execution Price"
+        )) {
             String value = readLabelValueFromSnapshot(alias);
             if (value != null && !value.isBlank()) {
                 logInfo("Found confirmation price using alias [" + alias + "]: " + value);

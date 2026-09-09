@@ -5,6 +5,7 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.StaleElementReferenceException;
@@ -12,7 +13,6 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.GetPageElement;
 
@@ -349,24 +349,67 @@ public class AppClosePositionPage {
         if (text == null || text.trim().isEmpty()) {
             text = header.getAttribute("text");
         }
-        return text == null ? "" : text;
+        if (text == null || text.trim().isEmpty()) {
+            text = header.getAttribute("content-desc");
+        }
+        return text == null ? "" : text.trim();
     }
 
     private WebElement waitForClosePositionHeader() {
         if (!(driver instanceof AndroidDriver)) {
             return null;
         }
-        By overlay = By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]");
-        By header = By.xpath("//*[@text='Close Position']");
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
         wait.ignoring(StaleElementReferenceException.class);
-        wait.until(d -> d.findElements(overlay).stream().noneMatch(el -> {
+        return wait.until(d -> visibleClosePositionHeader());
+    }
+
+    private WebElement visibleClosePositionHeader() {
+        Dimension window = driver.manage().window().getSize();
+        int maxHeaderY = (int) (window.getHeight() * 0.45);
+        int maxHeaderWidth = (int) (window.getWidth() * 0.75);
+        WebElement compact = null;
+        WebElement any = null;
+        int bestCompactY = Integer.MAX_VALUE;
+        int bestAnyY = Integer.MAX_VALUE;
+        for (WebElement el : driver.findElements(By.xpath(
+                "//*[@text='Close Position' or @content-desc='Close Position' or contains(@text,'Close Position')]"
+        ))) {
             try {
-                return el.isDisplayed();
-            } catch (StaleElementReferenceException e) {
-                return false;
+                String text = firstNonBlank(
+                        el.getText(),
+                        elementAttribute(el, "text"),
+                        elementAttribute(el, "content-desc")
+                );
+                if (text == null || !text.trim().equals("Close Position")) {
+                    continue;
+                }
+                int[] box = parseBounds(elementAttribute(el, "bounds"));
+                int top = box == null ? Integer.MAX_VALUE / 2 : box[1];
+                int width = box == null ? 0 : box[2] - box[0];
+                int height = box == null ? 0 : box[3] - box[1];
+                if (top < bestAnyY) {
+                    bestAnyY = top;
+                    any = el;
+                }
+                if (box != null && top <= maxHeaderY && width <= maxHeaderWidth && height <= 140) {
+                    if (top < bestCompactY) {
+                        bestCompactY = top;
+                        compact = el;
+                    }
+                }
+            } catch (StaleElementReferenceException ignored) {
             }
-        }));
-        return wait.until(ExpectedConditions.visibilityOfElementLocated(header));
+        }
+        return compact != null ? compact : any;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 }
