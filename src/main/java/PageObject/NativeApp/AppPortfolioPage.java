@@ -101,8 +101,7 @@ public class AppPortfolioPage {
             applicationButtonAos.click();
         }
         else if (buttonName.equalsIgnoreCase("Cancel Order")) {
-            abs.waitUntilElementFind(confirmBtnAos);
-            confirmBtnAos.click();
+            confirmCancelOrder();
         }
     }
 
@@ -511,6 +510,16 @@ public class AppPortfolioPage {
                     + " at " + point.getX() + "," + point.getY());
         }
         abs.tapAt(point.getX(), point.getY());
+        if ("cancel".equalsIgnoreCase(buttonName) && !confirmationDialogueVisible(2)) {
+            Point retry = estimatedCtaPoint(buttonName);
+            abs.tapAt(retry.getX(), retry.getY());
+        } else if ("close".equalsIgnoreCase(buttonName) && !closePositionPageVisible(5)) {
+            Point retry = estimatedCtaPoint("close");
+            abs.tapAt(retry.getX(), retry.getY());
+        } else if ("edit".equalsIgnoreCase(buttonName) && !editPositionPageVisible(5)) {
+            Point retry = estimatedCtaPoint("edit");
+            abs.tapAt(retry.getX(), retry.getY());
+        }
     }
 
     private Point firstRowCtaPoint(String buttonName) {
@@ -532,18 +541,19 @@ public class AppPortfolioPage {
             return count - 1;
         }
         if (name.equals("close") || name.equals("cancel")) {
-            return count >= 2 ? 0 : -1;
+            return count >= 3 ? count - 3 : (count >= 2 ? 0 : -1);
         }
         if (name.equals("edit")) {
-            return count >= 3 ? 1 : -1;
+            return count >= 3 ? count - 2 : -1;
         }
         return -1;
     }
 
     private List<int[]> firstRowIconsByGeometry() {
-        int listTop = listAreaTopY();
-        int footerTop = footerTopY();
-        int minLeft = Math.max(800, (int) (driver.manage().window().getSize().getWidth() * 0.68));
+        int[] row = firstPositionRowBounds();
+        int listTop = row != null ? row[1] : listAreaTopY();
+        int footerTop = row != null ? row[1] + row[3] : footerTopY();
+        int minLeft = (int) (driver.manage().window().getSize().getWidth() * 0.58);
         List<int[]> all = new ArrayList<>();
         for (WebElement el : clickableRowCandidates()) {
             try {
@@ -560,20 +570,67 @@ public class AppPortfolioPage {
         }
         all.sort(Comparator.comparingInt(box -> box[1]));
         int rowTop = all.getFirst()[1];
-        List<int[]> row = new ArrayList<>();
+        List<int[]> clustered = new ArrayList<>();
         for (int[] box : all) {
-            if (Math.abs(box[1] - rowTop) <= 60) {
-                row.add(box);
+            if (Math.abs(box[1] - rowTop) <= 80) {
+                clustered.add(box);
             }
         }
-        return dedupeByX(row);
+        return dedupeByX(clustered);
+    }
+
+    private int[] firstPositionRowBounds() {
+        int listTop = listAreaTopY();
+        int footerTop = footerTopY();
+        Dimension window = driver.manage().window().getSize();
+        int[] best = null;
+        int bestY = Integer.MAX_VALUE;
+        List<By> markers = new ArrayList<>();
+        String symbol = AppMarketsPage.tradeSymbol;
+        if (symbol != null && !symbol.isBlank()) {
+            markers.add(By.xpath("//*[@text='" + symbol + "']"));
+        }
+        markers.add(By.xpath("//*[@text='BUY' or @text='SELL']"));
+        for (By locator : markers) {
+            for (WebElement el : driver.findElements(locator)) {
+                try {
+                    int[] box = visibleBox(el);
+                    if (box == null) {
+                        continue;
+                    }
+                    int width = box[2] - box[0];
+                    int height = box[3] - box[1];
+                    if (box[1] < listTop - 10 || box[1] > footerTop - 40) {
+                        continue;
+                    }
+                    if (height > 90 || width > (int) (window.getWidth() * 0.45)) {
+                        continue;
+                    }
+                    if (box[1] < bestY) {
+                        bestY = box[1];
+                        int top = Math.max(listTop, box[1] - 28);
+                        int bottom = Math.min(footerTop - 8, box[3] + 96);
+                        best = new int[]{0, top, window.getWidth(), Math.max(88, bottom - top)};
+                    }
+                } catch (StaleElementReferenceException ignored) {
+                }
+            }
+            if (best != null) {
+                return best;
+            }
+        }
+        return null;
     }
 
     private List<WebElement> clickableRowCandidates() {
-        List<WebElement> found = new ArrayList<>(driver.findElements(
-                By.xpath("//android.view.ViewGroup[@clickable='true']")));
-        if (found.isEmpty()) {
-            found.addAll(driver.findElements(By.xpath("//*[@clickable='true']")));
+        List<WebElement> found = new ArrayList<>();
+        for (By locator : List.of(
+                By.xpath("//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']"),
+                By.className("android.widget.ImageView"),
+                By.xpath("//android.widget.ScrollView//android.view.ViewGroup"),
+                By.xpath("//*[@clickable='true']")
+        )) {
+            found.addAll(driver.findElements(locator));
         }
         return found;
     }
@@ -584,7 +641,7 @@ public class AppPortfolioPage {
         }
         int width = box[2] - box[0];
         int height = box[3] - box[1];
-        if (width < 28 || width > 170 || height < 28 || height > 240) {
+        if (width < 16 || width > 240 || height < 16 || height > 300) {
             return false;
         }
         if (box[0] < minLeft) {
@@ -593,7 +650,33 @@ public class AppPortfolioPage {
         if (box[1] < listTop - 20 || box[3] > footerTop - 8) {
             return false;
         }
-        return height >= 50 || box[3] < footerTop - 80;
+        return true;
+    }
+
+    private boolean closePositionPageVisible(int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(Math.max(1, seconds)))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !d.findElements(By.xpath(
+                            "//*[@text='Close Position' or @content-desc='Close Position']"
+                    )).isEmpty());
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private boolean editPositionPageVisible(int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(Math.max(1, seconds)))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !d.findElements(By.xpath(
+                            "//*[@text='Edit Position' or @content-desc='Edit Position']"
+                    )).isEmpty());
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
     }
 
     private int[] visibleBox(WebElement element) {
@@ -622,11 +705,17 @@ public class AppPortfolioPage {
         Dimension window = driver.manage().window().getSize();
         String name = buttonName == null ? "" : buttonName.trim().toLowerCase();
         double ratio = switch (name) {
-            case "close", "cancel" -> 0.74;
-            case "edit" -> 0.83;
-            default -> 0.92;
+            case "close", "cancel" -> 0.70;
+            case "edit" -> 0.82;
+            default -> 0.93;
         };
-        int y = listAreaTopY() + Math.max(110, (int) (window.getHeight() * 0.045));
+        int[] row = firstPositionRowBounds();
+        int y;
+        if (row != null) {
+            y = row[1] + Math.max(36, row[3] / 2);
+        } else {
+            y = listAreaTopY() + Math.max(90, (int) (window.getHeight() * 0.04));
+        }
         return new Point((int) (window.getWidth() * ratio), y);
     }
 
@@ -669,21 +758,55 @@ public class AppPortfolioPage {
     }
 
     private int footerTopY() {
+        Dimension window = driver.manage().window().getSize();
+        int minFooterY = (int) (window.getHeight() * 0.75);
         for (WebElement el : driver.findElements(By.xpath(
                 "//*[@content-desc='Home' or @text='Home']"))) {
             int[] box = parseBounds(elementAttribute(el, "bounds"));
-            if (box != null && box[1] > 1800) {
+            if (box != null && box[1] > minFooterY) {
                 return box[1];
             }
         }
-        return driver.manage().window().getSize().getHeight() - 180;
+        return window.getHeight() - 140;
     }
 
     public boolean confirmationDialogueIsDisplayed() {
-        if (driver instanceof AndroidDriver) {
-            return confirmationDialogueAos.isDisplayed();
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
         }
-        return false;
+        return confirmationDialogueVisible(12);
+    }
+
+    private boolean confirmationDialogueVisible(int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(Math.max(1, seconds)))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !confirmationDialogueNodes().isEmpty());
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private List<WebElement> confirmationDialogueNodes() {
+        return driver.findElements(By.xpath(
+                "//*[@resource-id='RNE__Overlay']"
+                        + " | //*[@text='Cancel Order']"
+                        + " | //*[contains(@text,\"Don't Show Again\")]"
+                        + " | //*[@text='Order Confirmation' or @text='Confirm Order']"
+        ));
+    }
+
+    private void confirmCancelOrder() {
+        By overlayCancel = By.xpath(
+                "//*[@resource-id='RNE__Overlay']//*[@text='Cancel Order']"
+        );
+        By cancelLabel = By.xpath("//*[@text='Cancel Order']");
+        try {
+            abs.tapBottomMost(overlayCancel, 8);
+        } catch (TimeoutException e) {
+            abs.tapBottomMost(cancelLabel, 8);
+        }
     }
 
     public String getDate(){
@@ -700,7 +823,7 @@ public class AppPortfolioPage {
     public void cancelPendingOrder() {
         if (driver instanceof AndroidDriver) {
             tapButtonOnRow("cancel");
-            confirmBtnAos.click();
+            confirmCancelOrder();
         }
     }
 

@@ -674,7 +674,36 @@ public class AppInstrumentDetailsPage {
     }
 
     public void getExecutedPrice() {
-        executedPrice = getDetailValue("Price");
+        executedPrice = readConfirmationExecutedPrice();
+    }
+
+    private String readConfirmationExecutedPrice() {
+        getPageElement.clearPageSourceCache();
+        getPageElement.waitForConfirmationPrice();
+        for (String label : List.of(
+                "Price",
+                "Target Price",
+                "Open Price",
+                "Current Price",
+                "Order Price",
+                "Stop Order Price",
+                "Execution Price"
+        )) {
+            String raw = getPageElement.readLabelValueFast(label);
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            getPageElement.logInfo("Captured confirmation price from [" + label + "]: " + raw);
+            return getPageElement.normalizeByLabel(label, raw.trim(), "");
+        }
+        String sequential = getPageElement.findSequentialOverlayValue("Price");
+        if (sequential == null || sequential.isBlank()) {
+            sequential = getPageElement.findSequentialOverlayValue("Target Price");
+        }
+        if (sequential == null || sequential.isBlank()) {
+            throw new NoSuchElementException("Could not find value in hierarchy for label: Price");
+        }
+        return getPageElement.normalizeByLabel("Price", sequential.trim(), "");
     }
 
     public String getDetailValue(String value) {

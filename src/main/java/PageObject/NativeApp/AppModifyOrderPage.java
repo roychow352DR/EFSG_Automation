@@ -149,9 +149,10 @@ public class AppModifyOrderPage {
     }
 
     public void tapsButton(String buttonName) {
-        if (driver instanceof AndroidDriver) {
-            driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
         }
+        abs.tapBottomMost(By.xpath("//*[@text='" + buttonName + "']"), 10);
     }
 
     public void scrollDown() {
