@@ -4,10 +4,7 @@ import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Keys;
-import org.openqa.selenium.Point;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -22,12 +19,13 @@ public class AppLoginPage {
     public BiometricsPage biometricsPage;
     private final MobileAbstractComponents abs;
 
-    private static final By SIGNUP_LOGIN_LINK = By.xpath(
-            "//android.widget.TextView[@text='Have an account? Log In']"
-    );
-    private static final By LOGIN_TEXT = By.xpath("//*[@text='Login' or @text='Log In' or @text='Log in']");
-    private static final By SIGNUP_TITLE = By.xpath("//*[@text='Signup']");
+    private static final By SIGN_UP_LOGIN = By.xpath("//*[@text='Sign Up / Login']");
+    private static final By HAVE_AN_ACCOUNT = By.xpath("//android.widget.TextView[contains(@text,'Have an account')]");
+    private static final By LOGIN_TEXT = By.xpath("//*[@text='Login']");
     private static final By EDIT_TEXT = By.className("android.widget.EditText");
+    private static final By ME_TAB = By.xpath("//*[@text='Me']");
+    private static final By LOGOUT = By.xpath("//*[@text='Logout' or @text='Log Out' or @text='Log out']");
+    private static final By CONFIRM = By.xpath("//*[@text='Confirm' or @text='OK']");
 
     public AppLoginPage(AppiumDriver driver) {
         this.driver = driver;
@@ -69,39 +67,51 @@ public class AppLoginPage {
     }
 
     private void openLoginPage() {
-        if (isLoginFormVisible(2)) {
+        if (isLoginFormVisible(2) || openLoginFromGuestHome() || openLoginFromMeTab()) {
             return;
         }
-        try {
-            new AppHomePage(driver).navigateToSignupPage();
-        } catch (TimeoutException e) {
-            throw new TimeoutException("Login page was not visible", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new TimeoutException("Login page was not visible", e);
-        }
-        if (isLoginFormVisible(2)) {
+        logoutLeftoverSession();
+        if (isLoginFormVisible(5) || openLoginFromGuestHome() || openLoginFromMeTab()) {
             return;
         }
-        new AppSignupPage(driver).navigateToLoginPage();
-        if (!isLoginFormVisible(15)) {
-            System.out.println("Login form not visible after Signup -> Log In. onScreenEditTexts="
-                    + onScreenCount(EDIT_TEXT)
-                    + " loginTitle=" + isOnScreen(LOGIN_TEXT)
-                    + " signupTitle=" + isOnScreen(SIGNUP_TITLE)
-                    + " haveAccountLink=" + isOnScreen(SIGNUP_LOGIN_LINK));
-            throw new TimeoutException("Login page was not visible");
+        throw new TimeoutException("Login page was not visible");
+    }
+
+    private boolean openLoginFromGuestHome() {
+        if (tapIfPresent(SIGN_UP_LOGIN, 5)) {
+            tapIfPresent(HAVE_AN_ACCOUNT, 10);
+            return isLoginFormVisible(10);
         }
+        if (tapIfPresent(HAVE_AN_ACCOUNT, 2)) {
+            return isLoginFormVisible(10);
+        }
+        return false;
+    }
+
+    private boolean openLoginFromMeTab() {
+        if (!tapIfPresent(ME_TAB, 5)) {
+            return false;
+        }
+        if (!tapIfPresent(SIGN_UP_LOGIN, 8)) {
+            return false;
+        }
+        tapIfPresent(HAVE_AN_ACCOUNT, 10);
+        return isLoginFormVisible(10);
+    }
+
+    private void logoutLeftoverSession() {
+        tapIfPresent(ME_TAB, 5);
+        for (int swipe = 0; swipe < 3 && !tapIfPresent(LOGOUT, 2); swipe++) {
+            abs.swipeUp(driver);
+        }
+        tapIfPresent(CONFIRM, 5);
     }
 
     private boolean isLoginFormVisible(int seconds) {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(seconds)).until(d -> {
-                int fields = onScreenCount(EDIT_TEXT);
-                boolean loginTitle = isOnScreen(LOGIN_TEXT);
-                boolean signupLink = isOnScreen(SIGNUP_LOGIN_LINK);
-                // Signup stays in the RN tree after Log In; only reject it when the link is still on screen.
-                return fields >= 2 && loginTitle && !signupLink;
+                List<WebElement> fields = d.findElements(EDIT_TEXT);
+                return fields.size() >= 2 && !d.findElements(LOGIN_TEXT).isEmpty();
             });
             return true;
         } catch (TimeoutException e) {
@@ -109,41 +119,11 @@ public class AppLoginPage {
         }
     }
 
-    private int onScreenCount(By locator) {
-        int count = 0;
-        for (WebElement element : driver.findElements(locator)) {
-            if (isOnScreen(element)) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    private boolean isOnScreen(By locator) {
-        for (WebElement element : driver.findElements(locator)) {
-            if (isOnScreen(element)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean isOnScreen(WebElement element) {
+    private boolean tapIfPresent(By locator, int seconds) {
         try {
-            if (!element.isDisplayed()) {
-                return false;
-            }
-            Point location = element.getLocation();
-            Dimension size = element.getSize();
-            Dimension window = driver.manage().window().getSize();
-            if (size.getWidth() <= 0 || size.getHeight() <= 0) {
-                return false;
-            }
-            int right = location.getX() + size.getWidth();
-            int bottom = location.getY() + size.getHeight();
-            return right > 0 && location.getX() < window.getWidth()
-                    && bottom > 0 && location.getY() < window.getHeight();
-        } catch (StaleElementReferenceException e) {
+            abs.tapVisible(locator, seconds);
+            return true;
+        } catch (TimeoutException e) {
             return false;
         }
     }
@@ -162,9 +142,7 @@ public class AppLoginPage {
         if (driver instanceof AndroidDriver) {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
             List<WebElement> fields = wait.until(d -> {
-                List<WebElement> found = d.findElements(EDIT_TEXT).stream()
-                        .filter(this::isOnScreen)
-                        .toList();
+                List<WebElement> found = d.findElements(EDIT_TEXT);
                 return found.size() >= 2 ? found : null;
             });
             fields.get(0).clear();

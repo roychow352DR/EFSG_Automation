@@ -4,9 +4,14 @@ import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AppMePage {
 
@@ -50,10 +55,38 @@ public class AppMePage {
         return driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + username + "\"]"));
     }
 
-    public void tapWidget(String label){
-        WebElement widget = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + label + "\"]"));
-        abs.waitUntilElementClickable(widget);
-        widget.click();
+    public void tapWidget(String label) {
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        TimeoutException lastError = null;
+        for (int swipe = 0; swipe < 4; swipe++) {
+            for (By locator : widgetLocators(label)) {
+                try {
+                    abs.tapVisible(locator, 5);
+                    return;
+                } catch (TimeoutException e) {
+                    lastError = e;
+                }
+            }
+            abs.swipeUp(driver);
+        }
+        throw lastError != null
+                ? lastError
+                : new NoSuchElementException("Widget was not visible on the Me page: " + label);
+    }
+
+    private List<By> widgetLocators(String label) {
+        List<By> locators = new ArrayList<>();
+        locators.add(By.xpath("//android.widget.TextView[@text='" + label + "']"));
+        locators.add(By.xpath("//*[@text='" + label + "']"));
+        locators.add(By.xpath("//*[contains(@text,'" + label + "')]"));
+        locators.add(By.xpath("//*[contains(@content-desc,'" + label + "')]"));
+        if ("Setting".equalsIgnoreCase(label)) {
+            locators.add(By.xpath("//*[@text='Settings']"));
+            locators.add(By.xpath("//*[contains(@text,'Setting')]"));
+        }
+        return locators;
     }
 
 
