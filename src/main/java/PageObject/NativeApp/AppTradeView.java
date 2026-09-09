@@ -138,10 +138,6 @@ public class AppTradeView {
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[15]")
     WebElement closeDialogueBtnAos;
 
-    @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.widget.TextView")
-    List<WebElement> openPositionRecordDetailsAos;
-
-
     private final By positionsTabAos = By.xpath("//android.widget.HorizontalScrollView/android.view.ViewGroup/android.view.View[2]");
 
 
@@ -1191,6 +1187,14 @@ public class AppTradeView {
             submitOpenClosePosition();
             return;
         }
+        if (isPortfolioListVisible()) {
+            new AppPortfolioPage(driver).tapButtonOnRow("close");
+            if (!isClosePositionPageOpen(8)) {
+                throw new TimeoutException("Close Position page did not open after tapping the close CTA");
+            }
+            submitOpenClosePosition();
+            return;
+        }
         tapListTab("Positions");
         dismissCancelOrderPromptIfShown();
         if (!isClosePositionPageOpen(2)) {
@@ -1375,6 +1379,13 @@ public class AppTradeView {
         } catch (TimeoutException ignored) {
             System.out.println("Close position confirmation overlay was not shown");
         }
+    }
+
+    private boolean isPortfolioListVisible() {
+        return !driver.findElements(By.xpath(
+                "//*[@text='Show all' or @text='Show All' or @content-desc='Show all'"
+                        + " or contains(@content-desc,'Show last') or contains(@text,'Show last')]"
+        )).isEmpty();
     }
 
     private boolean isClosePositionPageOpen(int seconds) {
@@ -1749,14 +1760,95 @@ public class AppTradeView {
     }
 
     public String getOpenPositionTime() {
-        if (driver instanceof AndroidDriver) {
-            return openPositionRecordDetailsAos.get(3).getText();
+        if (!(driver instanceof AndroidDriver)) {
+            return null;
         }
-        return null;
+        waitUntilOverlayGone();
+        tapListTab("Positions");
+        waitForFirstListRow();
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(12))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> firstOpenPositionDateText());
+        } catch (TimeoutException e) {
+            throw new NoSuchElementException("Open position date was not visible on the Positions tab");
+        }
     }
 
     public boolean isOpenPositionDateValid() {
         return abs.dateValidator(getOpenPositionTime());
+    }
+
+    private String firstOpenPositionDateText() {
+        List<String> texts = visibleRowTexts(firstListRowBounds());
+        String dateTime = dateTimeFromTexts(texts);
+        if (dateTime != null) {
+            return dateTime;
+        }
+        return dateTimeFromTexts(visibleRowTexts(listAreaBounds()));
+    }
+
+    private List<String> visibleRowTexts(int[] area) {
+        List<String> texts = new ArrayList<>();
+        if (area == null) {
+            return texts;
+        }
+        int top = area[1];
+        int bottom = area[1] + area[3];
+        for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
+            try {
+                if (!el.isDisplayed()) {
+                    continue;
+                }
+                Point location = el.getLocation();
+                if (location.getY() < top - 8 || location.getY() > bottom + 8) {
+                    continue;
+                }
+                String value = el.getText();
+                if (value != null && !value.isBlank()) {
+                    texts.add(value.trim());
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return texts;
+    }
+
+    private int[] listAreaBounds() {
+        Dimension window = driver.manage().window().getSize();
+        int top = listAreaTopY();
+        return new int[]{0, top, window.getWidth(), Math.max(120, window.getHeight() - top - 160)};
+    }
+
+    private String dateTimeFromTexts(List<String> texts) {
+        if (texts == null || texts.isEmpty()) {
+            return null;
+        }
+        Pattern full = Pattern.compile("\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}");
+        for (String text : texts) {
+            Matcher matcher = full.matcher(text);
+            if (matcher.find()) {
+                return matcher.group();
+            }
+            if (abs.dateValidator(text)) {
+                return text;
+            }
+        }
+        for (int i = 0; i < texts.size() - 1; i++) {
+            String date = texts.get(i);
+            String time = texts.get(i + 1);
+            if (!date.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                continue;
+            }
+            if (!time.matches("\\d{2}:\\d{2}:\\d{2}")) {
+                continue;
+            }
+            String combined = date + " " + time;
+            if (abs.dateValidator(combined)) {
+                return combined;
+            }
+        }
+        return null;
     }
 
     public void selectTab(String tabName){

@@ -86,10 +86,18 @@ public class GetPageElement {
         try {
             String value = readLabelValueFromSnapshot(uiLabel);
             if (value == null && ("Direction".equals(uiLabel) || "Side".equals(uiLabel)
-                    || "Volume".equals(uiLabel) || "Qty".equals(uiLabel))) {
-                waitForLabel(uiLabel);
+                    || "Volume".equals(uiLabel) || "Qty".equals(uiLabel)
+                    || "Price".equals(uiLabel))) {
+                if ("Price".equals(uiLabel)) {
+                    waitForConfirmationPrice();
+                } else {
+                    waitForLabel(uiLabel);
+                }
                 capturePageSource();
                 value = readLabelValueFromSnapshot(uiLabel);
+                if (value == null && "Price".equals(uiLabel)) {
+                    value = readConfirmationPriceValue();
+                }
             }
             return value;
         } finally {
@@ -117,6 +125,9 @@ public class GetPageElement {
         }
         if (value == null) {
             value = plausible(uiLabel, findValueByFollowingSiblingScoped(uiLabel));
+        }
+        if (value == null && "Price".equals(uiLabel)) {
+            value = plausible(uiLabel, findSequentialOverlayValue(uiLabel));
         }
         return value;
     }
@@ -172,9 +183,16 @@ public class GetPageElement {
             return rawValue;
         }
 
-        return isPriceLabel(label)
-                ? abs.normalizePriceToDecimals(rawValue, symbolDecimal)
-                : abs.normalizeDialogueValue(label, rawValue);
+        if (isPriceLabel(label)) {
+            String token = extractPriceToken(rawValue);
+            String price = token != null ? token : rawValue;
+            if (symbolDecimal == null || symbolDecimal.isBlank()) {
+                return price;
+            }
+            return abs.normalizePriceToDecimals(price, symbolDecimal);
+        }
+
+        return abs.normalizeDialogueValue(label, rawValue);
     }
 
     private boolean isPriceLabel(String label) {
@@ -183,8 +201,11 @@ public class GetPageElement {
         }
 
         Set<String> priceLabels = new HashSet<>(Arrays.asList(
+                "Price",
                 "Open Price",
                 "Current Price",
+                "Order Price",
+                "Execution Price",
                 "Take Profit Price",
                 "Stop Loss Price",
                 "Take Profit",
@@ -206,6 +227,7 @@ public class GetPageElement {
                 "Status",
                 "Direction",
                 "Volume",
+                "Price",
                 "Contract Value",
                 "Open Price",
                 "Current Price",
@@ -305,11 +327,17 @@ public class GetPageElement {
         if (isMoneyLabel(uiLabel) || "Floating P/L".equals(uiLabel)) {
             return extractMoneyToken(value) != null;
         }
-        if (isPriceLabel(uiLabel) || "Target Price".equals(uiLabel) || "Stop Order Price".equals(uiLabel)) {
+        if (isPriceLabel(uiLabel) || "Target Price".equals(uiLabel) || "Stop Order Price".equals(uiLabel)
+                || "Price".equals(uiLabel)) {
             return "N/A".equalsIgnoreCase(value) || extractPriceToken(value) != null;
         }
         if ("Status".equals(uiLabel)) {
             return value.matches("(?i)Open|Pending|Filled|Cancelled|Canceled|Partial.*");
+        }
+        if ("Product".equals(uiLabel)) {
+            String text = value.trim();
+            return !text.equalsIgnoreCase("Name")
+                    && text.matches("[A-Z]{3,}[A-Z0-9]{2,}");
         }
         return true;
     }
@@ -1131,6 +1159,7 @@ public class GetPageElement {
                 "Status",
                 "Direction",
                 "Volume",
+                "Price",
                 "Contract Value",
                 "Open Price",
                 "Current Price",
@@ -1277,7 +1306,7 @@ public class GetPageElement {
         }
 
         Matcher nodeMatcher = Pattern.compile("<[^>]+bounds=\"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]\"[^>]*>").matcher(source);
-        Rect labelRect = null;
+        List<Rect> labelRects = new ArrayList<>();
         String bestValue = null;
         int bestScore = Integer.MAX_VALUE;
 
@@ -1297,34 +1326,47 @@ public class GetPageElement {
             int top = Integer.parseInt(nodeMatcher.group(2));
             int right = Integer.parseInt(nodeMatcher.group(3));
             int bottom = Integer.parseInt(nodeMatcher.group(4));
-            if (uiLabel.equals(value)) {
-                labelRect = new Rect(left, top, right, bottom);
+            if (isMatchingLabel(uiLabel, value)) {
+                if (!value.equals(uiLabel)) {
+                    String stripped = valueAfterStrippingLabels(value, uiLabel);
+                    if (stripped != null && isPlausibleValue(uiLabel, stripped)) {
+                        logInfo("Found combined XML value for label [" + uiLabel + "]: " + stripped);
+                        return stripped;
+                    }
+                }
+                labelRects.add(new Rect(left, top, right, bottom));
             }
             nodes.add(new int[]{left, top, right, bottom});
             values.add(value);
         }
 
-        if (labelRect == null) {
+        if (labelRects.isEmpty()) {
             return null;
         }
 
-        for (int i = 0; i < values.size(); i++) {
-            String value = values.get(i);
-            if (uiLabel.equals(value) || isLikelyLabel(value) || !isPlausibleValue(uiLabel, value)) {
-                continue;
-            }
-            int[] bounds = nodes.get(i);
-            Rect rect = new Rect(bounds[0], bounds[1], bounds[2], bounds[3]);
-            int verticalDelta = Math.abs(rect.centerY() - labelRect.centerY());
-            boolean sameRow = verticalDelta <= Math.max(28, labelRect.height());
-            boolean toRight = rect.left >= labelRect.right - 10;
-            if (!sameRow || !toRight) {
-                continue;
-            }
-            int score = verticalDelta * 100 + Math.abs(rect.left - labelRect.right);
-            if (score < bestScore) {
-                bestScore = score;
-                bestValue = value.trim();
+        for (Rect labelRect : labelRects) {
+            for (int i = 0; i < values.size(); i++) {
+                String value = values.get(i);
+                if (uiLabel.equals(value) || isLikelyLabel(value) || !isPlausibleValue(uiLabel, value)) {
+                    continue;
+                }
+                int[] bounds = nodes.get(i);
+                Rect rect = new Rect(bounds[0], bounds[1], bounds[2], bounds[3]);
+                int verticalDelta = Math.abs(rect.centerY() - labelRect.centerY());
+                boolean sameRow = verticalDelta <= Math.max(28, labelRect.height());
+                boolean toRight = rect.left >= labelRect.right - 10;
+                boolean stackedBelow = rect.top >= labelRect.bottom - 10
+                        && Math.abs(rect.centerX() - labelRect.centerX()) <= Math.max(labelRect.width(), 80);
+                if (!(sameRow && toRight) && !stackedBelow) {
+                    continue;
+                }
+                int score = stackedBelow
+                        ? 10000 + Math.abs(rect.top - labelRect.bottom)
+                        : verticalDelta * 100 + Math.abs(rect.left - labelRect.right);
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestValue = value.trim();
+                }
             }
         }
 
@@ -1353,7 +1395,7 @@ public class GetPageElement {
         }
         remaining = remaining.replace(uiLabel, " ");
         for (String label : Arrays.asList(
-                "Product", "Product Name", "Account", "Status", "Direction", "Volume",
+                "Product", "Product Name", "Account", "Status", "Direction", "Volume", "Price",
                 "Contract Value", "Open Price", "Current Price", "Initial Margin",
                 "Floating P/L", "Take Profit Price", "Stop Loss Price", "Interest",
                 "Open Position Time", "Order Time", "Position ID"
@@ -1530,41 +1572,184 @@ public class GetPageElement {
         String safeLabel = Pattern.quote(uiLabel);
 
         String pattern =
-                "<android\\.widget\\.TextView[^>]*text=\"" + safeLabel + "\"[^>]*/>" +
+                "<[^>]*text=\"" + safeLabel + "\"[^>]*/?>" +
                         "(?s).*?" +
-                        "<android\\.widget\\.TextView[^>]*text=\"([^\"]+)\"[^>]*/>";
+                        "<[^>]*(?:text|content-desc)=\"([^\"]+)\"[^>]*/?>";
 
         Matcher matcher = Pattern.compile(pattern).matcher(xml);
-
-        if (matcher.find()) {
+        while (matcher.find()) {
             String found = matcher.group(1);
-            if (found != null && !found.trim().equals(uiLabel) && !isLikelyLabel(found)) {
-                return found.trim();
+            if (found == null) {
+                continue;
             }
+            String text = found.trim();
+            if (text.equals(uiLabel) || isLikelyLabel(text) || !isPlausibleValue(uiLabel, text)) {
+                continue;
+            }
+            return text;
         }
 
         return null;
     }
 
     public String findValueByFollowingSiblingScoped(String uiLabel) {
-        String xpath =
-                "//android.widget.ScrollView//android.widget.TextView[@text=\"" + uiLabel + "\"]" +
-                        "/following-sibling::android.widget.TextView[1]";
-
+        List<String> xpaths = List.of(
+                "//android.view.ViewGroup[@resource-id='RNE__Overlay']//*[@text=\"" + uiLabel + "\"]/following-sibling::*[@text][1]",
+                "//android.widget.TextView[@text=\"" + uiLabel + "\"]/following-sibling::android.widget.TextView[1]",
+                "//android.widget.ScrollView//android.widget.TextView[@text=\"" + uiLabel + "\"]/following-sibling::android.widget.TextView[1]"
+        );
         try {
-            List<WebElement> matches = driver.findElements(By.xpath(xpath));
-            for (WebElement el : matches) {
-                String text = extractBestText(el);
-                if (text == null || text.isBlank() || uiLabel.equals(text)) {
-                    continue;
+            for (String xpath : xpaths) {
+                List<WebElement> matches = driver.findElements(By.xpath(xpath));
+                for (WebElement el : matches) {
+                    String text = extractBestText(el);
+                    if (text == null || text.isBlank() || uiLabel.equals(text)) {
+                        continue;
+                    }
+                    if (isLikelyLabel(text) || !isPlausibleValue(uiLabel, text)) {
+                        continue;
+                    }
+                    return text.trim();
                 }
-                if (isLikelyLabel(text)) {
-                    return null;
-                }
-                return text.trim();
             }
         } catch (Exception e) {
             logWarn("Scoped sibling failed for label [" + uiLabel + "]: " + e.getMessage());
+        }
+        return null;
+    }
+
+    private boolean isMatchingLabel(String uiLabel, String value) {
+        if (value == null || uiLabel == null) {
+            return false;
+        }
+        String text = value.trim();
+        if ("Price".equals(uiLabel) && isTpslConstraintPrice(text)) {
+            return false;
+        }
+        if (text.equals(uiLabel)) {
+            return true;
+        }
+        if (isLikelyLabel(text)) {
+            return false;
+        }
+        return text.startsWith(uiLabel + " ")
+                || text.startsWith(uiLabel + "\n")
+                || text.startsWith(uiLabel + "（");
+    }
+
+    private boolean isTpslConstraintPrice(String text) {
+        return text.contains("≥")
+                || text.contains("≤")
+                || text.contains("Take Profit")
+                || text.contains("Stop Loss");
+    }
+
+    public void waitForConfirmationPrice() {
+        includeUnimportantViews();
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> isConfirmationPriceReady());
+        } catch (TimeoutException e) {
+            logWarn("Confirmation price was not visible");
+        }
+        capturePageSource();
+    }
+
+    private boolean isConfirmationPriceReady() {
+        if (!driver.findElements(By.xpath(
+                "//android.view.ViewGroup[@resource-id='RNE__Overlay']//*[@text='Price']"
+        )).isEmpty()) {
+            return true;
+        }
+        boolean confirmationChrome = !driver.findElements(By.xpath(
+                "//*[@text=\"Don't Show Again\" or @text='Confirm Order' or @text='Order Confirmation']"
+        )).isEmpty();
+        return confirmationChrome && !confirmationPriceNodes().isEmpty();
+    }
+
+    private List<WebElement> confirmationPriceNodes() {
+        List<WebElement> overlayNodes = driver.findElements(By.xpath(
+                "//android.view.ViewGroup[@resource-id='RNE__Overlay']"
+                        + "//*[@text='Price' or @text='Open Price' or @text='Current Price'"
+                        + " or @text='Order Price' or @text='Execution Price'"
+                        + " or starts-with(@text,'Price ')]"
+                        + "[not(contains(@text,'Take Profit')) and not(contains(@text,'Stop Loss'))"
+                        + " and not(contains(@text,'≥')) and not(contains(@text,'≤'))]"
+        ));
+        if (!overlayNodes.isEmpty()) {
+            return overlayNodes;
+        }
+        return driver.findElements(By.xpath(
+                "//*[@text='Price' or @text='Open Price' or @text='Current Price'"
+                        + " or @text='Order Price' or @text='Execution Price'"
+                        + " or starts-with(@text,'Price ')]"
+                        + "[not(contains(@text,'Take Profit')) and not(contains(@text,'Stop Loss'))"
+                        + " and not(contains(@text,'≥')) and not(contains(@text,'≤'))]"
+        ));
+    }
+
+    private String readConfirmationPriceValue() {
+        String value = readPriceAliasFromSnapshot();
+        if (value != null && !value.isBlank()) {
+            return value;
+        }
+        value = plausible("Price", findSequentialOverlayValue("Price"));
+        if (value != null) {
+            return value;
+        }
+        return plausible("Price", findValueFromParentRow("Price"));
+    }
+
+    private String readPriceAliasFromSnapshot() {
+        for (String alias : List.of("Open Price", "Current Price", "Order Price", "Execution Price")) {
+            String value = readLabelValueFromSnapshot(alias);
+            if (value != null && !value.isBlank()) {
+                logInfo("Found confirmation price using alias [" + alias + "]: " + value);
+                return value;
+            }
+        }
+        return null;
+    }
+
+    public String findSequentialOverlayValue(String uiLabel) {
+        List<By> locators = List.of(
+                By.xpath("//android.view.ViewGroup[@resource-id='RNE__Overlay']//android.widget.TextView"),
+                By.xpath("//android.view.ViewGroup[@resource-id='RNE__Overlay']//*[@text]"),
+                By.xpath("//android.widget.TextView")
+        );
+        for (By locator : locators) {
+            List<String> texts = new ArrayList<>();
+            for (WebElement el : driver.findElements(locator)) {
+                String text = extractBestText(el);
+                if (!isBlank(text)) {
+                    texts.add(text.trim());
+                }
+            }
+            for (int i = 0; i < texts.size(); i++) {
+                String current = texts.get(i);
+                if (!isMatchingLabel(uiLabel, current)) {
+                    continue;
+                }
+                String stripped = valueAfterStrippingLabels(current, uiLabel);
+                if (stripped != null && isPlausibleValue(uiLabel, stripped)) {
+                    logInfo("Found combined sequential value for label [" + uiLabel + "]: " + stripped);
+                    return stripped;
+                }
+                for (int j = i + 1; j < texts.size(); j++) {
+                    String next = texts.get(j);
+                    if (isLikelyLabel(next) && !isMatchingLabel(uiLabel, next)) {
+                        break;
+                    }
+                    if (isMatchingLabel(uiLabel, next) || uiLabel.equals(next)) {
+                        continue;
+                    }
+                    if (isPlausibleValue(uiLabel, next)) {
+                        logInfo("Found sequential overlay value for label [" + uiLabel + "]: " + next);
+                        return next.trim();
+                    }
+                }
+            }
         }
         return null;
     }

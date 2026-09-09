@@ -18,6 +18,7 @@ import utils.GetPageElement;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -677,10 +678,18 @@ public class AppInstrumentDetailsPage {
     }
 
     public String getDetailValue(String value) {
-        getPageElement.waitAndCaptureIfNeeded(
-                By.xpath("//android.view.ViewGroup[@resource-id='RNE__Overlay']"), 10);
+        if ("Price".equals(value)) {
+            getPageElement.clearPageSourceCache();
+            getPageElement.waitForConfirmationPrice();
+        } else {
+            getPageElement.waitAndCaptureIfNeeded(
+                    By.xpath("//android.view.ViewGroup[@resource-id='RNE__Overlay']"), 10);
+        }
         String uiLabel = getPageElement.mapUiLabel(value);
         String rawValue = getPageElement.readLabelValueFast(uiLabel);
+        if ((rawValue == null || rawValue.isBlank()) && "Price".equals(value)) {
+            rawValue = getPageElement.findSequentialOverlayValue("Price");
+        }
         if (rawValue == null || rawValue.isBlank()) {
             throw new NoSuchElementException("Could not find value in hierarchy for label: " + uiLabel);
         }
@@ -698,8 +707,8 @@ public class AppInstrumentDetailsPage {
     }
 
     public void waitForConfirmationPopup() {
-        getPageElement.waitAndCapture(
-                By.xpath("//android.view.ViewGroup[@resource-id='RNE__Overlay']"), 10);
+        getPageElement.clearPageSourceCache();
+        getPageElement.waitForConfirmationPrice();
     }
 
 
@@ -928,10 +937,7 @@ public class AppInstrumentDetailsPage {
     public boolean getToggleStatus() {
         List<WebElement> switches = driver.findElements(By.xpath("//android.widget.Switch"));
         for (WebElement toggle : switches) {
-            String checked = toggle.getDomAttribute("checked");
-            if (checked == null || checked.isBlank() || "null".equalsIgnoreCase(checked)) {
-                checked = toggle.getAttribute("checked");
-            }
+            String checked = toggle.getAttribute("checked");
             if (checked != null && !"null".equalsIgnoreCase(checked)) {
                 return Boolean.parseBoolean(checked);
             }
@@ -966,35 +972,46 @@ public class AppInstrumentDetailsPage {
         int fieldCenterY = (fieldBounds[1] + fieldBounds[3]) / 2;
         int fieldLeft = fieldBounds[0];
         int fieldRight = fieldBounds[2];
-        List<int[]> controls = compactControlsOnRow(fieldCenterY);
-        if (ctaBtn.equals("+")) {
-            int[] plus = rightmostControlToTheRight(controls, fieldRight);
-            if (plus != null) {
-                return controlCenter(plus);
+        List<int[]> left = new ArrayList<>();
+        List<int[]> right = new ArrayList<>();
+        for (int[] bounds : compactControlsOnRow(fieldCenterY)) {
+            int centerX = (bounds[0] + bounds[2]) / 2;
+            if (centerX < fieldLeft) {
+                left.add(bounds);
+            } else if (centerX > fieldRight) {
+                right.add(bounds);
+            }
+        }
+        left.sort(Comparator.comparingInt(bounds -> bounds[0]));
+        right.sort(Comparator.comparingInt(bounds -> bounds[0]));
+
+        if ("+".equals(ctaBtn) || "plus".equalsIgnoreCase(ctaBtn)) {
+            if (!right.isEmpty()) {
+                return controlCenter(right.getFirst());
             }
             return new Point(fieldRight + 36, fieldCenterY);
         }
-        if (ctaBtn.equals("-")) {
-            int[] minus = leftmostControlToTheLeft(controls, fieldLeft);
-            if (minus != null) {
-                return controlCenter(minus);
+        if ("-".equals(ctaBtn) || "minus".equalsIgnoreCase(ctaBtn)) {
+            if (!left.isEmpty()) {
+                return controlCenter(left.getLast());
             }
             return new Point(Math.max(8, fieldLeft - 36), fieldCenterY);
         }
-        int[] clear = controlBetween(controls, fieldRight, fieldRight + 120);
-        if (clear != null) {
-            return controlCenter(clear);
+        if (right.size() >= 2) {
+            return controlCenter(right.getLast());
         }
-        Point plusPoint = tpslStepperPoint(fieldName, "+");
-        return new Point(Math.max(fieldRight + 16, plusPoint.getX() - 48), fieldCenterY);
+        if (right.size() == 1) {
+            return new Point(right.getFirst()[2] + 26, fieldCenterY);
+        }
+        return new Point(fieldRight + 160, fieldCenterY);
     }
 
     private List<int[]> compactControlsOnRow(int rowCenterY) {
         List<int[]> found = new ArrayList<>();
         List<By> locators = List.of(
+                By.xpath("//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']"),
                 By.xpath("//*[@text='+' or @text='-' or @text='✕' or @text='×' or @text='x' or @text='X']"),
-                By.className("android.widget.ImageView"),
-                By.xpath("//android.widget.ScrollView//android.view.ViewGroup")
+                By.className("android.widget.ImageView")
         );
         for (By locator : locators) {
             for (WebElement el : driver.findElements(locator)) {
@@ -1009,7 +1026,10 @@ public class AppInstrumentDetailsPage {
                         continue;
                     }
                     int centerY = (bounds[1] + bounds[3]) / 2;
-                    if (Math.abs(centerY - rowCenterY) > 40) {
+                    if (Math.abs(centerY - rowCenterY) > 48) {
+                        continue;
+                    }
+                    if (alreadyHasSimilarControl(found, bounds)) {
                         continue;
                     }
                     found.add(bounds);
@@ -1020,52 +1040,17 @@ public class AppInstrumentDetailsPage {
         return found;
     }
 
-    private int[] rightmostControlToTheRight(List<int[]> controls, int fieldRight) {
-        int[] best = null;
-        int bestX = Integer.MIN_VALUE;
-        for (int[] bounds : controls) {
-            int centerX = (bounds[0] + bounds[2]) / 2;
-            if (centerX <= fieldRight - 4) {
-                continue;
-            }
-            if (centerX > bestX) {
-                bestX = centerX;
-                best = bounds;
+    private boolean alreadyHasSimilarControl(List<int[]> found, int[] bounds) {
+        int centerX = (bounds[0] + bounds[2]) / 2;
+        int centerY = (bounds[1] + bounds[3]) / 2;
+        for (int[] existing : found) {
+            int existingX = (existing[0] + existing[2]) / 2;
+            int existingY = (existing[1] + existing[3]) / 2;
+            if (Math.abs(existingX - centerX) <= 12 && Math.abs(existingY - centerY) <= 12) {
+                return true;
             }
         }
-        return best;
-    }
-
-    private int[] leftmostControlToTheLeft(List<int[]> controls, int fieldLeft) {
-        int[] best = null;
-        int bestX = Integer.MAX_VALUE;
-        for (int[] bounds : controls) {
-            int centerX = (bounds[0] + bounds[2]) / 2;
-            if (centerX >= fieldLeft + 4) {
-                continue;
-            }
-            if (centerX < bestX) {
-                bestX = centerX;
-                best = bounds;
-            }
-        }
-        return best;
-    }
-
-    private int[] controlBetween(List<int[]> controls, int minX, int maxX) {
-        int[] best = null;
-        int bestX = Integer.MAX_VALUE;
-        for (int[] bounds : controls) {
-            int centerX = (bounds[0] + bounds[2]) / 2;
-            if (centerX < minX || centerX > maxX) {
-                continue;
-            }
-            if (centerX < bestX) {
-                bestX = centerX;
-                best = bounds;
-            }
-        }
-        return best;
+        return false;
     }
 
     private Point controlCenter(int[] bounds) {

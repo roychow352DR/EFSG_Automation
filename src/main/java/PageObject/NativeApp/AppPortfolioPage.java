@@ -17,6 +17,8 @@ import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,6 +63,7 @@ public class AppPortfolioPage {
     @AndroidFindBy(accessibility = "Pending\n" +
             "Orders")
     WebElement pendingOrderTabAos;
+
 
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]")
     WebElement arrowBtnAos;
@@ -153,16 +156,194 @@ public class AppPortfolioPage {
     }
 
     public String getTitleAos() {
-        abs.waitUntilElementFind(titleAos);
-        return titleAos.getText();
+        if (!(driver instanceof AndroidDriver)) {
+            return "";
+        }
+        WebElement heading = filteringHeading();
+        String text = heading.getText();
+        if (text == null || text.isBlank()) {
+            text = elementAttribute(heading, "text");
+        }
+        return text == null ? "" : text.trim();
+    }
+
+    private WebElement filteringHeading() {
+        List<By> locators = List.of(
+                By.xpath("//android.widget.TextView[@text='Show']"),
+                By.xpath("//*[@text='Show']"),
+                By.xpath("//android.widget.TextView[@content-desc='Show']")
+        );
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+        wait.ignoring(StaleElementReferenceException.class);
+        TimeoutException lastError = null;
+        for (By locator : locators) {
+            try {
+                return wait.until(d -> {
+                    for (WebElement el : d.findElements(locator)) {
+                        try {
+                            String text = el.getText();
+                            if (text == null || text.isBlank()) {
+                                text = elementAttribute(el, "text");
+                            }
+                            if (text != null && text.trim().equals("Show") && el.isDisplayed()) {
+                                return el;
+                            }
+                        } catch (StaleElementReferenceException ignored) {
+                        }
+                    }
+                    return null;
+                });
+            } catch (TimeoutException e) {
+                lastError = e;
+            }
+        }
+        throw lastError != null
+                ? lastError
+                : new TimeoutException("Portfolio filtering heading was not visible");
     }
 
     public String getCheckedProduct() {
-        if (driver instanceof AndroidDriver) {
-            return driver.findElement(By.xpath("//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[2]/android.view.ViewGroup" +
-                    "/parent::android.view.ViewGroup/android.widget.TextView")).getText();
+        if (!(driver instanceof AndroidDriver)) {
+            return "No checked product found";
         }
-        return "No checked product found";
+        waitForFilteringPage();
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> selectedProductName());
+        } catch (TimeoutException e) {
+            throw new NoSuchElementException("Could not find the selected product on the portfolio filtering page");
+        }
+    }
+
+    private String selectedProductName() {
+        String fromState = productNameFromSelectedState();
+        if (fromState != null) {
+            return fromState;
+        }
+        String fromCheckmark = productNameBesideCheckmark();
+        if (fromCheckmark != null) {
+            return fromCheckmark;
+        }
+        if (!driver.findElements(By.xpath("//android.widget.TextView[@text='All']")).isEmpty()
+                || !driver.findElements(By.xpath("//*[@content-desc='All']")).isEmpty()) {
+            return "All";
+        }
+        return null;
+    }
+
+    private String productNameFromSelectedState() {
+        for (WebElement el : driver.findElements(By.xpath(
+                "//*[@selected='true' or @checked='true' or @content-desc='All']"))) {
+            try {
+                String name = visibleProductLabel(el);
+                if (name != null) {
+                    return name;
+                }
+                int[] box = parseBounds(elementAttribute(el, "bounds"));
+                String nearby = productLabelOnRow(box);
+                if (nearby != null) {
+                    return nearby;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private String productNameBesideCheckmark() {
+        for (WebElement el : driver.findElements(By.xpath(
+                "//android.widget.ScrollView//android.widget.TextView"))) {
+            try {
+                String name = visibleProductLabel(el);
+                if (name == null) {
+                    continue;
+                }
+                int[] labelBounds = parseBounds(elementAttribute(el, "bounds"));
+                if (rowHasCheckmark(labelBounds)) {
+                    return name;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private String visibleProductLabel(WebElement el) {
+        String text = el.getText();
+        if (text == null || text.isBlank()) {
+            text = elementAttribute(el, "text");
+        }
+        if (text == null || text.isBlank()) {
+            text = elementAttribute(el, "content-desc");
+        }
+        if (text == null) {
+            return null;
+        }
+        text = text.trim();
+        if (text.equals("Show") || text.toLowerCase().contains("show all") || text.length() > 40) {
+            return null;
+        }
+        return text;
+    }
+
+    private String productLabelOnRow(int[] box) {
+        if (box == null) {
+            return null;
+        }
+        int centerY = (box[1] + box[3]) / 2;
+        for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
+            try {
+                int[] bounds = parseBounds(elementAttribute(el, "bounds"));
+                if (bounds == null) {
+                    continue;
+                }
+                int labelY = (bounds[1] + bounds[3]) / 2;
+                if (Math.abs(labelY - centerY) > 40) {
+                    continue;
+                }
+                String name = visibleProductLabel(el);
+                if (name != null) {
+                    return name;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private boolean rowHasCheckmark(int[] labelBounds) {
+        if (labelBounds == null) {
+            return false;
+        }
+        int labelY = (labelBounds[1] + labelBounds[3]) / 2;
+        int labelRight = labelBounds[2];
+        List<By> locators = List.of(
+                By.className("android.widget.ImageView"),
+                By.xpath("//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']")
+        );
+        for (By locator : locators) {
+            for (WebElement el : driver.findElements(locator)) {
+                try {
+                    int[] bounds = parseBounds(elementAttribute(el, "bounds"));
+                    if (bounds == null) {
+                        continue;
+                    }
+                    int width = bounds[2] - bounds[0];
+                    int height = bounds[3] - bounds[1];
+                    if (width < 16 || width > 96 || height < 16 || height > 96) {
+                        continue;
+                    }
+                    int centerY = (bounds[1] + bounds[3]) / 2;
+                    int centerX = (bounds[0] + bounds[2]) / 2;
+                    if (Math.abs(centerY - labelY) <= 40 && centerX > labelRight) {
+                        return true;
+                    }
+                } catch (StaleElementReferenceException ignored) {
+                }
+            }
+        }
+        return false;
     }
 
     public void tapBack() {
@@ -315,30 +496,187 @@ public class AppPortfolioPage {
     }
 
     public void tapButtonOnRow(String buttonName) {
-        if (driver instanceof AndroidDriver) {
-            switch (buttonName) {
-                case "arrow" -> {
-                    abs.waitUntilElementFind(arrowBtnAos);
-                    arrowBtnAos.click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        waitForPortfolioPage();
+        Point point;
+        try {
+            point = new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> firstRowCtaPoint(buttonName));
+        } catch (TimeoutException e) {
+            point = estimatedCtaPoint(buttonName);
+            System.out.println("Portfolio row CTA fallback for " + buttonName
+                    + " at " + point.getX() + "," + point.getY());
+        }
+        abs.tapAt(point.getX(), point.getY());
+    }
+
+    private Point firstRowCtaPoint(String buttonName) {
+        List<int[]> icons = firstRowIconsByGeometry();
+        int index = ctaIndex(buttonName, icons.size());
+        if (index < 0 || index >= icons.size()) {
+            return null;
+        }
+        int[] box = icons.get(index);
+        return new Point((box[0] + box[2]) / 2, (box[1] + box[3]) / 2);
+    }
+
+    private int ctaIndex(String buttonName, int count) {
+        String name = buttonName == null ? "" : buttonName.trim().toLowerCase();
+        if (count <= 0) {
+            return -1;
+        }
+        if (name.equals("arrow") || name.equals("detail")) {
+            return count - 1;
+        }
+        if (name.equals("close") || name.equals("cancel")) {
+            return count >= 2 ? 0 : -1;
+        }
+        if (name.equals("edit")) {
+            return count >= 3 ? 1 : -1;
+        }
+        return -1;
+    }
+
+    private List<int[]> firstRowIconsByGeometry() {
+        int listTop = listAreaTopY();
+        int footerTop = footerTopY();
+        int minLeft = Math.max(800, (int) (driver.manage().window().getSize().getWidth() * 0.68));
+        List<int[]> all = new ArrayList<>();
+        for (WebElement el : clickableRowCandidates()) {
+            try {
+                int[] box = visibleBox(el);
+                if (!isPortfolioRowCta(box, listTop, footerTop, minLeft)) {
+                    continue;
                 }
-                case "close" -> {
-                    abs.waitUntilElementFind(closeBtnAos);
-                    closeBtnAos.click();
+                all.add(box);
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        if (all.isEmpty()) {
+            return List.of();
+        }
+        all.sort(Comparator.comparingInt(box -> box[1]));
+        int rowTop = all.getFirst()[1];
+        List<int[]> row = new ArrayList<>();
+        for (int[] box : all) {
+            if (Math.abs(box[1] - rowTop) <= 60) {
+                row.add(box);
+            }
+        }
+        return dedupeByX(row);
+    }
+
+    private List<WebElement> clickableRowCandidates() {
+        List<WebElement> found = new ArrayList<>(driver.findElements(
+                By.xpath("//android.view.ViewGroup[@clickable='true']")));
+        if (found.isEmpty()) {
+            found.addAll(driver.findElements(By.xpath("//*[@clickable='true']")));
+        }
+        return found;
+    }
+
+    private boolean isPortfolioRowCta(int[] box, int listTop, int footerTop, int minLeft) {
+        if (box == null) {
+            return false;
+        }
+        int width = box[2] - box[0];
+        int height = box[3] - box[1];
+        if (width < 28 || width > 170 || height < 28 || height > 240) {
+            return false;
+        }
+        if (box[0] < minLeft) {
+            return false;
+        }
+        if (box[1] < listTop - 20 || box[3] > footerTop - 8) {
+            return false;
+        }
+        return height >= 50 || box[3] < footerTop - 80;
+    }
+
+    private int[] visibleBox(WebElement element) {
+        int[] fromBounds = parseBounds(elementAttribute(element, "bounds"));
+        if (fromBounds != null && fromBounds[2] > fromBounds[0] && fromBounds[3] > fromBounds[1]) {
+            return fromBounds;
+        }
+        try {
+            Point location = element.getLocation();
+            Dimension size = element.getSize();
+            if (size.getWidth() <= 0 || size.getHeight() <= 0) {
+                return null;
+            }
+            return new int[]{
+                    location.getX(),
+                    location.getY(),
+                    location.getX() + size.getWidth(),
+                    location.getY() + size.getHeight()
+            };
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private Point estimatedCtaPoint(String buttonName) {
+        Dimension window = driver.manage().window().getSize();
+        String name = buttonName == null ? "" : buttonName.trim().toLowerCase();
+        double ratio = switch (name) {
+            case "close", "cancel" -> 0.74;
+            case "edit" -> 0.83;
+            default -> 0.92;
+        };
+        int y = listAreaTopY() + Math.max(110, (int) (window.getHeight() * 0.045));
+        return new Point((int) (window.getWidth() * ratio), y);
+    }
+
+    private List<int[]> dedupeByX(List<int[]> boxes) {
+        boxes.sort(Comparator.comparingInt(box -> box[0]));
+        List<int[]> unique = new ArrayList<>();
+        for (int[] box : boxes) {
+            if (unique.isEmpty()) {
+                unique.add(box);
+                continue;
+            }
+            int[] last = unique.getLast();
+            int lastCenter = (last[0] + last[2]) / 2;
+            int center = (box[0] + box[2]) / 2;
+            if (Math.abs(center - lastCenter) <= 24) {
+                if ((box[2] - box[0]) * (box[3] - box[1]) > (last[2] - last[0]) * (last[3] - last[1])) {
+                    unique.set(unique.size() - 1, box);
                 }
-                case "edit" -> {
-                    abs.waitUntilElementFind(editBtnAos);
-                    editBtnAos.click();
-                }
-                case "cancel" -> {
-                    abs.waitUntilElementFind(cancelBtnAos);
-                    cancelBtnAos.click();
-                }
-                case "detail" -> {
-                    abs.waitUntilElementClickable(detailBtnAos);
-                    detailBtnAos.click();
+            } else {
+                unique.add(box);
+            }
+        }
+        return unique;
+    }
+
+    private int listAreaTopY() {
+        for (By locator : List.of(
+                By.xpath("//*[@content-desc='Show all' or @text='Show all' or @text='Show All']"),
+                By.xpath("//*[contains(@content-desc,'Show last') or contains(@text,'Show last')]"),
+                By.xpath("//*[@content-desc='Newest to Oldest' or @text='Newest to Oldest']")
+        )) {
+            for (WebElement el : driver.findElements(locator)) {
+                int[] box = parseBounds(elementAttribute(el, "bounds"));
+                if (box != null && box[3] > box[1]) {
+                    return box[3] + 8;
                 }
             }
         }
+        return (int) (driver.manage().window().getSize().getHeight() * 0.52);
+    }
+
+    private int footerTopY() {
+        for (WebElement el : driver.findElements(By.xpath(
+                "//*[@content-desc='Home' or @text='Home']"))) {
+            int[] box = parseBounds(elementAttribute(el, "bounds"));
+            if (box != null && box[1] > 1800) {
+                return box[1];
+            }
+        }
+        return driver.manage().window().getSize().getHeight() - 180;
     }
 
     public boolean confirmationDialogueIsDisplayed() {

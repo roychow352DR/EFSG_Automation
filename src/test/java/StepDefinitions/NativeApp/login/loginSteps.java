@@ -82,7 +82,11 @@ public class loginSteps extends BaseTest {
 
     @And("the user login as username {string} and password {string} on App login page")
     public void the_user_login_as_username_and_password_on_App_login_page(String username,String password) throws InterruptedException {
-        appPOManager.getAppLoginPage().loginAs(username, password);
+        appPOManager.getAppHomePage().navigateToSignupPage();
+        appPOManager.getAppSignupPage().navigateToLoginPage();
+        Assert.assertTrue(appPOManager.getAppLoginPage().loginPageValidation());
+        appPOManager.getAppLoginPage().fillCredential(username, password);
+        appPOManager.getAppLoginPage().clickLogin();
     }
 
 }
