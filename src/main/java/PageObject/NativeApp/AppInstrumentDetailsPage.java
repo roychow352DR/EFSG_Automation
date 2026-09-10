@@ -5,6 +5,7 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.StaleElementReferenceException;
@@ -1014,25 +1015,46 @@ public class AppInstrumentDetailsPage {
         left.sort(Comparator.comparingInt(bounds -> bounds[0]));
         right.sort(Comparator.comparingInt(bounds -> bounds[0]));
 
-        if ("+".equals(ctaBtn) || "plus".equalsIgnoreCase(ctaBtn)) {
+        // Filled row is [minus] [field] [clear] [plus]; empty row has no clear.
+        String action = normalizeStepperAction(ctaBtn);
+        if ("plus".equals(action)) {
             if (!right.isEmpty()) {
-                return controlCenter(right.getFirst());
+                return controlCenter(right.getLast());
             }
-            return new Point(fieldRight + 36, fieldCenterY);
+            Dimension window = driver.manage().window().getSize();
+            return new Point(Math.min(window.getWidth() - 24, fieldRight + 98), fieldCenterY);
         }
-        if ("-".equals(ctaBtn) || "minus".equalsIgnoreCase(ctaBtn)) {
+        if ("minus".equals(action)) {
             if (!left.isEmpty()) {
                 return controlCenter(left.getLast());
             }
-            return new Point(Math.max(8, fieldLeft - 36), fieldCenterY);
+            return new Point(Math.max(8, fieldLeft - 48), fieldCenterY);
         }
-        if (right.size() >= 2) {
-            return controlCenter(right.getLast());
+        if ("clear".equals(action)) {
+            if (right.size() >= 2) {
+                return controlCenter(right.getFirst());
+            }
+            return new Point(fieldRight + 28, fieldCenterY);
         }
-        if (right.size() == 1) {
-            return new Point(right.getFirst()[2] + 26, fieldCenterY);
+        throw new IllegalArgumentException("Unsupported stepper button: " + ctaBtn);
+    }
+
+    private String normalizeStepperAction(String ctaBtn) {
+        if (ctaBtn == null || ctaBtn.isBlank()) {
+            throw new IllegalArgumentException("Stepper button was empty");
         }
-        return new Point(fieldRight + 160, fieldCenterY);
+        String text = ctaBtn.trim();
+        if (text.equals("+") || text.equalsIgnoreCase("plus")) {
+            return "plus";
+        }
+        if (text.equals("-") || text.equalsIgnoreCase("minus")) {
+            return "minus";
+        }
+        if (text.equals("✕") || text.equals("×") || text.equalsIgnoreCase("x")
+                || text.equals("?") || text.equalsIgnoreCase("clear")) {
+            return "clear";
+        }
+        return text.toLowerCase(Locale.ROOT);
     }
 
     private List<int[]> compactControlsOnRow(int rowCenterY) {
@@ -1051,11 +1073,11 @@ public class AppInstrumentDetailsPage {
                     }
                     int width = bounds[2] - bounds[0];
                     int height = bounds[3] - bounds[1];
-                    if (width < 18 || width > 96 || height < 18 || height > 96) {
+                    if (width < 18 || width > 120 || height < 18 || height > 120) {
                         continue;
                     }
                     int centerY = (bounds[1] + bounds[3]) / 2;
-                    if (Math.abs(centerY - rowCenterY) > 48) {
+                    if (Math.abs(centerY - rowCenterY) > 64) {
                         continue;
                     }
                     if (alreadyHasSimilarControl(found, bounds)) {
