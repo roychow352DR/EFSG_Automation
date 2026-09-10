@@ -673,9 +673,8 @@ public class MobileAbstractComponents {
             return rawValue.replace("Lots", "").trim();
         }
 
-        if (label.equalsIgnoreCase("Initial Margin") || label.equalsIgnoreCase("Estimated Margin")) {
-            String[] parts = rawValue.split("USD");
-            return parts.length > 1 ? parts[1].trim().replace(",", "") : rawValue.replace(",", "");
+        if (isMarginLabel(label)) {
+            return stripCurrencyAndComma(rawValue);
         }
 
         if (label.equalsIgnoreCase("Contract Value")) {
@@ -690,6 +689,20 @@ public class MobileAbstractComponents {
         }
 
         return rawValue;
+    }
+
+    private boolean isMarginLabel(String label) {
+        return label.equalsIgnoreCase("Initial Margin")
+                || label.equalsIgnoreCase("Estimated Margin")
+                || label.equalsIgnoreCase("Est. Margin");
+    }
+
+    private String stripCurrencyAndComma(String rawValue) {
+        String text = rawValue.replace('\u00A0', ' ').trim();
+        String[] parts = text.split("\\s+");
+        String amount = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+        amount = amount.replace(",", "");
+        return amount.replaceFirst("(?i)^[A-Z]{3}", "");
     }
 
     public boolean dateValidator(String input) {

@@ -81,13 +81,34 @@ public class AppEditPositionPage {
 
 
     public String getDisplayedValue(String label, String symbolDecimal) {
-        getPageElement.waitAndCaptureIfNeeded(By.xpath("//*[@text='Edit Position']"), 10);
+        waitForEditPositionReady();
         String uiLabel = getPageElement.mapUiLabel(label);
         String rawValue = getPageElement.readLabelValueFast(uiLabel);
+        if ((rawValue == null || rawValue.isBlank()) && isVolumeLabel(label)) {
+            rawValue = getPageElement.readLabelValueFast("Lots");
+            if (rawValue != null && !rawValue.isBlank()) {
+                uiLabel = "Lots";
+            }
+        }
         if (rawValue == null || rawValue.isBlank()) {
             throw new NoSuchElementException("Could not find value on Edit Position for label: " + uiLabel);
         }
         return getPageElement.normalizeByLabel(label, rawValue.trim(), symbolDecimal);
+    }
+
+    private boolean isVolumeLabel(String label) {
+        return "Volume".equals(label) || "Qty".equals(label) || "Lots".equals(label);
+    }
+
+    private void waitForEditPositionReady() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !d.findElements(By.xpath(
+                            "//*[@text='Edit Position' or @content-desc='Edit Position']"
+                    )).isEmpty());
+        } catch (TimeoutException ignored) {
+        }
     }
 
     public String getInputFieldValue(String inputFieldName) {
@@ -131,24 +152,22 @@ public class AppEditPositionPage {
         String action = normalizeStepperAction(ctaBtn);
         if ("plus".equals(action)) {
             if (!right.isEmpty()) {
-                return controlCenter(right.getFirst());
+                return controlCenter(right.getLast());
             }
-            return new Point(fieldRight + 36, fieldCenterY);
+            Dimension window = driver.manage().window().getSize();
+            return new Point(Math.min(window.getWidth() - 24, fieldRight + 98), fieldCenterY);
         }
         if ("minus".equals(action)) {
             if (!left.isEmpty()) {
                 return controlCenter(left.getLast());
             }
-            return new Point(Math.max(8, fieldLeft - 36), fieldCenterY);
+            return new Point(Math.max(8, fieldLeft - 48), fieldCenterY);
         }
         if ("clear".equals(action)) {
             if (right.size() >= 2) {
-                return controlCenter(right.getLast());
+                return controlCenter(right.getFirst());
             }
-            if (right.size() == 1) {
-                return new Point(right.getFirst()[2] + 26, fieldCenterY);
-            }
-            return new Point(fieldRight + 160, fieldCenterY);
+            return new Point(fieldRight + 28, fieldCenterY);
         }
         throw new IllegalArgumentException("Unsupported stepper button: " + ctaBtn);
     }
@@ -187,11 +206,11 @@ public class AppEditPositionPage {
                     }
                     int width = bounds[2] - bounds[0];
                     int height = bounds[3] - bounds[1];
-                    if (width < 18 || width > 96 || height < 18 || height > 96) {
+                    if (width < 18 || width > 120 || height < 18 || height > 120) {
                         continue;
                     }
                     int centerY = (bounds[1] + bounds[3]) / 2;
-                    if (Math.abs(centerY - rowCenterY) > 48) {
+                    if (Math.abs(centerY - rowCenterY) > 64) {
                         continue;
                     }
                     if (alreadyHasSimilarControl(found, bounds)) {
