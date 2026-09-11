@@ -98,7 +98,6 @@ public class tradeSteps extends BaseTest {
 
     @And("the user taps {string} cta button on the app trade view")
     public void the_user_taps_cta_button_on_the_app_trade_view(String buttonName) throws InterruptedException {
-        Thread.sleep(3000);
         appPoManager.getAppTradeView().captureVisibleRowPrice();
         appPoManager.getAppTradeView().tapCtaButton(buttonName);
     }

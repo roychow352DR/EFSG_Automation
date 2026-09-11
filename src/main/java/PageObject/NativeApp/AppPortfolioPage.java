@@ -479,19 +479,69 @@ public class AppPortfolioPage {
     }
 
     public void selectTab(String tabName) {
-        if (driver instanceof AndroidDriver) {
-            WebElement tab = switch (tabName) {
-                case "Open Positions" -> positionTabAos;
-                case "Pending Orders" -> pendingOrderTabAos;
-                case "History" -> historyTabAos;
-                default -> null;
-            };
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        waitForPortfolioPage();
+        Point point = tabPoint(tabName);
+        if (point != null) {
+            abs.tapAt(point.getX(), point.getY());
+            return;
+        }
+        WebElement tab = switch (tabName) {
+            case "Open Positions" -> positionTabAos;
+            case "Pending Orders" -> pendingOrderTabAos;
+            case "History" -> historyTabAos;
+            default -> null;
+        };
+        if (tab != null) {
+            abs.tapElement(tab);
+        }
+    }
 
-            if (tab != null) {
-                abs.waitUntilElementFind(tab);
-                tab.click();
+    private Point tabPoint(String tabName) {
+        List<By> locators = switch (tabName) {
+            case "History" -> List.of(
+                    By.xpath("//*[@text='History' or @content-desc='History']")
+            );
+            case "Pending Orders" -> List.of(
+                    By.xpath("//*[contains(@text,'Pending') or contains(@content-desc,'Pending')]")
+            );
+            default -> List.of(
+                    By.xpath("//*[contains(@text,'Open') or contains(@content-desc,'Open')]")
+            );
+        };
+        Dimension window = driver.manage().window().getSize();
+        int maxHeight = Math.max(80, (int) (window.getHeight() * 0.12));
+        int maxWidth = (int) (window.getWidth() * 0.55);
+        Point best = null;
+        int bestY = Integer.MAX_VALUE;
+        for (By locator : locators) {
+            for (WebElement el : driver.findElements(locator)) {
+                try {
+                    Point location = el.getLocation();
+                    Dimension size = el.getSize();
+                    if (size.getHeight() < 8 || size.getHeight() > maxHeight) {
+                        continue;
+                    }
+                    if (size.getWidth() > maxWidth) {
+                        continue;
+                    }
+                    if (location.getY() < bestY) {
+                        bestY = location.getY();
+                        best = new Point(
+                                location.getX() + Math.max(8, size.getWidth() / 2),
+                                location.getY() + Math.max(8, size.getHeight() / 2)
+                        );
+                    }
+                } catch (StaleElementReferenceException ignored) {
+                }
+            }
+            if (best != null) {
+                return best;
             }
         }
+        return null;
     }
 
     public void tapButtonOnRow(String buttonName) {
@@ -499,6 +549,10 @@ public class AppPortfolioPage {
             return;
         }
         waitForPortfolioPage();
+        if ("arrow".equalsIgnoreCase(buttonName) || "detail".equalsIgnoreCase(buttonName)) {
+            tapFirstRowDetailsCta(buttonName);
+            return;
+        }
         Point point;
         try {
             point = new WebDriverWait(driver, Duration.ofSeconds(8))
@@ -520,6 +574,74 @@ public class AppPortfolioPage {
             Point retry = estimatedCtaPoint("edit");
             abs.tapAt(retry.getX(), retry.getY());
         }
+    }
+
+    private void tapFirstRowDetailsCta(String buttonName) {
+        waitForFirstPortfolioRow();
+        Point arrow = firstRowArrowPoint();
+        if (arrow != null) {
+            System.out.println("Tapping portfolio " + buttonName + " CTA at "
+                    + arrow.getX() + "," + arrow.getY());
+            abs.tapAt(arrow.getX(), arrow.getY());
+            if (detailsPageVisible(5)) {
+                return;
+            }
+        }
+        Point estimated = estimatedCtaPoint("arrow");
+        System.out.println("Retrying portfolio arrow CTA at estimated "
+                + estimated.getX() + "," + estimated.getY());
+        abs.tapAt(estimated.getX(), estimated.getY());
+    }
+
+    private void waitForFirstPortfolioRow() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> firstPositionRowBounds() != null);
+        } catch (TimeoutException ignored) {
+        }
+    }
+
+    private Point firstRowArrowPoint() {
+        Dimension window = driver.manage().window().getSize();
+        int listTop = listAreaTopY();
+        int footerTop = footerTopY();
+        int minRight = (int) (window.getWidth() * 0.88);
+        int[] best = null;
+        int bestTop = Integer.MAX_VALUE;
+        for (WebElement el : driver.findElements(By.xpath(
+                "//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']"))) {
+            try {
+                int[] box = visibleBox(el);
+                if (box == null) {
+                    continue;
+                }
+                int width = box[2] - box[0];
+                int height = box[3] - box[1];
+                int centerY = (box[1] + box[3]) / 2;
+                if (centerY < listTop || centerY > footerTop - 20) {
+                    continue;
+                }
+                if (box[2] < minRight) {
+                    continue;
+                }
+                if (height < 16 || height > 120 || width < 16 || width > 500) {
+                    continue;
+                }
+                if (box[1] < bestTop) {
+                    bestTop = box[1];
+                    best = box;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        if (best == null) {
+            return null;
+        }
+        // History arrow is the chevron on the right of the PnL chip, not the chip center.
+        int x = best[2] - Math.min(18, Math.max(8, (best[2] - best[0]) / 10));
+        int y = (best[1] + best[3]) / 2;
+        return new Point(x, y);
     }
 
     private Point firstRowCtaPoint(String buttonName) {
@@ -583,6 +705,10 @@ public class AppPortfolioPage {
         int listTop = listAreaTopY();
         int footerTop = footerTopY();
         Dimension window = driver.manage().window().getSize();
+        int[] fromProduct = firstRowBoundsFromLeftLabel(listTop, footerTop, window);
+        if (fromProduct != null) {
+            return fromProduct;
+        }
         int[] best = null;
         int bestY = Integer.MAX_VALUE;
         List<By> markers = new ArrayList<>();
@@ -590,7 +716,9 @@ public class AppPortfolioPage {
         if (symbol != null && !symbol.isBlank()) {
             markers.add(By.xpath("//*[@text='" + symbol + "']"));
         }
-        markers.add(By.xpath("//*[@text='BUY' or @text='SELL']"));
+        markers.add(By.xpath(
+                "//*[@text='BUY' or @text='SELL' or @text='Buy' or @text='Sell'"
+                        + " or contains(@text,'BUY') or contains(@text,'SELL')]"));
         for (By locator : markers) {
             for (WebElement el : driver.findElements(locator)) {
                 try {
@@ -609,7 +737,7 @@ public class AppPortfolioPage {
                     if (box[1] < bestY) {
                         bestY = box[1];
                         int top = Math.max(listTop, box[1] - 28);
-                        int bottom = Math.min(footerTop - 8, box[3] + 96);
+                        int bottom = Math.min(footerTop - 8, box[3] + 120);
                         best = new int[]{0, top, window.getWidth(), Math.max(88, bottom - top)};
                     }
                 } catch (StaleElementReferenceException ignored) {
@@ -620,6 +748,37 @@ public class AppPortfolioPage {
             }
         }
         return null;
+    }
+
+    private int[] firstRowBoundsFromLeftLabel(int listTop, int footerTop, Dimension window) {
+        int maxLeft = (int) (window.getWidth() * 0.28);
+        int[] best = null;
+        int bestY = Integer.MAX_VALUE;
+        for (WebElement el : driver.findElements(By.xpath(
+                "//android.widget.ScrollView//android.widget.TextView"))) {
+            try {
+                int[] box = visibleBox(el);
+                if (box == null) {
+                    continue;
+                }
+                int width = box[2] - box[0];
+                int height = box[3] - box[1];
+                if (box[0] > maxLeft || box[1] < listTop - 10 || box[1] > footerTop - 80) {
+                    continue;
+                }
+                if (height < 18 || height > 90 || width > (int) (window.getWidth() * 0.40)) {
+                    continue;
+                }
+                if (box[1] < bestY) {
+                    bestY = box[1];
+                    int top = Math.max(listTop, box[1] - 20);
+                    int bottom = Math.min(footerTop - 8, box[3] + 140);
+                    best = new int[]{0, top, window.getWidth(), Math.max(120, bottom - top)};
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return best;
     }
 
     private List<WebElement> clickableRowCandidates() {
@@ -679,6 +838,21 @@ public class AppPortfolioPage {
         }
     }
 
+    private boolean detailsPageVisible(int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(Math.max(1, seconds)))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !d.findElements(By.xpath(
+                            "//*[@text='Position Details' or @content-desc='Position Details'"
+                                    + " or @text='Position Detail' or @content-desc='Position Detail'"
+                                    + " or @text='Pending Order Details' or @content-desc='Pending Order Details']"
+                    )).isEmpty());
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
     private int[] visibleBox(WebElement element) {
         int[] fromBounds = parseBounds(elementAttribute(element, "bounds"));
         if (fromBounds != null && fromBounds[2] > fromBounds[0] && fromBounds[3] > fromBounds[1]) {
@@ -707,6 +881,7 @@ public class AppPortfolioPage {
         double ratio = switch (name) {
             case "close", "cancel" -> 0.70;
             case "edit" -> 0.82;
+            case "arrow", "detail" -> 0.94;
             default -> 0.93;
         };
         int[] row = firstPositionRowBounds();
@@ -745,16 +920,17 @@ public class AppPortfolioPage {
         for (By locator : List.of(
                 By.xpath("//*[@content-desc='Show all' or @text='Show all' or @text='Show All']"),
                 By.xpath("//*[contains(@content-desc,'Show last') or contains(@text,'Show last')]"),
-                By.xpath("//*[@content-desc='Newest to Oldest' or @text='Newest to Oldest']")
+                By.xpath("//*[@content-desc='Newest to Oldest' or @text='Newest to Oldest']"),
+                By.xpath("//*[@text='History' or @content-desc='History']")
         )) {
             for (WebElement el : driver.findElements(locator)) {
                 int[] box = parseBounds(elementAttribute(el, "bounds"));
-                if (box != null && box[3] > box[1]) {
+                if (box != null && box[3] > box[1] && box[3] - box[1] <= 140) {
                     return box[3] + 8;
                 }
             }
         }
-        return (int) (driver.manage().window().getSize().getHeight() * 0.52);
+        return (int) (driver.manage().window().getSize().getHeight() * 0.38);
     }
 
     private int footerTopY() {

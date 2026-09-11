@@ -7,7 +7,6 @@ import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.GetPageElement;
 
@@ -36,20 +35,125 @@ public class AppPositionDetailsPage {
     WebElement productAos;
 
     public String getHeader() {
-        if (driver instanceof AndroidDriver) {
-            By locator = By.xpath("//*[@text='Position Details']");
-
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-            WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
-
-            String text = element.getText();
-            if (text == null || text.trim().isEmpty()) {
-                text = element.getAttribute("text");
-            }
-
-            return text;
+        if (!(driver instanceof AndroidDriver)) {
+            return "";
         }
-        return "";
+        return new WebDriverWait(driver, Duration.ofSeconds(15))
+                .ignoring(StaleElementReferenceException.class)
+                .until(d -> resolvedPositionDetailsTitle());
+    }
+
+    private String resolvedPositionDetailsTitle() {
+        WebElement header = visiblePositionDetailsHeader();
+        if (header != null) {
+            String text = firstNonBlank(
+                    safeText(header),
+                    elementAttribute(header, "text"),
+                    elementAttribute(header, "content-desc")
+            );
+            if (text != null && text.toLowerCase().contains("position detail")) {
+                return "Position Details";
+            }
+        }
+        String source = pageSource();
+        if (source != null && (source.contains("Position Details") || source.contains("Position Detail"))) {
+            return "Position Details";
+        }
+        if (looksLikePositionDetailsPage()) {
+            return "Position Details";
+        }
+        return null;
+    }
+
+    private WebElement visiblePositionDetailsHeader() {
+        Dimension window = driver.manage().window().getSize();
+        int maxHeaderY = (int) (window.getHeight() * 0.50);
+        WebElement compact = null;
+        WebElement any = null;
+        int bestCompactY = Integer.MAX_VALUE;
+        int bestAnyY = Integer.MAX_VALUE;
+        for (WebElement el : driver.findElements(By.xpath(
+                "//*[@text='Position Details' or @content-desc='Position Details'"
+                        + " or @text='Position Detail' or @content-desc='Position Detail'"
+                        + " or contains(@text,'Position Detail') or contains(@content-desc,'Position Detail')]"
+        ))) {
+            try {
+                String text = firstNonBlank(
+                        safeText(el),
+                        elementAttribute(el, "text"),
+                        elementAttribute(el, "content-desc")
+                );
+                if (text == null || !text.toLowerCase().contains("position detail")) {
+                    continue;
+                }
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                int top = location.getY();
+                if (top < bestAnyY) {
+                    bestAnyY = top;
+                    any = el;
+                }
+                if (top <= maxHeaderY && size.getHeight() <= 180 && top < bestCompactY) {
+                    bestCompactY = top;
+                    compact = el;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return compact != null ? compact : any;
+    }
+
+    private boolean looksLikePositionDetailsPage() {
+        boolean hasDirection = hasText("Direction");
+        boolean hasOpenPrice = hasText("Open Price");
+        boolean hasVolume = hasText("Volume") || hasText("Lots");
+        boolean hasPositionId = hasText("Position ID");
+        return (hasDirection && hasOpenPrice) || (hasDirection && hasVolume) || hasPositionId;
+    }
+
+    private boolean hasText(String value) {
+        return !driver.findElements(By.xpath(
+                "//*[@text='" + value + "' or contains(@text,'" + value + "')"
+                        + " or @content-desc='" + value + "' or contains(@content-desc,'" + value + "')]"
+        )).isEmpty();
+    }
+
+    private String pageSource() {
+        try {
+            return driver.getPageSource();
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private String safeText(WebElement element) {
+        try {
+            String text = element.getText();
+            return text == null || text.isBlank() ? null : text.trim();
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private String elementAttribute(WebElement element, String name) {
+        try {
+            String value = element.getAttribute(name);
+            if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) {
+                return null;
+            }
+            return value;
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
 

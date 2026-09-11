@@ -5,10 +5,15 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.List;
@@ -33,19 +38,8 @@ public class AppModifyOrderPage {
         PageFactory.initElements(new AppiumFieldDecorator(driver, Duration.ofSeconds(10)), this);
     }
 
-    @FindBy(className = "android.widget.TextView")
-    List<WebElement> textMessagesAos;
-
-    @FindBy(xpath = "//android.widget.FrameLayout[@resource-id=\"android:id/content\"]/android.widget.FrameLayout" +
-            "/android.view.ViewGroup/android.view.ViewGroup[3]/android.view.ViewGroup/android.view.ViewGroup" +
-            "/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[1]")
-    WebElement backBtnAos;
-
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.view.ViewGroup[15]")
     WebElement closeBtnAos;
-
-    @FindBy(xpath = "(//android.widget.TextView[@text=\"Modify Order\"])[1]")
-    WebElement headerAos;
 
 
     public String getEditPrice(String direction, String decimal, String priceType, int value) {
@@ -161,21 +155,41 @@ public class AppModifyOrderPage {
     }
 
     public boolean getTextMessage(String messageContent) {
-        if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementFind(textMessagesAos.getFirst());
-            for (WebElement ele : textMessagesAos) {
-                if (ele.getText().equalsIgnoreCase(messageContent)) {
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
+        }
+        By error = By.xpath(
+                "//*[@text='" + messageContent + "' or @content-desc='" + messageContent + "'"
+                        + " or contains(@text,'" + messageContent + "')"
+                        + " or contains(@content-desc,'" + messageContent + "')]");
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> visibleMessage(d.findElements(error), messageContent));
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private boolean visibleMessage(List<WebElement> elements, String messageContent) {
+        for (WebElement ele : elements) {
+            try {
+                if (!ele.isDisplayed()) {
+                    continue;
+                }
+                String text = ele.getText();
+                if (text != null && text.toLowerCase().contains(messageContent.toLowerCase())) {
                     return true;
                 }
+            } catch (StaleElementReferenceException ignored) {
             }
         }
         return false;
     }
 
     public void tapBack() {
-        if (driver instanceof AndroidDriver) {
-            backBtnAos.click();
-        }
+        new AppTradeView(driver).tapBack();
     }
 
     public void tapButtonOnDialogue(String btnName) {
@@ -188,12 +202,42 @@ public class AppModifyOrderPage {
             }
         }
     }
-    public boolean getHeader(){
-        if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementFind(headerAos);
-            return headerAos.isDisplayed();
+    public boolean getHeader() {
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
         }
-        return false;
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> compactModifyOrderHeader() != null);
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private WebElement compactModifyOrderHeader() {
+        try {
+            Dimension window = driver.manage().window().getSize();
+            int maxHeaderY = (int) (window.getHeight() * 0.40);
+            WebElement best = null;
+            int bestY = Integer.MAX_VALUE;
+            for (WebElement el : driver.findElements(By.xpath(
+                    "//*[@text='Modify Order' or @content-desc='Modify Order']"))) {
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (location.getY() > maxHeaderY || size.getHeight() > 160) {
+                    continue;
+                }
+                if (location.getY() < bestY) {
+                    bestY = location.getY();
+                    best = el;
+                }
+            }
+            return best;
+        } catch (StaleElementReferenceException e) {
+            return null;
+        }
     }
 
 }
