@@ -122,6 +122,8 @@ public class AppEditPositionPage {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
+        hideAndroidKeyboard();
+        revealPriceRow(priceType);
         Point point = priceStepperPoint(priceType, ctaBtn);
         getPageElement.logInfo("Tapping " + ctaBtn + " on " + priceType + " at " + point.getX() + "," + point.getY());
         abs.tapAt(point.getX(), point.getY());
@@ -136,36 +138,28 @@ public class AppEditPositionPage {
         int fieldCenterY = (fieldBounds[1] + fieldBounds[3]) / 2;
         int fieldLeft = fieldBounds[0];
         int fieldRight = fieldBounds[2];
-        List<int[]> left = new ArrayList<>();
-        List<int[]> right = new ArrayList<>();
-        for (int[] bounds : compactControlsOnRow(fieldCenterY)) {
-            int centerX = (bounds[0] + bounds[2]) / 2;
-            if (centerX < fieldLeft) {
-                left.add(bounds);
-            } else if (centerX > fieldRight) {
-                right.add(bounds);
-            }
-        }
-        left.sort(Comparator.comparingInt(bounds -> bounds[0]));
-        right.sort(Comparator.comparingInt(bounds -> bounds[0]));
-
+        // Edit Position: [minus] [field] [plus] [clear]. Some tickets: [minus] [field] [clear] [plus].
+        List<StepperIcon> icons = compactControlsOnRow(fieldCenterY);
+        StepperIcon minus = minusIcon(icons, fieldLeft);
+        StepperIcon plus = plusIcon(icons, fieldRight);
+        StepperIcon clear = clearIcon(icons, fieldRight, plus);
         String action = normalizeStepperAction(ctaBtn);
         if ("plus".equals(action)) {
-            if (!right.isEmpty()) {
-                return controlCenter(right.getLast());
+            if (plus != null) {
+                return insetControlCenter(plus.bounds, "plus");
             }
             Dimension window = driver.manage().window().getSize();
-            return new Point(Math.min(window.getWidth() - 24, fieldRight + 98), fieldCenterY);
+            return new Point(Math.min(window.getWidth() - 24, fieldRight + 70), fieldCenterY);
         }
         if ("minus".equals(action)) {
-            if (!left.isEmpty()) {
-                return controlCenter(left.getLast());
+            if (minus != null) {
+                return insetControlCenter(minus.bounds, "minus");
             }
             return new Point(Math.max(8, fieldLeft - 48), fieldCenterY);
         }
         if ("clear".equals(action)) {
-            if (right.size() >= 2) {
-                return controlCenter(right.getFirst());
+            if (clear != null) {
+                return insetControlCenter(clear.bounds, "clear");
             }
             return new Point(fieldRight + 28, fieldCenterY);
         }
@@ -190,12 +184,11 @@ public class AppEditPositionPage {
         return text.toLowerCase(Locale.ROOT);
     }
 
-    private List<int[]> compactControlsOnRow(int rowCenterY) {
-        List<int[]> found = new ArrayList<>();
+    private List<StepperIcon> compactControlsOnRow(int rowCenterY) {
+        List<StepperIcon> found = new ArrayList<>();
         List<By> locators = List.of(
                 By.xpath("//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']"),
-                By.xpath("//*[@text='+' or @text='-' or @text='✕' or @text='×' or @text='x' or @text='X']"),
-                By.className("android.widget.ImageView")
+                By.xpath("//android.view.ViewGroup[@clickable='true']")
         );
         for (By locator : locators) {
             for (WebElement el : driver.findElements(locator)) {
@@ -206,39 +199,250 @@ public class AppEditPositionPage {
                     }
                     int width = bounds[2] - bounds[0];
                     int height = bounds[3] - bounds[1];
-                    if (width < 18 || width > 120 || height < 18 || height > 120) {
+                    if (width < 32 || width > 120 || height < 32 || height > 120) {
                         continue;
                     }
                     int centerY = (bounds[1] + bounds[3]) / 2;
-                    if (Math.abs(centerY - rowCenterY) > 64) {
+                    if (Math.abs(centerY - rowCenterY) > 72) {
                         continue;
                     }
                     if (alreadyHasSimilarControl(found, bounds)) {
                         continue;
                     }
-                    found.add(bounds);
+                    found.add(new StepperIcon(bounds, el));
                 } catch (StaleElementReferenceException ignored) {
                 }
             }
+            if (!found.isEmpty()) {
+                break;
+            }
         }
+        found.sort(Comparator.comparingInt(icon -> icon.bounds[0]));
         return found;
     }
 
-    private boolean alreadyHasSimilarControl(List<int[]> found, int[] bounds) {
+    private StepperIcon minusIcon(List<StepperIcon> icons, int fieldLeft) {
+        StepperIcon glyph = null;
+        StepperIcon closest = null;
+        for (StepperIcon icon : icons) {
+            if (icon.centerX() >= fieldLeft) {
+                continue;
+            }
+            if ("minus".equals(icon.glyphKind())) {
+                glyph = icon;
+            }
+            if (closest == null || icon.centerX() > closest.centerX()) {
+                closest = icon;
+            }
+        }
+        return glyph != null ? glyph : closest;
+    }
+
+    private StepperIcon plusIcon(List<StepperIcon> icons, int fieldRight) {
+        List<StepperIcon> right = iconsRightOf(icons, fieldRight);
+        for (StepperIcon icon : right) {
+            if ("plus".equals(icon.glyphKind())) {
+                return icon;
+            }
+        }
+        if (right.size() >= 2) {
+            return largerIcon(right);
+        }
+        return right.isEmpty() ? null : right.getFirst();
+    }
+
+    private StepperIcon clearIcon(List<StepperIcon> icons, int fieldRight, StepperIcon plus) {
+        List<StepperIcon> right = iconsRightOf(icons, fieldRight);
+        for (StepperIcon icon : right) {
+            if ("clear".equals(icon.glyphKind())) {
+                return icon;
+            }
+        }
+        if (right.size() >= 2) {
+            StepperIcon smaller = smallerIcon(right);
+            if (plus == null || smaller.centerX() != plus.centerX()) {
+                return smaller;
+            }
+        }
+        return null;
+    }
+
+    private List<StepperIcon> iconsRightOf(List<StepperIcon> icons, int fieldRight) {
+        List<StepperIcon> right = new ArrayList<>();
+        for (StepperIcon icon : icons) {
+            if (icon.centerX() > fieldRight) {
+                right.add(icon);
+            }
+        }
+        return right;
+    }
+
+    private StepperIcon largerIcon(List<StepperIcon> icons) {
+        StepperIcon best = icons.getFirst();
+        for (StepperIcon icon : icons) {
+            if (icon.area() > best.area()) {
+                best = icon;
+            }
+        }
+        return best;
+    }
+
+    private StepperIcon smallerIcon(List<StepperIcon> icons) {
+        StepperIcon best = icons.getFirst();
+        for (StepperIcon icon : icons) {
+            if (icon.area() < best.area()) {
+                best = icon;
+            }
+        }
+        return best;
+    }
+
+    private Point insetControlCenter(int[] bounds, String action) {
+        int centerY = (bounds[1] + bounds[3]) / 2;
+        int width = bounds[2] - bounds[0];
+        int x = switch (action) {
+            case "plus" -> bounds[0] + Math.max((width * 2) / 3, width / 2);
+            case "minus" -> bounds[0] + Math.min(width / 3, Math.max(12, width / 2));
+            default -> (bounds[0] + bounds[2]) / 2;
+        };
+        return new Point(x, centerY);
+    }
+
+    private void revealPriceRow(String fieldName) {
+        Dimension window = driver.manage().window().getSize();
+        int minY = (int) (window.getHeight() * 0.18);
+        int maxY = (int) (window.getHeight() * 0.72);
+        for (int swipe = 0; swipe < 3; swipe++) {
+            try {
+                WebElement label = priceLabel(fieldName);
+                int y = label.getLocation().getY();
+                if (y >= minY && y <= maxY) {
+                    return;
+                }
+                if (y > maxY) {
+                    abs.swipeUp(driver);
+                }
+            } catch (RuntimeException e) {
+                abs.swipeUp(driver);
+            }
+        }
+    }
+
+    private void hideAndroidKeyboard() {
+        if (!(driver instanceof AndroidDriver androidDriver)) {
+            return;
+        }
+        try {
+            if (androidDriver.isKeyboardShown()) {
+                androidDriver.hideKeyboard();
+            }
+        } catch (RuntimeException ignored) {
+        }
+    }
+
+    private boolean alreadyHasSimilarControl(List<StepperIcon> found, int[] bounds) {
         int centerX = (bounds[0] + bounds[2]) / 2;
         int centerY = (bounds[1] + bounds[3]) / 2;
-        for (int[] existing : found) {
-            int existingX = (existing[0] + existing[2]) / 2;
-            int existingY = (existing[1] + existing[3]) / 2;
-            if (Math.abs(existingX - centerX) <= 12 && Math.abs(existingY - centerY) <= 12) {
+        for (StepperIcon existing : found) {
+            if (Math.abs(existing.centerX() - centerX) <= 12
+                    && Math.abs(existing.centerY() - centerY) <= 12) {
                 return true;
             }
         }
         return false;
     }
 
-    private Point controlCenter(int[] bounds) {
-        return new Point((bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2);
+    private static final class StepperIcon {
+        private final int[] bounds;
+        private final WebElement element;
+
+        private StepperIcon(int[] bounds, WebElement element) {
+            this.bounds = bounds;
+            this.element = element;
+        }
+
+        private int centerX() {
+            return (bounds[0] + bounds[2]) / 2;
+        }
+
+        private int centerY() {
+            return (bounds[1] + bounds[3]) / 2;
+        }
+
+        private int area() {
+            return Math.max(0, bounds[2] - bounds[0]) * Math.max(0, bounds[3] - bounds[1]);
+        }
+
+        private String glyphKind() {
+            int[] inner = smallestInnerPath(element, bounds);
+            if (inner == null) {
+                return null;
+            }
+            int width = inner[2] - inner[0];
+            int height = inner[3] - inner[1];
+            if (height <= 12 && width >= 20) {
+                return "minus";
+            }
+            if (width <= 28 && height <= 28) {
+                return "clear";
+            }
+            if (Math.abs(width - height) <= 12 && width >= 30) {
+                return "plus";
+            }
+            return null;
+        }
+
+        private static int[] smallestInnerPath(WebElement icon, int[] iconBounds) {
+            int[] best = null;
+            int bestArea = Integer.MAX_VALUE;
+            int iconArea = Math.max(1, (iconBounds[2] - iconBounds[0]) * (iconBounds[3] - iconBounds[1]));
+            try {
+                for (WebElement path : icon.findElements(By.className("com.horcrux.svg.PathView"))) {
+                    int[] box = parseBoundsStatic(elementBounds(path));
+                    if (box == null) {
+                        continue;
+                    }
+                    int area = Math.max(0, box[2] - box[0]) * Math.max(0, box[3] - box[1]);
+                    if (area < 16 || area >= iconArea * 0.92) {
+                        continue;
+                    }
+                    if (area < bestArea) {
+                        bestArea = area;
+                        best = box;
+                    }
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+            return best;
+        }
+
+        private static String elementBounds(WebElement element) {
+            try {
+                String value = element.getAttribute("bounds");
+                if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) {
+                    return null;
+                }
+                return value;
+            } catch (RuntimeException e) {
+                return null;
+            }
+        }
+
+        private static int[] parseBoundsStatic(String bounds) {
+            if (bounds == null || bounds.isBlank()) {
+                return null;
+            }
+            Matcher matcher = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]").matcher(bounds);
+            if (!matcher.find()) {
+                return null;
+            }
+            return new int[]{
+                    Integer.parseInt(matcher.group(1)),
+                    Integer.parseInt(matcher.group(2)),
+                    Integer.parseInt(matcher.group(3)),
+                    Integer.parseInt(matcher.group(4))
+            };
+        }
     }
 
     public void fillInTextField(String textFieldName, String direction, String decimal, int priceDifVal) {
