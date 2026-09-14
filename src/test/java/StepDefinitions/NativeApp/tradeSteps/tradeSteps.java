@@ -575,7 +575,6 @@ public class tradeSteps extends BaseTest {
         switch (pageName) {
             case "Edit Position" -> {
                 Assert.assertTrue(appPoManager.getAppEditPositionPage().getHeader());
-                appPoManager.getAppTradeView().tapBack();
                 appPoManager.getAppTradeView().closePosition();
             }
             case "Close Position" -> {
@@ -584,7 +583,6 @@ public class tradeSteps extends BaseTest {
             }
             case "Modify Order" -> {
                 Assert.assertTrue(appPoManager.getAppModifyOrderPage().getHeader());
-                appPoManager.getAppModifyOrderPage().tapBack();
                 appPoManager.getAppTradeView().cancelOrder();
             }
         }

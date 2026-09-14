@@ -110,10 +110,15 @@ public class TradeRecord {
 
     public void confirmPlaceOrder(String direction) throws InterruptedException {
         appPoManager.getAppInstrumentDetailsPage().tapsButton(direction);
-        if (AppSettingPage.isTradeConfirmNeeded) {
-            appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
-            appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(direction);
+        if (!AppSettingPage.isTradeConfirmNeeded) {
+            return;
         }
+        if (!appPoManager.getAppInstrumentDetailsPage().isConfirmationOverlayVisible()) {
+            System.out.println("Trade confirmation overlay was not shown after tapping " + direction);
+            return;
+        }
+        appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
+        appPoManager.getAppInstrumentDetailsPage().tapsButtonOnConfirm(direction);
     }
 
     public void fillStopLossPrice(String direction,TradeSymbolConfig tradeSymbolConfig){

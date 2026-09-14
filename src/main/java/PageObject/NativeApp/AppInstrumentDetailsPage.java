@@ -435,37 +435,64 @@ public class AppInstrumentDetailsPage {
     }
 
     public String getStopOrderPrice(String direction, String stopOrderType, String decimal) {
-        String price = "";
-        WebElement text;
         selectedDirection = direction;
-        if (stopOrderType.contains("Stop")) {
-            switch (selectedDirection) {
-                case "BUY" -> {
-                    text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Price (≥\")]"));
-                    price = Float.toString(Float.parseFloat(text.getText().split("≥")[1].trim().split("\\)")[0]) + 25);
-                }
-                case "SELL" -> {
-                    text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Price (≤\")]"));
-                    price = Float.toString(Float.parseFloat(text.getText().split("≤")[1].trim().split("\\)")[0]) - 25);
-                }
-            }
-        } else if (stopOrderType.contains("Limit")) {
-            switch (selectedDirection) {
-                case "BUY" -> {
-                    text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Price (≤\")]"));
-                    price = Float.toString(Float.parseFloat(text.getText().split("≤")[1].trim().split("\\)")[0]) - 25);
-                }
-                case "SELL" -> {
-                    text = driver.findElement(By.xpath("//android.widget.TextView[contains(@text,\"Price (≥\")]"));
-                    price = Float.toString(Float.parseFloat(text.getText().split("≥")[1].trim().split("\\)")[0]) + 25);
-                }
-            }
+        boolean buy = direction != null && direction.equalsIgnoreCase("BUY");
+        boolean stop = stopOrderType != null && stopOrderType.toLowerCase(Locale.ROOT).contains("stop");
+        String threshold = waitForConstraintPrice(stop ? buy : !buy);
+        if (threshold == null || threshold.isBlank()) {
+            throw new NoSuchElementException("Could not find pending order Price constraint");
         }
+        float offset = stop == buy ? 25f : -25f;
+        String price = Float.toString(Float.parseFloat(threshold) + offset);
         stopOrderPrice = abs.normalizePriceToDecimals(price, decimal);
         if (AppSettingPage.isTradeConfirmNeeded) {
             executedPrice = stopOrderPrice;
         }
         return price;
+    }
+
+    private String waitForConstraintPrice(boolean greaterOrEqual) {
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> readConstraintPrice(greaterOrEqual));
+        } catch (TimeoutException e) {
+            return readConstraintPrice(greaterOrEqual);
+        }
+    }
+
+    private String readConstraintPrice(boolean greaterOrEqual) {
+        List<String> needles = greaterOrEqual
+                ? List.of("≥", ">=", "＞=")
+                : List.of("≤", "<=", "＜=");
+        for (WebElement el : driver.findElements(By.xpath(
+                "//*[contains(@text,'Price') or contains(@content-desc,'Price')]"))) {
+            try {
+                String text = el.getText();
+                if (text == null || text.isBlank()) {
+                    text = el.getAttribute("content-desc");
+                }
+                if (text == null || !text.contains("Price")) {
+                    continue;
+                }
+                boolean matches = false;
+                for (String needle : needles) {
+                    if (text.contains(needle)) {
+                        matches = true;
+                        break;
+                    }
+                }
+                if (!matches) {
+                    continue;
+                }
+                Matcher matcher = Pattern.compile("(\\d+[.,]\\d+)").matcher(text);
+                if (matcher.find()) {
+                    return matcher.group(1).replace(",", "");
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return null;
     }
 
     public String getDefaultPrice(String direction, String priceType, String decimal) {
@@ -581,16 +608,13 @@ public class AppInstrumentDetailsPage {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
-        if (buttonName.equals("Edit Position") || buttonName.equals("Modify Order")) {
-            abs.tapBottomMost(By.xpath("//*[@text='" + buttonName + "']"), 10);
+        if (buttonName.equalsIgnoreCase("BUY") || buttonName.equalsIgnoreCase("SELL")
+                || buttonName.contains("Cancel Order") || buttonName.equals("Edit Position")
+                || buttonName.equals("Modify Order") || buttonName.contains("Close Position")) {
+            abs.tapBottomMost(By.xpath("//*[@text='" + buttonName + "' or @content-desc='" + buttonName + "']"), 10);
             return;
         }
-        By button;
-        if (buttonName.contains("Cancel Order")) {
-            button = By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup");
-        } else {
-            button = By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup");
-        }
+        By button = By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup");
         abs.waitUntilElementClickable(button).click();
     }
 
@@ -702,9 +726,34 @@ public class AppInstrumentDetailsPage {
             sequential = getPageElement.findSequentialOverlayValue("Target Price");
         }
         if (sequential == null || sequential.isBlank()) {
+            sequential = firstCapturedOrderPrice();
+        }
+        if (sequential == null || sequential.isBlank()) {
             throw new NoSuchElementException("Could not find value in hierarchy for label: Price");
         }
         return getPageElement.normalizeByLabel("Price", sequential.trim(), "");
+    }
+
+    private String firstCapturedOrderPrice() {
+        for (String candidate : List.of(stopOrderPrice, executedPrice, AppTradeView.stopOrderPrice)) {
+            if (candidate != null && !candidate.isBlank()) {
+                getPageElement.logInfo("Using captured order price as confirmation Price: " + candidate);
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    public boolean isConfirmationOverlayVisible() {
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !d.findElements(By.xpath(
+                            "//android.view.ViewGroup[@resource-id='RNE__Overlay']"
+                    )).isEmpty());
+        } catch (TimeoutException e) {
+            return false;
+        }
     }
 
     public String getDetailValue(String value) {
@@ -719,6 +768,9 @@ public class AppInstrumentDetailsPage {
         String rawValue = getPageElement.readLabelValueFast(uiLabel);
         if ((rawValue == null || rawValue.isBlank()) && "Price".equals(value)) {
             rawValue = getPageElement.findSequentialOverlayValue("Price");
+        }
+        if ((rawValue == null || rawValue.isBlank()) && "Price".equals(value)) {
+            rawValue = firstCapturedOrderPrice();
         }
         if (rawValue == null || rawValue.isBlank()) {
             throw new NoSuchElementException("Could not find value in hierarchy for label: " + uiLabel);
