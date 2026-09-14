@@ -219,14 +219,14 @@ public class AppModifyOrderPage {
     private WebElement compactModifyOrderHeader() {
         try {
             Dimension window = driver.manage().window().getSize();
-            int maxHeaderY = (int) (window.getHeight() * 0.40);
+            int maxHeaderY = (int) (window.getHeight() * 0.45);
             WebElement best = null;
             int bestY = Integer.MAX_VALUE;
             for (WebElement el : driver.findElements(By.xpath(
                     "//*[@text='Modify Order' or @content-desc='Modify Order']"))) {
                 Point location = el.getLocation();
                 Dimension size = el.getSize();
-                if (location.getY() > maxHeaderY || size.getHeight() > 160) {
+                if (location.getY() > maxHeaderY || size.getHeight() > 220) {
                     continue;
                 }
                 if (location.getY() < bestY) {

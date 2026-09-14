@@ -12,6 +12,7 @@ import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.GetPageElement;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -22,10 +23,12 @@ public class AppPendingOrderDetailsPage {
 
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
+    private final GetPageElement getPageElement;
 
     public AppPendingOrderDetailsPage(AppiumDriver driver){
         this.driver = driver;
         abs = new MobileAbstractComponents(driver);
+        this.getPageElement = new GetPageElement(driver);
         PageFactory.initElements(new AppiumFieldDecorator(driver, Duration.ofSeconds(10)), this);
     }
 
@@ -55,35 +58,117 @@ public class AppPendingOrderDetailsPage {
     }
 
     public String getDetailValue(String label) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-        wait.ignoring(StaleElementReferenceException.class);
-
-        try {
-            return wait.until(d -> {
-                List<WebElement> elements = d.findElements(By.className("android.widget.TextView"));
-                List<String> texts = new ArrayList<>();
-
-                for (WebElement element : elements) {
-                    texts.add(element.getText());
-                }
-
-                for (int i = 0; i < texts.size() - 1; i++) {
-                    String currentLabel = texts.get(i);
-
-                    if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
-                        if (currentLabel.equalsIgnoreCase("Product")){
-                            return productAos.getText();
-                        }
-                        else {
-                            return normalizeDetailValue(label, texts.get(i + 1));
-                        }
-                    }
-                }
-                return null;
-            });
-        } catch (TimeoutException e) {
+        openDetailsIfNeeded();
+        getPageElement.clearPageSourceCache();
+        getPageElement.waitAndCaptureIfNeeded(By.xpath(
+                "//*[@text='Pending Order Details' or @content-desc='Pending Order Details']"), 10);
+        if ("Product Name".equalsIgnoreCase(label)) {
+            String productName = readProductName();
+            if (productName != null && !productName.isBlank()) {
+                return productName;
+            }
+        }
+        String uiLabel = getPageElement.mapUiLabel(label);
+        String rawValue = getPageElement.readLabelValueFast(uiLabel);
+        if (rawValue == null || rawValue.isBlank()) {
+            rawValue = adjacentTextValue(label);
+        }
+        if (rawValue == null || rawValue.isBlank()) {
             return null;
         }
+        return normalizeDetailValue(label, rawValue);
+    }
+
+    private void openDetailsIfNeeded() {
+        if (isPendingOrderDetailsOpen()) {
+            return;
+        }
+        if (isPortfolioListVisible()) {
+            new AppPortfolioPage(driver).tapButtonOnRow("detail");
+        } else {
+            new AppTradeView(driver).tapCtaButton("detail");
+        }
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> isPendingOrderDetailsOpen());
+        } catch (TimeoutException ignored) {
+        }
+    }
+
+    private boolean isPendingOrderDetailsOpen() {
+        try {
+            return !driver.findElements(By.xpath(
+                    "//*[@text='Pending Order Details' or @content-desc='Pending Order Details']"
+            )).isEmpty();
+        } catch (StaleElementReferenceException e) {
+            return false;
+        }
+    }
+
+    private boolean isPortfolioListVisible() {
+        try {
+            return !driver.findElements(By.xpath(
+                    "//*[@text='Show all' or @text='Show All' or contains(@text,'Show last')"
+                            + " or contains(@content-desc,'Show last')]"
+            )).isEmpty();
+        } catch (StaleElementReferenceException e) {
+            return false;
+        }
+    }
+
+    private String readProductName() {
+        String expected = abs.getProductName(AppMarketsPage.tradeSymbol);
+        if (expected != null && !"symbol not found".equals(expected) && hasVisibleText(expected)) {
+            return expected;
+        }
+        String fromLabel = getPageElement.readLabelValueFast("Product Name");
+        if (fromLabel != null && !fromLabel.isBlank() && !fromLabel.equalsIgnoreCase("Product Name")) {
+            return fromLabel.trim();
+        }
+        return null;
+    }
+
+    private boolean hasVisibleText(String value) {
+        try {
+            for (WebElement el : driver.findElements(By.xpath(
+                    "//*[@text='" + value + "' or @content-desc='" + value + "']"))) {
+                try {
+                    String text = el.getText();
+                    if (text == null || text.isBlank()) {
+                        text = el.getAttribute("content-desc");
+                    }
+                    if (value.equals(text)) {
+                        return true;
+                    }
+                } catch (StaleElementReferenceException ignored) {
+                }
+            }
+        } catch (StaleElementReferenceException ignored) {
+        }
+        return false;
+    }
+
+    private String adjacentTextValue(String label) {
+        try {
+            List<WebElement> elements = driver.findElements(By.className("android.widget.TextView"));
+            List<String> texts = new ArrayList<>();
+            for (WebElement element : elements) {
+                try {
+                    texts.add(element.getText());
+                } catch (StaleElementReferenceException ignored) {
+                    texts.add("");
+                }
+            }
+            for (int i = 0; i < texts.size() - 1; i++) {
+                String currentLabel = texts.get(i);
+                if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
+                    return texts.get(i + 1);
+                }
+            }
+        } catch (StaleElementReferenceException ignored) {
+        }
+        return null;
     }
 
     public String normalizeDetailValue(String label, String rawValue) {

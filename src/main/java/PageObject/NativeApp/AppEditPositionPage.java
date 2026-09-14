@@ -333,9 +333,7 @@ public class AppEditPositionPage {
             return;
         }
         try {
-            if (androidDriver.isKeyboardShown()) {
-                androidDriver.hideKeyboard();
-            }
+            androidDriver.hideKeyboard();
         } catch (RuntimeException ignored) {
         }
     }
@@ -627,23 +625,51 @@ public class AppEditPositionPage {
     }
 
     public boolean getTextMessage(String messageContent) {
-        if (driver instanceof AndroidDriver) {
-            for (WebElement ele : textMessages) {
-                if (ele.getText().equalsIgnoreCase(messageContent)) {
-                    return true;
-                }
-            }
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
         }
-
-        return false;
+        By error = By.xpath(
+                "//*[@text='" + messageContent + "' or @content-desc='" + messageContent + "'"
+                        + " or contains(@text,'" + messageContent + "')"
+                        + " or contains(@content-desc,'" + messageContent + "')]");
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> {
+                        for (WebElement ele : d.findElements(error)) {
+                            try {
+                                String text = ele.getText();
+                                String desc = elementAttribute(ele, "content-desc");
+                                if (text != null && text.toLowerCase(Locale.ROOT)
+                                        .contains(messageContent.toLowerCase(Locale.ROOT))) {
+                                    return true;
+                                }
+                                if (desc != null && desc.toLowerCase(Locale.ROOT)
+                                        .contains(messageContent.toLowerCase(Locale.ROOT))) {
+                                    return true;
+                                }
+                            } catch (StaleElementReferenceException ignored) {
+                            }
+                        }
+                        return false;
+                    });
+            hideAndroidKeyboard();
+            return true;
+        } catch (TimeoutException e) {
+            hideAndroidKeyboard();
+            return false;
+        }
     }
 
     public boolean getHeader() {
-        if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementFind(headerAos);
-            return headerAos.isDisplayed();
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
         }
-        return false;
+        try {
+            return waitForEditPositionHeader() != null;
+        } catch (TimeoutException e) {
+            return false;
+        }
     }
 
     public String getHeaderText() {

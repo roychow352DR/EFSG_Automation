@@ -1,9 +1,9 @@
 package PageObject.NativeApp;
 
 import AbstractComponent.MobileAbstractComponents;
+import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.pagefactory.AndroidFindBy;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
@@ -56,20 +56,8 @@ public class AppPortfolioPage {
             "/android.view.ViewGroup/android.view.ViewGroup")
     WebElement backButtonAos;
 
-    @AndroidFindBy(accessibility = "Open\n" +
-            "Positions")
-    WebElement positionTabAos;
-
-    @AndroidFindBy(accessibility = "Pending\n" +
-            "Orders")
-    WebElement pendingOrderTabAos;
-
-
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]")
     WebElement arrowBtnAos;
-
-    @AndroidFindBy(accessibility = "History")
-    WebElement historyTabAos;
 
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[1]/android.view.ViewGroup/android.view.ViewGroup[1]")
     WebElement closeBtnAos;
@@ -127,12 +115,31 @@ public class AppPortfolioPage {
     private void waitForPortfolioPage() {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(15))
-                    .until(d -> !d.findElements(By.xpath(
-                            "//*[@text='Open Positions' or @text='Pending Orders' or @text='Portfolio'"
-                                    + " or contains(@text,'Show all') or contains(@text,'Show All')]"
-                    )).isEmpty());
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> portfolioListChromeVisible());
         } catch (TimeoutException ignored) {
         }
+    }
+
+    private boolean portfolioListChromeVisible() {
+        Dimension window = driver.manage().window().getSize();
+        int maxY = (int) (window.getHeight() * 0.70);
+        for (WebElement el : driver.findElements(By.xpath(
+                "//*[@text='Show all' or @text='Show All' or @content-desc='Show all'"
+                        + " or contains(@text,'Show last') or contains(@content-desc,'Show last')"
+                        + " or @text='History' or @content-desc='History'"
+                        + " or @text='Newest to Oldest' or @content-desc='Newest to Oldest']"
+        ))) {
+            try {
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (location.getY() < maxY && size.getHeight() <= 140) {
+                    return true;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return false;
     }
 
     private List<By> portfolioButtonLocators(String buttonName) {
@@ -450,31 +457,29 @@ public class AppPortfolioPage {
         if (!(driver instanceof AndroidDriver)) {
             return false;
         }
-
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        Point tab = tabPoint(tabName);
+        if (tab == null) {
+            return false;
+        }
+        for (By locator : tabLocators(tabName)) {
             try {
-                WebElement tab = switch (tabName) {
-                    case "Open Positions" -> positionTabAos;
-                    case "Pending Orders" -> pendingOrderTabAos;
-                    case "History" -> historyTabAos;
-                    default -> null;
-                };
-
-                if (tab == null) {
-                    return false;
+                for (WebElement el : driver.findElements(locator)) {
+                    Point location = el.getLocation();
+                    Dimension size = el.getSize();
+                    int centerX = location.getX() + Math.max(8, size.getWidth() / 2);
+                    int centerY = location.getY() + Math.max(8, size.getHeight() / 2);
+                    if (Math.abs(centerX - tab.getX()) > 40 || Math.abs(centerY - tab.getY()) > 40) {
+                        continue;
+                    }
+                    String selected = el.getAttribute("selected");
+                    if ("true".equalsIgnoreCase(selected)) {
+                        return true;
+                    }
                 }
-
-                String selected = tab.getDomAttribute("selected");
-                if (selected == null) {
-                    selected = tab.getDomProperty("selected");
-                }
-
-                return "true".equalsIgnoreCase(selected);
-            } catch (StaleElementReferenceException e) {
-                System.out.println("Stale element when checking tab selection for: " + tabName);
+            } catch (StaleElementReferenceException ignored) {
+            } catch (Exception ignored) {
             }
         }
-
         return false;
     }
 
@@ -483,58 +488,68 @@ public class AppPortfolioPage {
             return;
         }
         waitForPortfolioPage();
-        Point point = tabPoint(tabName);
-        if (point != null) {
-            abs.tapAt(point.getX(), point.getY());
-            return;
+        Point point = null;
+        try {
+            point = waitForTabPoint(tabName);
+        } catch (RuntimeException e) {
+            System.out.println("Portfolio tab lookup failed for " + tabName + ": " + e.getMessage());
         }
-        WebElement tab = switch (tabName) {
-            case "Open Positions" -> positionTabAos;
-            case "Pending Orders" -> pendingOrderTabAos;
-            case "History" -> historyTabAos;
-            default -> null;
-        };
-        if (tab != null) {
-            abs.tapElement(tab);
+        if (point == null) {
+            point = estimatedTabPoint(tabName);
+        }
+        abs.tapAt(point.getX(), point.getY());
+    }
+
+    private Point waitForTabPoint(String tabName) {
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .ignoring(NoSuchElementException.class)
+                    .until(d -> tabPoint(tabName));
+        } catch (TimeoutException e) {
+            return null;
         }
     }
 
     private Point tabPoint(String tabName) {
-        List<By> locators = switch (tabName) {
-            case "History" -> List.of(
-                    By.xpath("//*[@text='History' or @content-desc='History']")
-            );
-            case "Pending Orders" -> List.of(
-                    By.xpath("//*[contains(@text,'Pending') or contains(@content-desc,'Pending')]")
-            );
-            default -> List.of(
-                    By.xpath("//*[contains(@text,'Open') or contains(@content-desc,'Open')]")
-            );
-        };
         Dimension window = driver.manage().window().getSize();
-        int maxHeight = Math.max(80, (int) (window.getHeight() * 0.12));
-        int maxWidth = (int) (window.getWidth() * 0.55);
+        int maxHeight = Math.max(140, (int) (window.getHeight() * 0.16));
+        int maxWidth = (int) (window.getWidth() * 0.70);
+        int maxY = (int) (window.getHeight() * 0.65);
         Point best = null;
         int bestY = Integer.MAX_VALUE;
-        for (By locator : locators) {
-            for (WebElement el : driver.findElements(locator)) {
+        for (By locator : tabLocators(tabName)) {
+            List<WebElement> matches;
+            try {
+                matches = driver.findElements(locator);
+            } catch (RuntimeException e) {
+                continue;
+            }
+            for (WebElement el : matches) {
                 try {
-                    Point location = el.getLocation();
-                    Dimension size = el.getSize();
-                    if (size.getHeight() < 8 || size.getHeight() > maxHeight) {
+                    int[] box = visibleBox(el);
+                    if (box == null) {
                         continue;
                     }
-                    if (size.getWidth() > maxWidth) {
+                    int width = box[2] - box[0];
+                    int height = box[3] - box[1];
+                    if (box[1] > maxY) {
                         continue;
                     }
-                    if (location.getY() < bestY) {
-                        bestY = location.getY();
+                    if (height < 8 || height > maxHeight) {
+                        continue;
+                    }
+                    if (width <= 0 || width > maxWidth) {
+                        continue;
+                    }
+                    if (box[1] < bestY) {
+                        bestY = box[1];
                         best = new Point(
-                                location.getX() + Math.max(8, size.getWidth() / 2),
-                                location.getY() + Math.max(8, size.getHeight() / 2)
+                                box[0] + Math.max(8, width / 2),
+                                box[1] + Math.max(8, height / 2)
                         );
                     }
-                } catch (StaleElementReferenceException ignored) {
+                } catch (StaleElementReferenceException | NoSuchElementException ignored) {
                 }
             }
             if (best != null) {
@@ -542,6 +557,40 @@ public class AppPortfolioPage {
             }
         }
         return null;
+    }
+
+    private List<By> tabLocators(String tabName) {
+        return switch (tabName) {
+            case "History" -> List.of(
+                    By.xpath("//*[@text='History' or @content-desc='History']"),
+                    AppiumBy.androidUIAutomator("new UiSelector().text(\"History\")")
+            );
+            case "Pending Orders" -> List.of(
+                    By.xpath("//*[@text='Pending Orders' or @content-desc='Pending Orders'"
+                            + " or @text='Pending\nOrders' or @content-desc='Pending\nOrders']"),
+                    By.xpath("//android.widget.TextView[contains(@text,'Pending')]"),
+                    By.xpath("//*[contains(@text,'Pending') or contains(@content-desc,'Pending')]"),
+                    AppiumBy.androidUIAutomator("new UiSelector().textContains(\"Pending\")")
+            );
+            default -> List.of(
+                    By.xpath("//*[@text='Open Positions' or @content-desc='Open Positions'"
+                            + " or @text='Open\nPositions' or @content-desc='Open\nPositions']"),
+                    By.xpath("//android.widget.TextView[contains(@text,'Open')]"),
+                    By.xpath("//*[contains(@text,'Open') or contains(@content-desc,'Open')]"),
+                    AppiumBy.androidUIAutomator("new UiSelector().textContains(\"Open\")")
+            );
+        };
+    }
+
+    private Point estimatedTabPoint(String tabName) {
+        Dimension window = driver.manage().window().getSize();
+        int y = Math.max(80, listAreaTopY() - 28);
+        double ratio = switch (tabName) {
+            case "History" -> 0.82;
+            case "Pending Orders" -> 0.50;
+            default -> 0.18;
+        };
+        return new Point((int) (window.getWidth() * ratio), y);
     }
 
     public void tapButtonOnRow(String buttonName) {
