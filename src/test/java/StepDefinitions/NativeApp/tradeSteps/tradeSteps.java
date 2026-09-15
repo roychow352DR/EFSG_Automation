@@ -328,7 +328,6 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_the_value_is_displayed_correctly_on_the_edit_position_page(String value) throws InterruptedException {
         Assert.assertEquals(appPoManager.getAppEditPositionPage().getDisplayedValue(value, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
                 appPoManager.getAppInstrumentDetailsPage().getValidationValue(value));
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -345,7 +344,6 @@ public class tradeSteps extends BaseTest {
     @Then("the user sees the {string} price is populate to the input field on the edit position page")
     public void the_user_sees_the_price_is_populate_to_the_input_field_on_the_edit_position_page(String inputField) {
         Assert.assertNotNull(appPoManager.getAppEditPositionPage().getInputFieldValue(inputField));
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -359,7 +357,6 @@ public class tradeSteps extends BaseTest {
         Assert.assertEquals(appPoManager.getAppEditPositionPage().getInputFieldValue(priceType),
                 String.format("%." + tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol) + "f", Float.parseFloat(appPoManager.getAppEditPositionPage().getValidationValue(priceType)) -
                         point / Math.pow(10, Integer.parseInt(tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)))));
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -368,7 +365,6 @@ public class tradeSteps extends BaseTest {
         Assert.assertEquals(appPoManager.getAppEditPositionPage().getInputFieldValue(priceType),
                 String.format("%." + tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol) + "f", Float.parseFloat(appPoManager.getAppEditPositionPage().getValidationValue(priceType)) +
                         point / Math.pow(10, Integer.parseInt(tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)))));
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -376,7 +372,6 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_the_input_field_is_empty_on_the_edit_position_page(String inputField) throws InterruptedException {
         Thread.sleep(500);
         Assert.assertTrue(appPoManager.getAppEditPositionPage().getInputFieldValue(inputField).isEmpty());
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -402,7 +397,6 @@ public class tradeSteps extends BaseTest {
     @Then("the user sees an error message {string} is displayed on the edit position page")
     public void the_user_sees_an_error_message_is_displayed_on_the_edit_position_page(String errorMsg) {
         Assert.assertTrue(appPoManager.getAppEditPositionPage().getTextMessage(errorMsg));
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
@@ -555,7 +549,6 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_edit_position_page() throws InterruptedException {
         Thread.sleep(500);
         Assert.assertTrue(appPoManager.getAppEditPositionPage().getHeader());
-        appPoManager.getAppTradeView().tapBack();
         appPoManager.getAppTradeView().closePosition();
     }
 
