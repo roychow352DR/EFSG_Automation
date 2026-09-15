@@ -505,6 +505,53 @@ public class MobileAbstractComponents {
         driver.perform(Collections.singletonList(tap));
     }
 
+    public void dismissAndroidKeyboardSafely() {
+        if (!(driver instanceof AndroidDriver androidDriver)) {
+            return;
+        }
+        try {
+            if (!androidDriver.isKeyboardShown()) {
+                return;
+            }
+        } catch (Exception e) {
+            return;
+        }
+        try {
+            androidDriver.executeScript("mobile: hideKeyboard");
+        } catch (Exception ignored) {
+        }
+        try {
+            if (!androidDriver.isKeyboardShown()) {
+                return;
+            }
+        } catch (Exception e) {
+            return;
+        }
+        try {
+            Dimension window = androidDriver.manage().window().getSize();
+            tapAt(window.getWidth() / 2, Math.max(48, (int) (window.getHeight() * 0.06)));
+        } catch (Exception ignored) {
+        }
+    }
+
+    public void bringAppToForeground() {
+        if (!(driver instanceof AndroidDriver androidDriver)) {
+            return;
+        }
+        try {
+            String pkg = androidDriver.getCurrentPackage();
+            if (pkg == null || pkg.isBlank()) {
+                return;
+            }
+            var state = androidDriver.queryAppState(pkg);
+            String name = state == null ? "" : state.name();
+            if (name.contains("BACKGROUND") || name.contains("NOT_RUNNING")) {
+                androidDriver.activateApp(pkg);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
     public void swipe(AppiumDriver driver, Direction direction, int durationMs) {
         Dimension size = driver.manage().window().getSize();
 
