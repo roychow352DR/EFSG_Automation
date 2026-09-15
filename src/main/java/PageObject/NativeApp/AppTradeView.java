@@ -574,11 +574,17 @@ public class AppTradeView {
     }
 
     private Point editPointBesideDirectionLabel() {
+        return ctaPointBesideDirectionLabel("edit");
+    }
+
+    private Point ctaPointBesideDirectionLabel(String buttonName) {
         Dimension window = driver.manage().window().getSize();
         int minY = listAreaTopY();
         int maxLabelWidth = (int) (window.getWidth() * 0.28);
+        int maxLabelHeight = px(40);
         int bestY = Integer.MAX_VALUE;
         Point best = null;
+        int x = rowCtaX(buttonName, window.getWidth());
         for (WebElement el : safeFindElements(By.xpath(
                 "//*[@text='BUY' or @text='SELL' or @text='Buy' or @text='Sell']"))) {
             try {
@@ -587,18 +593,18 @@ public class AppTradeView {
                 if (location.getY() < minY - 10) {
                     continue;
                 }
-                if (size.getHeight() > 56 || size.getWidth() > maxLabelWidth) {
+                if (size.getHeight() > maxLabelHeight || size.getWidth() > maxLabelWidth) {
                     continue;
                 }
                 if (size.getWidth() <= 0 || size.getHeight() < 8) {
                     continue;
                 }
+                if (rowLooksLikeTicket(location.getY() - 12, location.getY() + size.getHeight() + 12)) {
+                    continue;
+                }
                 if (location.getY() < bestY) {
                     bestY = location.getY();
-                    best = new Point(
-                            (int) (window.getWidth() * 0.82),
-                            location.getY() + Math.max(8, size.getHeight() / 2)
-                    );
+                    best = new Point(x, location.getY() + Math.max(8, size.getHeight() / 2));
                 }
             } catch (StaleElementReferenceException ignored) {
             }
@@ -1008,7 +1014,7 @@ public class AppTradeView {
                 if (location.getY() < minY - 20) {
                     continue;
                 }
-                if (size.getHeight() < 56 || size.getHeight() > 400) {
+                if (size.getHeight() < px(36) || size.getHeight() > px(168)) {
                     continue;
                 }
                 if (size.getWidth() < (int) (window.getWidth() * 0.55)) {
@@ -1049,11 +1055,8 @@ public class AppTradeView {
                 if (rowLooksLikeTicket(location.getY() - 28, location.getY() + size.getHeight() + 80)) {
                     continue;
                 }
-                int top = Math.max(minY, location.getY() - 28);
-                int height = Math.min(
-                        (int) (window.getHeight() * 0.12),
-                        Math.max(110, size.getHeight() + 80)
-                );
+                int top = Math.max(minY, location.getY() - px(12));
+                int height = Math.min(px(140), Math.max(px(72), size.getHeight() + px(48)));
                 if (location.getY() < bestY) {
                     bestY = location.getY();
                     best = new int[]{0, top, window.getWidth(), height};
@@ -1066,9 +1069,11 @@ public class AppTradeView {
 
     private List<Point> compactIconsOnRow(int rowTop, int rowBottom) {
         Dimension window = driver.manage().window().getSize();
-        int minX = (int) (window.getWidth() * 0.58);
-        int clusterGap = Math.max(24, (int) (window.getWidth() * 0.02));
-        int yPad = Math.max(8, (int) (window.getHeight() * 0.008));
+        int minX = Math.max((int) (window.getWidth() * 0.45), window.getWidth() - px(168));
+        int clusterGap = Math.max(px(8), (int) (window.getWidth() * 0.02));
+        int yPad = Math.max(px(4), (int) (window.getHeight() * 0.008));
+        int minIcon = px(10);
+        int maxIcon = px(56);
         List<Point> raw = new ArrayList<>();
         for (WebElement el : safeFindElements(
                 By.xpath("//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']"
@@ -1080,7 +1085,7 @@ public class AppTradeView {
                 }
                 int width = box[2] - box[0];
                 int height = box[3] - box[1];
-                if (width < 16 || width > 180 || height < 16 || height > 180) {
+                if (width < minIcon || width > maxIcon || height < minIcon || height > maxIcon) {
                     continue;
                 }
                 int centerX = (box[0] + box[2]) / 2;
@@ -1361,7 +1366,11 @@ public class AppTradeView {
             return;
         }
         waitUntilTradeListVisible();
-        tapListTab("Positions");
+        waitForOpenPositionRow();
+        if (firstOpenPositionRowBounds() == null) {
+            tapListTab("Positions");
+            waitForOpenPositionRow();
+        }
         dismissCancelOrderPromptIfShown();
         if (!isClosePositionPageOpen(2)) {
             openClosePositionPage();
@@ -1612,14 +1621,29 @@ public class AppTradeView {
                 leaveEditPositionIfOpen();
             }
             waitUntilTradeListVisible();
+            waitForOpenPositionRow();
             waitForFirstListRowReady();
             int[] row = resolveTradeRowBounds();
+            if (row == null || rowLooksLikeTicket(row[1], row[1] + row[3])) {
+                abs.swipeUp(driver);
+                waitForOpenPositionRow();
+                row = resolveTradeRowBounds();
+            }
             Point fromIcons = row == null ? null : ctaFromRightmostIcons(
                     "close", compactIconsOnRow(row[1], row[1] + row[3]));
-            if (fromIcons != null) {
+            if (fromIcons != null && !pointLooksLikeTicket(fromIcons)) {
                 getPageElement.logInfo("Tapping close CTA at icon "
                         + fromIcons.getX() + "," + fromIcons.getY());
                 abs.tapAt(fromIcons.getX(), fromIcons.getY());
+                if (isCancelOrderPromptVisible() || isClosePositionPageOpen(3)) {
+                    return;
+                }
+            }
+            Point fromDirection = ctaPointBesideDirectionLabel("close");
+            if (fromDirection != null) {
+                getPageElement.logInfo("Tapping close CTA beside direction at "
+                        + fromDirection.getX() + "," + fromDirection.getY());
+                abs.tapAt(fromDirection.getX(), fromDirection.getY());
                 if (isCancelOrderPromptVisible() || isClosePositionPageOpen(3)) {
                     return;
                 }
@@ -1633,6 +1657,11 @@ public class AppTradeView {
             }
         }
         Point retry = estimatedRowCtaPoint("close", resolveTradeRowBounds());
+        if (pointLooksLikeTicket(retry)) {
+            getPageElement.logInfo("Skipping estimated close CTA on ticket at "
+                    + retry.getX() + "," + retry.getY());
+            return;
+        }
         getPageElement.logInfo("Retrying close CTA at first-row estimated "
                 + retry.getX() + "," + retry.getY());
         abs.tapAt(retry.getX(), retry.getY());
@@ -1650,21 +1679,25 @@ public class AppTradeView {
 
     private boolean openRowAction(String buttonName, Supplier<Boolean> opened) {
         int[] row = resolveTradeRowBounds();
+        Point fromIcons = row == null ? null : ctaFromRightmostIcons(
+                buttonName, compactIconsOnRow(row[1], row[1] + row[3]));
+        if (fromIcons != null && !pointLooksLikeTicket(fromIcons)) {
+            getPageElement.logInfo("Tapping " + buttonName + " CTA at icon "
+                    + fromIcons.getX() + "," + fromIcons.getY());
+            abs.tapAt(fromIcons.getX(), fromIcons.getY());
+            if (opened.get()) {
+                return true;
+            }
+        }
         Point estimated = estimatedRowCtaPoint(buttonName, row);
+        if (pointLooksLikeTicket(estimated)) {
+            getPageElement.logInfo("Skipping estimated " + buttonName + " CTA on ticket at "
+                    + estimated.getX() + "," + estimated.getY());
+            return false;
+        }
         getPageElement.logInfo("Tapping " + buttonName + " CTA at estimated "
                 + estimated.getX() + "," + estimated.getY());
         abs.tapAt(estimated.getX(), estimated.getY());
-        if (opened.get()) {
-            return true;
-        }
-        Point fromIcons = row == null ? null : ctaFromRightmostIcons(
-                buttonName, compactIconsOnRow(row[1], row[1] + row[3]));
-        if (fromIcons == null) {
-            return false;
-        }
-        getPageElement.logInfo("Retrying " + buttonName + " CTA at icon "
-                + fromIcons.getX() + "," + fromIcons.getY());
-        abs.tapAt(fromIcons.getX(), fromIcons.getY());
         return opened.get();
     }
 
@@ -1692,10 +1725,11 @@ public class AppTradeView {
     private Point ctaFromRightmostIcons(String buttonName, List<Point> icons) {
         String name = buttonName == null ? "" : buttonName.toLowerCase(Locale.ROOT);
         if (icons.size() >= 3) {
+            List<Point> cluster = icons.subList(icons.size() - 3, icons.size());
             return switch (name) {
-                case "close", "cancel" -> icons.get(icons.size() - 3);
-                case "edit" -> icons.get(icons.size() - 2);
-                default -> icons.get(icons.size() - 1);
+                case "close", "cancel" -> cluster.get(0);
+                case "edit" -> cluster.get(1);
+                default -> cluster.get(2);
             };
         }
         if (icons.size() == 2 && "edit".equals(name)) {
@@ -1709,23 +1743,51 @@ public class AppTradeView {
 
     private Point estimatedRowCtaPoint(String buttonName, int[] row) {
         Dimension window = driver.manage().window().getSize();
-        String name = buttonName == null ? "" : buttonName.toLowerCase(Locale.ROOT);
-        double ratio = switch (name) {
-            case "close", "cancel" -> 0.70;
-            case "edit" -> 0.82;
-            default -> 0.93;
-        };
-        int listTop = listAreaTopY();
-        int firstRowY = listTop + Math.max(90, (int) (window.getHeight() * 0.045));
-        int maxRowY = listTop + Math.max(160, (int) (window.getHeight() * 0.18));
-        int y = firstRowY;
+        int rowRight = row != null ? row[0] + Math.max(row[2], 1) : window.getWidth();
+        int x = rowCtaX(buttonName, rowRight);
+        int y;
         if (row != null) {
-            y = row[1] + Math.max(36, Math.min(row[3] / 2, (int) (window.getHeight() * 0.06)));
-            if (y > maxRowY) {
-                y = firstRowY;
+            y = row[1] + Math.max(px(16), row[3] / 2);
+        } else {
+            y = listAreaTopY() + px(48);
+        }
+        return new Point(x, y);
+    }
+
+    private int rowCtaX(String buttonName, int rowRight) {
+        Dimension window = driver.manage().window().getSize();
+        String name = buttonName == null ? "" : buttonName.toLowerCase(Locale.ROOT);
+        float dpFromRight = switch (name) {
+            case "close", "cancel" -> 108f;
+            case "edit" -> 68f;
+            default -> 28f;
+        };
+        int x = rowRight - px(dpFromRight);
+        int minX = (int) (window.getWidth() * 0.50);
+        int maxX = window.getWidth() - px(12);
+        return Math.min(maxX, Math.max(minX, x));
+    }
+
+    private boolean pointLooksLikeTicket(Point point) {
+        return point != null && rowLooksLikeTicket(point.getY() - px(12), point.getY() + px(12));
+    }
+
+    private int px(float dp) {
+        return Math.max(1, Math.round(dp * pxPerDp()));
+    }
+
+    private float pxPerDp() {
+        if (driver instanceof AndroidDriver androidDriver) {
+            try {
+                int dpi = Math.toIntExact(androidDriver.getDisplayDensity());
+                if (dpi > 0) {
+                    return dpi / 160f;
+                }
+            } catch (RuntimeException ignored) {
             }
         }
-        return new Point((int) (window.getWidth() * ratio), y);
+        Dimension window = driver.manage().window().getSize();
+        return Math.max(1f, window.getWidth() / 360f);
     }
 
     private int[] firstOpenPositionRowBounds() {
@@ -1748,7 +1810,7 @@ public class AppTradeView {
                 if (location.getY() < minY - 20) {
                     continue;
                 }
-                if (size.getHeight() < 56 || size.getHeight() > 400) {
+                if (size.getHeight() < px(36) || size.getHeight() > px(168)) {
                     continue;
                 }
                 if (size.getWidth() < (int) (window.getWidth() * 0.55)) {
@@ -2604,7 +2666,7 @@ public class AppTradeView {
                 if (location.getY() < minY - 20) {
                     continue;
                 }
-                if (size.getHeight() < 56 || size.getHeight() > 400) {
+                if (size.getHeight() < px(36) || size.getHeight() > px(168)) {
                     continue;
                 }
                 if (size.getWidth() < (int) (window.getWidth() * 0.55)) {
