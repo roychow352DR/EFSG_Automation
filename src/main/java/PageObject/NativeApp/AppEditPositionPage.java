@@ -81,7 +81,6 @@ public class AppEditPositionPage {
 
 
     public String getDisplayedValue(String label, String symbolDecimal) {
-        abs.bringAppToForeground();
         waitForEditPositionReady();
         String uiLabel = getPageElement.mapUiLabel(label);
         String rawValue = getPageElement.readLabelValueFast(uiLabel);

@@ -498,7 +498,6 @@ public class AppTradeView {
                 case "close" -> tapCloseRowCta();
                 case "edit" -> openEditPosition();
             }
-            bringAppToForeground();
         });
     }
 
@@ -524,8 +523,7 @@ public class AppTradeView {
     private void openEditPosition() {
         hideAndroidKeyboard();
         waitUntilOverlayGone();
-        if (isEditOrModifyOpen(1)) {
-            bringAppToForeground();
+        if (isEditOrModifyUiVisible()) {
             return;
         }
         revealListForCurrentOrder();
@@ -534,7 +532,6 @@ public class AppTradeView {
         for (int attempt = 1; attempt <= 3; attempt++) {
             leaveWrongPageAfterEditTap();
             if (isEditOrModifyUiVisible()) {
-                bringAppToForeground();
                 return;
             }
             int[] row = resolveTradeRowBounds();
@@ -545,12 +542,10 @@ public class AppTradeView {
                         + fromIcons.getX() + "," + fromIcons.getY());
                 abs.tapAt(fromIcons.getX(), fromIcons.getY());
                 if (isEditOrModifyOpen(5)) {
-                    bringAppToForeground();
                     return;
                 }
             }
             if (tryClickRowCta(rowEditLocators()) && isEditOrModifyOpen(5)) {
-                bringAppToForeground();
                 return;
             }
             Point fromDirection = editPointBesideDirectionLabel();
@@ -559,11 +554,13 @@ public class AppTradeView {
                         + fromDirection.getX() + "," + fromDirection.getY());
                 abs.tapAt(fromDirection.getX(), fromDirection.getY());
                 if (isEditOrModifyOpen(5)) {
-                    bringAppToForeground();
                     return;
                 }
             }
             getPageElement.logInfo("Edit CTA attempt " + attempt + " did not open Edit or Modify");
+            if (isEditOrModifyUiVisible()) {
+                return;
+            }
             revealListForCurrentOrder();
             waitForFirstListRowReady();
         }
@@ -1343,7 +1340,6 @@ public class AppTradeView {
             return;
         }
         hideAndroidKeyboard();
-        bringAppToForeground();
         leaveEditPositionIfOpen();
         dismissLeaveEditPromptIfShown();
         waitUntilOverlayGone();
@@ -1405,30 +1401,25 @@ public class AppTradeView {
         if (!isEditPositionUiVisible()) {
             return;
         }
-        tapBackChevron();
+        tapHeaderBack();
         waitForLeaveEditPromptOrEditGone();
         dismissLeaveEditPromptIfShown();
-        if (!isEditPositionUiVisible()) {
-            waitUntilTradeListVisible();
+        if (!isEditPositionUiVisible() || isTradeListVisible()) {
             return;
         }
-        pressAndroidBack();
-        hideAndroidKeyboard();
+        tapHeaderBack();
         waitForLeaveEditPromptOrEditGone();
         dismissLeaveEditPromptIfShown();
-        if (isEditPositionUiVisible()) {
-            tapBackChevron();
-            waitForLeaveEditPromptOrEditGone();
-            dismissLeaveEditPromptIfShown();
+        if (isTradeListVisible() || !isEditPositionUiVisible()) {
+            return;
         }
         try {
             new WebDriverWait(driver, Duration.ofSeconds(8))
                     .ignoring(StaleElementReferenceException.class)
-                    .until(d -> !isEditPositionUiVisible());
+                    .until(d -> !isEditPositionUiVisible() || isTradeListVisible());
         } catch (TimeoutException e) {
             throw new TimeoutException("Edit Position was still visible after tapping Back");
         }
-        waitUntilTradeListVisible();
     }
 
     private void waitForLeaveEditPromptOrEditGone() {
@@ -1481,7 +1472,9 @@ public class AppTradeView {
     }
 
     private boolean isEditPositionUiVisible() {
-        return labeledScreenVisible("Edit Position");
+        return compactHeaderVisible("Edit Position")
+                || headerTitleInTree("Edit Position")
+                || bottomActionLabelPresent("Edit Position");
     }
 
     private boolean headerTitleInTree(String title) {
@@ -1539,25 +1532,15 @@ public class AppTradeView {
         if (!isModifyOrderUiVisible()) {
             return;
         }
-        tapBackChevron();
+        tapHeaderBack();
         waitForLeaveModifyPromptOrModifyGone();
         dismissLeaveEditPromptIfShown();
-        if (!isModifyOrderUiVisible()) {
-            waitUntilTradeListVisible();
+        if (!isModifyOrderUiVisible() || isTradeListVisible()) {
             return;
         }
-        pressAndroidBack();
-        hideAndroidKeyboard();
+        tapHeaderBack();
         waitForLeaveModifyPromptOrModifyGone();
         dismissLeaveEditPromptIfShown();
-        try {
-            new WebDriverWait(driver, Duration.ofSeconds(8))
-                    .ignoring(StaleElementReferenceException.class)
-                    .until(d -> !isModifyOrderUiVisible());
-        } catch (TimeoutException e) {
-            throw new TimeoutException("Modify Order was still visible after tapping Back");
-        }
-        waitUntilTradeListVisible();
     }
 
     private void waitForLeaveModifyPromptOrModifyGone() {
@@ -1570,14 +1553,24 @@ public class AppTradeView {
     }
 
     private boolean isModifyOrderUiVisible() {
-        return labeledScreenVisible("Modify Order");
+        return compactHeaderVisible("Modify Order")
+                || headerTitleInTree("Modify Order")
+                || bottomActionLabelPresent("Modify Order");
     }
 
-    private boolean labeledScreenVisible(String title) {
+    private boolean compactHeaderVisible(String title) {
+        Dimension window = driver.manage().window().getSize();
+        int maxHeaderY = (int) (window.getHeight() * 0.22);
+        int maxHeaderHeight = (int) (window.getHeight() * 0.14);
         for (WebElement el : safeFindElements(By.xpath(
                 "//*[@text='" + title + "' or @content-desc='" + title + "']"))) {
             try {
-                if (el.isDisplayed()) {
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (!el.isDisplayed() || location.getY() >= maxHeaderY) {
+                    continue;
+                }
+                if (size.getHeight() <= maxHeaderHeight || location.getY() <= px(24)) {
                     return true;
                 }
             } catch (StaleElementReferenceException ignored) {
@@ -2190,10 +2183,11 @@ public class AppTradeView {
     }
 
     private void tapBackChevron() {
+        tapHeaderBack();
+    }
+
+    private void tapHeaderBack() {
         hideAndroidKeyboard();
-        if (tapLeftOfPageTitle()) {
-            return;
-        }
         List<By> locators = Arrays.asList(
                 By.xpath("//*[@content-desc='Back']"),
                 By.xpath("//*[@text='Back']"),
@@ -2208,30 +2202,9 @@ public class AppTradeView {
             }
         }
         Dimension window = driver.manage().window().getSize();
-        WebElement title = pageTitleInHeader();
-        int y = Math.max(80, (int) (window.getHeight() * 0.08));
-        if (title != null) {
-            y = title.getLocation().getY() + Math.max(8, title.getSize().getHeight() / 2);
-        }
-        abs.tapAt(Math.max(40, window.getWidth() / 14), y);
-    }
-
-    private boolean tapLeftOfPageTitle() {
-        WebElement title = pageTitleInHeader();
-        if (title == null) {
-            return false;
-        }
-        try {
-            Point location = title.getLocation();
-            Dimension size = title.getSize();
-            Dimension window = driver.manage().window().getSize();
-            int y = location.getY() + Math.max(8, size.getHeight() / 2);
-            int x = Math.min(Math.max(36, window.getWidth() / 14), Math.max(36, location.getX() - 24));
-            abs.tapAt(x, y);
-            return true;
-        } catch (StaleElementReferenceException e) {
-            return false;
-        }
+        int y = Math.max(px(20), Math.min(px(48), (int) (window.getHeight() * 0.07)));
+        int x = Math.max(px(16), Math.min(px(28), window.getWidth() / 12));
+        abs.tapAt(x, y);
     }
 
     private WebElement pageTitleInHeader() {
@@ -2252,10 +2225,6 @@ public class AppTradeView {
 
     private void hideAndroidKeyboard() {
         abs.dismissAndroidKeyboardSafely();
-    }
-
-    private void bringAppToForeground() {
-        abs.bringAppToForeground();
     }
 
     private void pressAndroidBack() {

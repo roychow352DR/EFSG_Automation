@@ -520,18 +520,6 @@ public class MobileAbstractComponents {
             androidDriver.executeScript("mobile: hideKeyboard");
         } catch (Exception ignored) {
         }
-        try {
-            if (!androidDriver.isKeyboardShown()) {
-                return;
-            }
-        } catch (Exception e) {
-            return;
-        }
-        try {
-            Dimension window = androidDriver.manage().window().getSize();
-            tapAt(window.getWidth() / 2, Math.max(48, (int) (window.getHeight() * 0.06)));
-        } catch (Exception ignored) {
-        }
     }
 
     public void bringAppToForeground() {
@@ -543,10 +531,15 @@ public class MobileAbstractComponents {
             if (pkg == null || pkg.isBlank()) {
                 return;
             }
-            var state = androidDriver.queryAppState(pkg);
-            String name = state == null ? "" : state.name();
-            if (name.contains("BACKGROUND") || name.contains("NOT_RUNNING")) {
-                androidDriver.activateApp(pkg);
+            String lower = pkg.toLowerCase(Locale.ROOT);
+            if (!lower.contains("launcher") && !lower.contains("systemui")) {
+                return;
+            }
+            String appPackage = androidDriver.getCapabilities().getCapability("appPackage") instanceof String value
+                    ? value : androidDriver.getCapabilities().getCapability("appium:appPackage") instanceof String appiumValue
+                    ? appiumValue : null;
+            if (appPackage != null && !appPackage.isBlank()) {
+                androidDriver.activateApp(appPackage);
             }
         } catch (Exception ignored) {
         }
