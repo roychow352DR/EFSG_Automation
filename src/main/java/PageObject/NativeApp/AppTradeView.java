@@ -498,6 +498,7 @@ public class AppTradeView {
                 case "close" -> tapCloseRowCta();
                 case "edit" -> openEditPosition();
             }
+            bringAppToForeground();
         });
     }
 
@@ -524,6 +525,7 @@ public class AppTradeView {
         hideAndroidKeyboard();
         waitUntilOverlayGone();
         if (isEditOrModifyOpen(1)) {
+            bringAppToForeground();
             return;
         }
         revealListForCurrentOrder();
@@ -532,6 +534,7 @@ public class AppTradeView {
         for (int attempt = 1; attempt <= 3; attempt++) {
             leaveWrongPageAfterEditTap();
             if (isEditOrModifyUiVisible()) {
+                bringAppToForeground();
                 return;
             }
             int[] row = resolveTradeRowBounds();
@@ -542,10 +545,12 @@ public class AppTradeView {
                         + fromIcons.getX() + "," + fromIcons.getY());
                 abs.tapAt(fromIcons.getX(), fromIcons.getY());
                 if (isEditOrModifyOpen(5)) {
+                    bringAppToForeground();
                     return;
                 }
             }
             if (tryClickRowCta(rowEditLocators()) && isEditOrModifyOpen(5)) {
+                bringAppToForeground();
                 return;
             }
             Point fromDirection = editPointBesideDirectionLabel();
@@ -554,6 +559,7 @@ public class AppTradeView {
                         + fromDirection.getX() + "," + fromDirection.getY());
                 abs.tapAt(fromDirection.getX(), fromDirection.getY());
                 if (isEditOrModifyOpen(5)) {
+                    bringAppToForeground();
                     return;
                 }
             }
@@ -1337,6 +1343,7 @@ public class AppTradeView {
             return;
         }
         hideAndroidKeyboard();
+        bringAppToForeground();
         leaveEditPositionIfOpen();
         dismissLeaveEditPromptIfShown();
         waitUntilOverlayGone();
@@ -1474,7 +1481,7 @@ public class AppTradeView {
     }
 
     private boolean isEditPositionUiVisible() {
-        return headerTitleInTree("Edit Position") || bottomActionLabelPresent("Edit Position");
+        return labeledScreenVisible("Edit Position");
     }
 
     private boolean headerTitleInTree(String title) {
@@ -1563,7 +1570,20 @@ public class AppTradeView {
     }
 
     private boolean isModifyOrderUiVisible() {
-        return headerTitleInTree("Modify Order") || bottomActionLabelPresent("Modify Order");
+        return labeledScreenVisible("Modify Order");
+    }
+
+    private boolean labeledScreenVisible(String title) {
+        for (WebElement el : safeFindElements(By.xpath(
+                "//*[@text='" + title + "' or @content-desc='" + title + "']"))) {
+            try {
+                if (el.isDisplayed()) {
+                    return true;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return false;
     }
 
     private void tapCloseRowCta() {
@@ -2231,22 +2251,11 @@ public class AppTradeView {
     }
 
     private void hideAndroidKeyboard() {
-        if (!(driver instanceof AndroidDriver androidDriver)) {
-            return;
-        }
-        try {
-            androidDriver.hideKeyboard();
-        } catch (Exception ignored) {
-        }
-        try {
-            if (androidDriver.isKeyboardShown()) {
-                pressAndroidBack();
-            }
-            new WebDriverWait(driver, Duration.ofSeconds(2))
-                    .ignoring(RuntimeException.class)
-                    .until(d -> !((AndroidDriver) d).isKeyboardShown());
-        } catch (Exception ignored) {
-        }
+        abs.dismissAndroidKeyboardSafely();
+    }
+
+    private void bringAppToForeground() {
+        abs.bringAppToForeground();
     }
 
     private void pressAndroidBack() {

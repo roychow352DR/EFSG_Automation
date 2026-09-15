@@ -81,6 +81,7 @@ public class AppEditPositionPage {
 
 
     public String getDisplayedValue(String label, String symbolDecimal) {
+        abs.bringAppToForeground();
         waitForEditPositionReady();
         String uiLabel = getPageElement.mapUiLabel(label);
         String rawValue = getPageElement.readLabelValueFast(uiLabel);
@@ -329,13 +330,7 @@ public class AppEditPositionPage {
     }
 
     private void hideAndroidKeyboard() {
-        if (!(driver instanceof AndroidDriver androidDriver)) {
-            return;
-        }
-        try {
-            androidDriver.hideKeyboard();
-        } catch (RuntimeException ignored) {
-        }
+        abs.dismissAndroidKeyboardSafely();
     }
 
     private boolean alreadyHasSimilarControl(List<StepperIcon> found, int[] bounds) {
