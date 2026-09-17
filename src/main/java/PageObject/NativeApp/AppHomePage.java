@@ -76,7 +76,9 @@ public class AppHomePage {
 
     public boolean bottomButtonIsTapped() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUntilLaunchComplete(Duration.ofSeconds(30));
+            if (!abs.isAndroidHomeChromeVisible()) {
+                abs.waitUntilLaunchComplete(Duration.ofSeconds(60));
+            }
             return true;
         }
         applicationButtonIos.click();
