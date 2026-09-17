@@ -19,9 +19,11 @@ public class AppLoginPage {
     public BiometricsPage biometricsPage;
     private final MobileAbstractComponents abs;
 
-    private static final By SIGN_UP_LOGIN = By.xpath("//*[@text='Sign Up / Login']");
+    private static final By SIGN_UP_LOGIN = By.xpath("//*[@text='Sign Up / Login' or @content-desc='Sign Up / Login']");
     private static final By HAVE_AN_ACCOUNT = By.xpath("//android.widget.TextView[contains(@text,'Have an account')]");
-    private static final By LOGIN_TEXT = By.xpath("//*[@text='Login']");
+    private static final By LOGIN_TEXT = By.xpath(
+            "//*[@text='Login' or @text='Log In' or @content-desc='Login' or @content-desc='Log In']");
+    private static final By SIGNUP_TITLE = By.xpath("//*[@text='Signup' or @text='Sign up']");
     private static final By EDIT_TEXT = By.className("android.widget.EditText");
     private static final By ME_TAB = By.xpath("//*[@text='Me']");
     private static final By LOGOUT = By.xpath("//*[@text='Logout' or @text='Log Out' or @text='Log out']");
@@ -109,14 +111,20 @@ public class AppLoginPage {
 
     private boolean isLoginFormVisible(int seconds) {
         try {
-            new WebDriverWait(driver, Duration.ofSeconds(seconds)).until(d -> {
-                List<WebElement> fields = d.findElements(EDIT_TEXT);
-                return fields.size() >= 2 && !d.findElements(LOGIN_TEXT).isEmpty();
-            });
+            new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                    .until(d -> isLoginFormVisibleNow());
             return true;
         } catch (TimeoutException e) {
             return false;
         }
+    }
+
+    private boolean isLoginFormVisibleNow() {
+        if (!driver.findElements(SIGNUP_TITLE).isEmpty()) {
+            return false;
+        }
+        List<WebElement> fields = driver.findElements(EDIT_TEXT);
+        return fields.size() >= 2 && !driver.findElements(LOGIN_TEXT).isEmpty();
     }
 
     private boolean tapIfPresent(By locator, int seconds) {
@@ -130,6 +138,7 @@ public class AppLoginPage {
 
     public BiometricsPage clickLogin() {
         if (driver instanceof AndroidDriver) {
+            abs.dismissAndroidKeyboardSafely();
             abs.tapBottomMost(LOGIN_TEXT, 15);
         } else {
             loginButtonIos.click();
@@ -160,7 +169,9 @@ public class AppLoginPage {
 
     public boolean loginPageValidation() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementVisible(LOGIN_TEXT);
+            if (!isLoginFormVisible(15)) {
+                throw new TimeoutException("Login form was not visible");
+            }
             return true;
         }
         abs.waitUntilElementFind(loginTitleIos);

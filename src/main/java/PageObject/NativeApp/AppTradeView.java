@@ -149,9 +149,16 @@ public class AppTradeView {
             return;
         }
         TimeoutException lastError = null;
+        boolean ticketOpen = isOrderTicketVisible();
         for (By locator : directionLocators(direction)) {
             try {
-                abs.tapVisible(locator, 15);
+                // Quote chips use content-desc "BUY, 4312, .32". Submit CTA is exact "BUY" and must not be used here.
+                if (ticketOpen) {
+                    abs.tapVisible(locator, 15);
+                } else {
+                    abs.tapBottomMost(locator, 15);
+                }
+                System.out.println("Tapped direction quote: " + direction + " ticketOpen=" + ticketOpen);
                 waitForOrderTicket();
                 return;
             } catch (TimeoutException e) {
@@ -170,9 +177,20 @@ public class AppTradeView {
                 )));
     }
 
+    private boolean isOrderTicketVisible() {
+        return !driver.findElements(By.xpath(
+                "//android.widget.TextView[(@text='Market Order' or @text='Limit / Stop Order' or @text='Lots') and @displayed='true']"
+        )).isEmpty();
+    }
+
     private List<By> directionLocators(String direction) {
         return List.of(
-                By.xpath("//android.widget.TextView[@text=\"" + direction + "\"]/parent::android.view.ViewGroup"),
+                By.xpath("//*[@clickable='true' and starts-with(@content-desc,'" + direction + ",')]"),
+                By.xpath("//android.view.ViewGroup[@clickable='true' and starts-with(@content-desc,'" + direction + ",')]"),
+                By.xpath("//android.widget.TextView[@text='" + direction
+                        + "']/parent::android.view.ViewGroup[@clickable='true' and starts-with(@content-desc,'"
+                        + direction + ",')]"),
+                By.xpath("//android.widget.TextView[@text=\"" + direction + "\"]/parent::android.view.ViewGroup[@clickable='true']"),
                 By.xpath("//*[@text=\"" + direction + "\"]")
         );
     }

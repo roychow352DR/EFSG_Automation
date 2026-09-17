@@ -95,9 +95,6 @@ public class AppInstrumentDetailsPage {
     @FindBy(xpath = "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]/android.widget.TextView")
     WebElement dialogueTextAos;
 
-    @FindBy(className = "android.widget.TextView")
-    List<WebElement> textMessages;
-
     @FindBy(xpath = "//android.widget.ScrollView/android.view.ViewGroup/android.view.ViewGroup[11]/android.view.ViewGroup")
     WebElement stopLossPlusBtnAos;
 
@@ -136,15 +133,86 @@ public class AppInstrumentDetailsPage {
 
 
     public boolean getTextMessage(String messageContent) {
-        if (driver instanceof AndroidDriver) {
-            for (WebElement ele : textMessages) {
-                if (ele.getText().equalsIgnoreCase(messageContent)) {
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
+        }
+        // Blur the field so inline validation can render, then wait for RN text/content-desc.
+        abs.dismissAndroidKeyboardSafely();
+        By error = errorMessageLocator(messageContent);
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> errorMessageVisible(error, messageContent));
+            return true;
+        } catch (TimeoutException e) {
+            boolean inSource = pageSourceContainsMessage(messageContent);
+            System.out.println("Error message lookup timed out for '" + messageContent
+                    + "', pageSourceContains=" + inSource);
+            return inSource;
+        }
+    }
+
+    private By errorMessageLocator(String messageContent) {
+        return By.xpath(
+                "//*[@text='" + messageContent + "' or @content-desc='" + messageContent + "'"
+                        + " or contains(@text,'" + messageContent + "')"
+                        + " or contains(@content-desc,'" + messageContent + "')]");
+    }
+
+    private boolean errorMessageVisible(By locator, String messageContent) {
+        List<WebElement> matches = driver.findElements(locator);
+        if (!matches.isEmpty()) {
+            return true;
+        }
+        String expected = messageContent.toLowerCase(Locale.ROOT);
+        for (WebElement ele : driver.findElements(By.className("android.widget.TextView"))) {
+            try {
+                if (nodeText(ele).toLowerCase(Locale.ROOT).contains(expected)) {
+                    return true;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return false;
+    }
+
+    private String nodeText(WebElement element) {
+        StringBuilder combined = new StringBuilder();
+        appendNodeText(combined, element.getText());
+        appendNodeText(combined, elementAttribute(element, "text"));
+        appendNodeText(combined, elementAttribute(element, "content-desc"));
+        return combined.toString();
+    }
+
+    private void appendNodeText(StringBuilder combined, String value) {
+        if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) {
+            return;
+        }
+        if (!combined.isEmpty()) {
+            combined.append(' ');
+        }
+        combined.append(value.trim());
+    }
+
+    private boolean pageSourceContainsMessage(String messageContent) {
+        try {
+            String xml = driver.getPageSource();
+            if (xml == null || xml.isBlank()) {
+                return false;
+            }
+            String expected = messageContent.toLowerCase(Locale.ROOT);
+            if (xml.toLowerCase(Locale.ROOT).contains(expected)) {
+                return true;
+            }
+            for (String text : abs.extractTextViewTexts(xml)) {
+                if (text.toLowerCase(Locale.ROOT).contains(expected)) {
                     return true;
                 }
             }
+            return false;
+        } catch (RuntimeException e) {
+            return false;
         }
-
-        return false;
     }
 
     public void switchProfitStopLoss() {
@@ -703,14 +771,45 @@ public class AppInstrumentDetailsPage {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
-        if (buttonName.equalsIgnoreCase("BUY") || buttonName.equalsIgnoreCase("SELL")
-                || buttonName.contains("Cancel Order") || buttonName.equals("Edit Position")
+        if (buttonName.equalsIgnoreCase("BUY") || buttonName.equalsIgnoreCase("SELL")) {
+            tapSubmitDirection(buttonName);
+            return;
+        }
+        if (buttonName.contains("Cancel Order") || buttonName.equals("Edit Position")
                 || buttonName.equals("Modify Order") || buttonName.contains("Close Position")) {
             abs.tapBottomMost(By.xpath("//*[@text='" + buttonName + "' or @content-desc='" + buttonName + "']"), 10);
             return;
         }
         By button = By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup");
         abs.waitUntilElementClickable(button).click();
+    }
+
+    private void tapSubmitDirection(String direction) {
+        TimeoutException lastError = null;
+        for (By locator : submitDirectionLocators(direction)) {
+            try {
+                // Submit CTA is the full-width bar with exact content-desc "BUY" / "SELL", not the quote chip "BUY, 4312, .32".
+                abs.tapBottomMost(locator, 10);
+                System.out.println("Tapped submit direction button: " + direction);
+                return;
+            } catch (TimeoutException e) {
+                lastError = e;
+            }
+        }
+        throw lastError != null
+                ? lastError
+                : new TimeoutException("Submit direction button was not visible: " + direction);
+    }
+
+    private List<By> submitDirectionLocators(String direction) {
+        return List.of(
+                By.xpath("//*[@clickable='true' and @content-desc='" + direction + "']"),
+                By.xpath("//android.view.ViewGroup[@clickable='true' and @content-desc='" + direction + "']"),
+                By.xpath("//android.widget.TextView[@text='" + direction
+                        + "']/parent::android.view.ViewGroup[@clickable='true' and @content-desc='" + direction + "']"),
+                By.xpath("//android.widget.TextView[@text='" + direction
+                        + "']/parent::android.view.ViewGroup[@clickable='true']")
+        );
     }
 
     public void tapsButtonOnConfirm(String buttonName) {

@@ -451,17 +451,40 @@ public class MobileAbstractComponents {
 
     private Point centerIfShown(WebElement element) {
         try {
+            // RN getLocation() is often 0,0 even when UiAutomator bounds are correct.
+            Point fromBounds = centerFromBounds(element);
+            if (fromBounds != null && isPointInWindow(fromBounds)) {
+                return fromBounds;
+            }
             if (!element.isDisplayed()) {
                 return null;
             }
             Point location = element.getLocation();
             Dimension size = element.getSize();
             if (size.getWidth() > 0 && size.getHeight() > 0) {
-                return new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+                Point fromRect = new Point(
+                        location.getX() + size.getWidth() / 2,
+                        location.getY() + size.getHeight() / 2);
+                if (isPointInWindow(fromRect)) {
+                    return fromRect;
+                }
             }
-            return centerFromBounds(element);
+            return fromBounds;
         } catch (StaleElementReferenceException e) {
             return null;
+        }
+    }
+
+    private boolean isPointInWindow(Point point) {
+        try {
+            Dimension window = driver.manage().window().getSize();
+            // Gesture/nav bars make window height smaller than UiAutomator bounds (e.g. BUY at y=2684).
+            int maxY = window.getHeight() + 200;
+            return point.getX() >= 0 && point.getY() >= 0
+                    && point.getX() < window.getWidth()
+                    && point.getY() < maxY;
+        } catch (RuntimeException e) {
+            return true;
         }
     }
 
