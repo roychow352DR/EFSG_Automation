@@ -10,7 +10,9 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.List;
 
 public class AppSignupPage {
@@ -67,21 +69,54 @@ public class AppSignupPage {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
+        if (isLoginFormOpen()) {
+            return;
+        }
         TimeoutException lastError = null;
-        for (By locator : List.of(
-                By.xpath("//android.widget.TextView[@text='Have an account? Log In']"),
-                By.xpath("//android.widget.TextView[contains(@text,'Have an account')]")
-        )) {
-            try {
-                abs.tapVisibleRight(locator, 12);
-                return;
-            } catch (TimeoutException e) {
-                lastError = e;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            for (By locator : List.of(
+                    By.xpath("//android.widget.TextView[@text='Have an account? Log In']"),
+                    By.xpath("//android.widget.TextView[contains(@text,'Have an account')]"),
+                    By.xpath("//*[contains(@text,'Have an account') or contains(@content-desc,'Have an account')]")
+            )) {
+                try {
+                    if (attempt == 1) {
+                        abs.tapVisibleRight(locator, 8);
+                    } else {
+                        abs.tapBottomMost(locator, 8);
+                    }
+                    if (waitForLoginForm(10)) {
+                        return;
+                    }
+                } catch (TimeoutException e) {
+                    lastError = e;
+                }
             }
         }
         if (lastError != null) {
             throw lastError;
         }
+        throw new TimeoutException("Login page was not visible after tapping Have an account");
+    }
+
+    private boolean waitForLoginForm(int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                    .until(d -> isLoginFormOpen());
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private boolean isLoginFormOpen() {
+        if (!driver.findElements(By.xpath("//*[@text='Signup' or @text='Sign up']")).isEmpty()) {
+            return false;
+        }
+        int fields = driver.findElements(By.className("android.widget.EditText")).size();
+        return fields >= 2 && !driver.findElements(By.xpath(
+                "//*[@text='Login' or @text='Log In' or @content-desc='Login' or @content-desc='Log In']"
+        )).isEmpty();
     }
 
     public void enterTextFieldValue(String value, String textField) throws InterruptedException {

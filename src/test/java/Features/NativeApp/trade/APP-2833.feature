@@ -1,6 +1,6 @@
 Feature: Native App trade
 
-  @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
+  @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro @AppTest
   Scenario: The default volume is 1
     Given the user launch the app
     When the user login as username "autol3" and password "Test1234@" on App login page
