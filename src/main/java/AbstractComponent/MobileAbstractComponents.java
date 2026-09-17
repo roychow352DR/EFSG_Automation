@@ -840,17 +840,21 @@ public class MobileAbstractComponents {
         relaxUiAutomatorIdleWait();
         long deadline = System.nanoTime() + timeout.toNanos();
         while (System.nanoTime() < deadline) {
+            recoverForegroundIfNeeded();
             dismissAndroidLaunchBlockers();
             if (isAndroidHomeChromeVisible()) {
                 return;
             }
-            sleep(400);
+            sleep(500);
         }
+        recoverForegroundIfNeeded();
         dismissAndroidLaunchBlockers();
         if (isAndroidHomeChromeVisible()) {
             return;
         }
-        throw new TimeoutException("App home chrome was not visible after launch wait of " + timeout.toSeconds() + "s");
+        throw new TimeoutException(
+                "App home chrome was not visible after launch wait of " + timeout.toSeconds()
+                        + "s. currentPackage=" + currentAndroidPackage());
     }
 
     public void relaxUiAutomatorIdleWait() {
@@ -859,8 +863,9 @@ public class MobileAbstractComponents {
         }
         try {
             androidDriver.setSetting("waitForIdleTimeout", 0);
+            androidDriver.setSetting("waitForSelectorTimeout", 0);
         } catch (Exception e) {
-            System.err.println("Could not set waitForIdleTimeout: " + e.getMessage());
+            System.err.println("Could not relax UiAutomator wait settings: " + e.getMessage());
         }
     }
 
@@ -869,37 +874,102 @@ public class MobileAbstractComponents {
             return;
         }
         for (By locator : launchBlockerLocators()) {
-            try {
-                for (WebElement element : driver.findElements(locator)) {
-                    if (!element.isDisplayed()) {
-                        continue;
-                    }
-                    System.out.println("Dismissing Android launch blocker: " + locator);
-                    element.click();
-                    sleep(400);
-                    return;
-                }
-            } catch (RuntimeException ignored) {
+            if (tapFirstPresent(locator)) {
+                return;
             }
         }
     }
 
     public boolean isAndroidHomeChromeVisible() {
+        return firstOnScreen(androidHomeChromeLocator()) != null;
+    }
+
+    private void recoverForegroundIfNeeded() {
+        bringAppToForeground();
+        String pkg = currentAndroidPackage();
+        if (pkg == null) {
+            return;
+        }
+        String lower = pkg.toLowerCase(Locale.ROOT);
+        if (lower.contains("permission") || lower.contains("packageinstaller")) {
+            dismissAndroidLaunchBlockers();
+        }
+    }
+
+    private String currentAndroidPackage() {
+        if (!(driver instanceof AndroidDriver androidDriver)) {
+            return null;
+        }
         try {
-            for (WebElement element : driver.findElements(androidHomeChromeLocator())) {
-                if (element.isDisplayed()) {
-                    return true;
+            return androidDriver.getCurrentPackage();
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private boolean tapFirstPresent(By locator) {
+        WebElement element = firstOnScreen(locator);
+        if (element == null) {
+            return false;
+        }
+        try {
+            System.out.println("Dismissing Android launch blocker: " + locator);
+            element.click();
+            sleep(400);
+            return true;
+        } catch (RuntimeException clickFailed) {
+            try {
+                Point location = element.getLocation();
+                Dimension size = element.getSize();
+                tapAt(location.getX() + Math.max(1, size.getWidth() / 2),
+                        location.getY() + Math.max(1, size.getHeight() / 2));
+                sleep(400);
+                return true;
+            } catch (RuntimeException ignored) {
+                return false;
+            }
+        }
+    }
+
+    private WebElement firstOnScreen(By locator) {
+        try {
+            for (WebElement element : driver.findElements(locator)) {
+                if (hasOnScreenBounds(element)) {
+                    return element;
                 }
             }
         } catch (RuntimeException ignored) {
         }
-        return false;
+        return null;
+    }
+
+    private boolean hasOnScreenBounds(WebElement element) {
+        try {
+            String displayed = element.getAttribute("displayed");
+            if ("true".equalsIgnoreCase(displayed)) {
+                return true;
+            }
+            String bounds = element.getAttribute("bounds");
+            if (bounds != null && !bounds.isBlank() && !"null".equalsIgnoreCase(bounds)) {
+                Matcher matcher = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]").matcher(bounds);
+                if (matcher.find()) {
+                    int width = Integer.parseInt(matcher.group(3)) - Integer.parseInt(matcher.group(1));
+                    int height = Integer.parseInt(matcher.group(4)) - Integer.parseInt(matcher.group(2));
+                    return width > 8 && height > 8;
+                }
+            }
+            return element.isDisplayed();
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 
     private By androidHomeChromeLocator() {
         return By.xpath(
-                "//*[@text='Home' or @text='Markets' or @text='Me' or @text='Sign Up / Login'"
-                        + " or @text='Login' or @text='Open a Live Trading Accounts']"
+                "//*[@text='Home' or @content-desc='Home' or @text='Markets' or @content-desc='Markets'"
+                        + " or @text='Me' or @content-desc='Me' or @text='Sign Up / Login'"
+                        + " or @content-desc='Sign Up / Login' or @text='Login' or @content-desc='Login'"
+                        + " or @text='Open a Live Trading Accounts']"
         );
     }
 
@@ -907,11 +977,9 @@ public class MobileAbstractComponents {
         return List.of(
                 By.id("com.android.permissioncontroller:id/permission_allow_button"),
                 By.id("com.android.permissioncontroller:id/permission_allow_foreground_only_button"),
-                By.id("com.android.permissioncontroller:id/permission_allow_one_time_button"),
                 By.id("com.android.packageinstaller:id/permission_allow_button"),
-                By.xpath("//*[@text='While using the app' or @text='Allow all the time']"),
-                By.xpath("//*[@text='Allow' or @text='ALLOW']"),
-                By.xpath("//*[@text='Agree' or @text='AGREE']")
+                By.xpath("//*[@text='While using the app' or @text='Allow' or @text='ALLOW'"
+                        + " or @content-desc='Allow' or @text='Agree' or @text='AGREE' or @content-desc='Agree']")
         );
     }
 

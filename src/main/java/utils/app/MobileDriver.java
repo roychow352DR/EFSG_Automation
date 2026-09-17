@@ -40,7 +40,7 @@ public class MobileDriver {
     private static final String APPIUM_SERVER_URL = "http://127.0.0.1:4723";
     private static final String APPIUM_JS_PATH = "//usr//local//lib//node_modules//appium//build//lib//main.js";
     private static final Duration IMPLICIT_WAIT = Duration.ZERO;
-    private static final Duration APP_READY_WAIT = Duration.ofSeconds(45);
+    private static final Duration APP_READY_WAIT = Duration.ofSeconds(60);
     // Package is entity-specific; the RN launcher class is still CopyMaster MainActivity.
     private static final String ANDROID_LAUNCH_ACTIVITY = "com.mfinance.copymaster.MainActivity";
     private static final Duration WDA_LAUNCH_TIMEOUT = Duration.ofSeconds(20);
@@ -115,14 +115,10 @@ public class MobileDriver {
     }
 
     private void waitForAppReady(AppiumDriver driver, String androidAppPackage) {
-        try {
-            if (driver instanceof AndroidDriver) {
-                waitForAndroidAppReady(driver, androidAppPackage);
-            } else {
-                System.err.println("Unknown driver type; skipping app-ready wait");
-            }
-        } catch (Exception e) {
-            System.err.println("Warning: Error while waiting for app to be ready: " + e.getMessage());
+        if (driver instanceof AndroidDriver) {
+            waitForAndroidAppReady(driver, androidAppPackage);
+        } else {
+            System.err.println("Unknown driver type; skipping app-ready wait");
         }
     }
 
@@ -253,6 +249,8 @@ public class MobileDriver {
                 System.out.println("Android driver initialized successfully. Session ID: " + driver.getSessionId());
                 waitForAppReady(driver, androidPackage);
                 return (AndroidDriver) driver;
+            } catch (TimeoutException e) {
+                throw e;
             } catch (Exception e) {
                 lastError = e;
                 System.err.println("Error initializing Android driver (attempt " + attempt + "): " + e.getMessage());
@@ -382,6 +380,7 @@ public class MobileDriver {
         aosOptions.setCapability("appium:adbExecTimeout", 60_000);
         aosOptions.setCapability("appium:ignoreHiddenApiPolicyError", true);
         aosOptions.setCapability("appium:settings[waitForIdleTimeout]", 0);
+        aosOptions.setCapability("appium:settings[waitForSelectorTimeout]", 0);
 
         // Handle app path configuration. A .zip is unpacked first so Appium receives a real APK.
         if (androidAppPath != null && !androidAppPath.isBlank()) {
