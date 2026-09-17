@@ -894,7 +894,10 @@ public class AppPortfolioPage {
                     .until(d -> !d.findElements(By.xpath(
                             "//*[@text='Position Details' or @content-desc='Position Details'"
                                     + " or @text='Position Detail' or @content-desc='Position Detail'"
-                                    + " or @text='Pending Order Details' or @content-desc='Pending Order Details']"
+                                    + " or contains(@text,'Pending Order Detail')"
+                                    + " or contains(@content-desc,'Pending Order Detail')"
+                                    + " or @text='Pending Order\nDetails'"
+                                    + " or @content-desc='Pending Order\nDetails']"
                     )).isEmpty());
             return true;
         } catch (TimeoutException e) {

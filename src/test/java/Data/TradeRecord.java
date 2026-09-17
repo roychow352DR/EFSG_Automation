@@ -105,7 +105,11 @@ public class TradeRecord {
 
     public void fillStopLimitPrice(String direction, TradeSymbolConfig tradeSymbolConfig) throws InterruptedException, IOException {
         Thread.sleep(500);
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField("Price", direction, tradeSymbolConfig.getDecimalPlace(getDefaultSymbol()));
+        String symbol = AppMarketsPage.tradeSymbol != null && !AppMarketsPage.tradeSymbol.isBlank()
+                ? AppMarketsPage.tradeSymbol
+                : getDefaultSymbol();
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField(
+                "Price", direction, tradeSymbolConfig.getDecimalPlace(symbol));
     }
 
     public void confirmPlaceOrder(String direction) throws InterruptedException {

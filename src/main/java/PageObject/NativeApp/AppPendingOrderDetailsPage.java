@@ -1,6 +1,7 @@
 package PageObject.NativeApp;
 
 import AbstractComponent.MobileAbstractComponents;
+import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
@@ -59,9 +60,7 @@ public class AppPendingOrderDetailsPage {
 
     public String getDetailValue(String label) {
         openDetailsIfNeeded();
-        getPageElement.clearPageSourceCache();
-        getPageElement.waitAndCaptureIfNeeded(By.xpath(
-                "//*[@text='Pending Order Details' or @content-desc='Pending Order Details']"), 10);
+        captureDetailsSource();
         if ("Product Name".equalsIgnoreCase(label)) {
             String productName = readProductName();
             if (productName != null && !productName.isBlank()) {
@@ -73,21 +72,35 @@ public class AppPendingOrderDetailsPage {
         if (rawValue == null || rawValue.isBlank()) {
             rawValue = adjacentTextValue(label);
         }
+        if ((rawValue == null || rawValue.isBlank()) && "Product Name".equalsIgnoreCase(label)) {
+            rawValue = adjacentTextValue("Product");
+        }
         if (rawValue == null || rawValue.isBlank()) {
             return null;
         }
         return normalizeDetailValue(label, rawValue);
     }
 
+    private void captureDetailsSource() {
+        getPageElement.clearPageSourceCache();
+        try {
+            getPageElement.waitAndCaptureIfNeeded(By.xpath(
+                    "//*[@text='Product Name' or @text='Product' or @text='Target Price'"
+                            + " or @text='Cancel Order' or contains(@text,'Silver') or contains(@text,'Gold')"
+                            + " or contains(@text,'Order Detail')]"), 8);
+        } catch (TimeoutException e) {
+            getPageElement.capturePageSource();
+        }
+    }
+
     private void openDetailsIfNeeded() {
         if (isPendingOrderDetailsOpen()) {
             return;
         }
-        if (isPortfolioListVisible()) {
-            new AppPortfolioPage(driver).tapButtonOnRow("detail");
-        } else {
-            new AppTradeView(driver).tapCtaButton("detail");
+        if (!isPortfolioListVisible()) {
+            return;
         }
+        new AppPortfolioPage(driver).tapButtonOnRow("detail");
         try {
             new WebDriverWait(driver, Duration.ofSeconds(10))
                     .ignoring(StaleElementReferenceException.class)
@@ -98,9 +111,43 @@ public class AppPendingOrderDetailsPage {
 
     private boolean isPendingOrderDetailsOpen() {
         try {
+            if (!driver.findElements(pendingOrderDetailsLocator()).isEmpty()) {
+                return true;
+            }
+            if (uiContains("Order Detail")) {
+                return true;
+            }
+            return hasNode("Target Price") || hasNode("Product Name") || hasNode("Cancel Order");
+        } catch (StaleElementReferenceException e) {
+            return false;
+        }
+    }
+
+    private By pendingOrderDetailsLocator() {
+        return By.xpath(
+                "//*[contains(@text,'Order Detail') or contains(@content-desc,'Order Detail')"
+                        + " or @text='Pending Order Details' or @content-desc='Pending Order Details'"
+                        + " or @text='Pending Order\nDetails' or @content-desc='Pending Order\nDetails']"
+        );
+    }
+
+    private boolean uiContains(String fragment) {
+        try {
+            return !driver.findElements(AppiumBy.androidUIAutomator(
+                    "new UiSelector().textContains(\"" + fragment + "\")")).isEmpty()
+                    || !driver.findElements(AppiumBy.androidUIAutomator(
+                    "new UiSelector().descriptionContains(\"" + fragment + "\")")).isEmpty();
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private boolean hasNode(String value) {
+        try {
             return !driver.findElements(By.xpath(
-                    "//*[@text='Pending Order Details' or @content-desc='Pending Order Details']"
-            )).isEmpty();
+                    "//*[@text='" + value + "' or @content-desc='" + value + "'"
+                            + " or contains(@text,'" + value + "') or contains(@content-desc,'" + value + "')]")
+            ).isEmpty();
         } catch (StaleElementReferenceException e) {
             return false;
         }
@@ -119,34 +166,163 @@ public class AppPendingOrderDetailsPage {
 
     private String readProductName() {
         String expected = abs.getProductName(AppMarketsPage.tradeSymbol);
-        if (expected != null && !"symbol not found".equals(expected) && hasVisibleText(expected)) {
+        if (isKnownProduct(expected) && productNameIsShown(expected)) {
             return expected;
         }
-        String fromLabel = getPageElement.readLabelValueFast("Product Name");
-        if (fromLabel != null && !fromLabel.isBlank() && !fromLabel.equalsIgnoreCase("Product Name")) {
-            return fromLabel.trim();
+        String fromScreen = readProductFieldText();
+        if (isUsableProductName(fromScreen)) {
+            return normalizeProductName(fromScreen, expected);
+        }
+        for (String name : knownProductNames()) {
+            if (productNameIsShown(name)) {
+                return name;
+            }
+        }
+        if (isKnownProduct(expected) && productNameIsShown(AppMarketsPage.tradeSymbol)) {
+            return expected;
+        }
+        String fromLabel = firstUsableProductName(
+                getPageElement.readLabelValueFast("Product Name"),
+                getPageElement.readLabelValueFast("Product"),
+                adjacentTextValue("Product Name"),
+                adjacentTextValue("Product")
+        );
+        if (fromLabel != null) {
+            return normalizeProductName(fromLabel, expected);
         }
         return null;
     }
 
-    private boolean hasVisibleText(String value) {
+    private String normalizeProductName(String fromScreen, String expected) {
+        if (isKnownProduct(expected) && containsIgnoreCase(fromScreen, expected)) {
+            return expected;
+        }
+        String mapped = abs.getProductName(fromScreen);
+        if (isKnownProduct(mapped)) {
+            return mapped;
+        }
+        return fromScreen.trim();
+    }
+
+    private String firstUsableProductName(String... values) {
+        for (String value : values) {
+            if (isUsableProductName(value)) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private boolean isUsableProductName(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        String text = value.trim().replace('\n', ' ');
+        if (text.equalsIgnoreCase("Product") || text.equalsIgnoreCase("Product Name")
+                || text.equalsIgnoreCase("Name")) {
+            return false;
+        }
+        if (text.matches("(?i).*(limit\\s*/\\s*stop|buy limit|sell limit|buy stop|sell stop|market order).*")) {
+            return false;
+        }
+        for (String name : knownProductNames()) {
+            if (containsIgnoreCase(text, name)) {
+                return true;
+            }
+        }
+        return text.equalsIgnoreCase(AppMarketsPage.tradeSymbol)
+                || text.matches("[A-Z]{3,}[A-Z0-9]{2,}");
+    }
+
+    private boolean isDetailFieldLabel(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        String text = value.trim().replace('\n', ' ');
+        return text.equalsIgnoreCase("Product")
+                || text.equalsIgnoreCase("Product Name")
+                || text.equalsIgnoreCase("Order Type")
+                || text.equalsIgnoreCase("Target Price")
+                || text.equalsIgnoreCase("Direction")
+                || text.equalsIgnoreCase("Volume")
+                || text.equalsIgnoreCase("Status")
+                || text.equalsIgnoreCase("Validity")
+                || text.equalsIgnoreCase("Estimated Margin")
+                || text.equalsIgnoreCase("Cancel Order");
+    }
+
+    private boolean productNameIsShown(String value) {
+        if (value == null || value.isBlank() || "symbol not found".equals(value)) {
+            return false;
+        }
+        if (hasNode(value) || uiContains(value)) {
+            return true;
+        }
+        return pageSourceContains(value);
+    }
+
+    private boolean pageSourceContains(String value) {
         try {
-            for (WebElement el : driver.findElements(By.xpath(
-                    "//*[@text='" + value + "' or @content-desc='" + value + "']"))) {
-                try {
-                    String text = el.getText();
-                    if (text == null || text.isBlank()) {
-                        text = el.getAttribute("content-desc");
+            String source = driver.getPageSource();
+            return source != null && source.contains(value);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private boolean isKnownProduct(String value) {
+        return value != null && !value.isBlank() && !"symbol not found".equals(value);
+    }
+
+    private List<String> knownProductNames() {
+        return List.of("Hong Kong Gold", "RMB Kilobar Gold", "Spot Silver", "Spot Gold", "Silver", "Gold");
+    }
+
+    private boolean containsIgnoreCase(String text, String fragment) {
+        return text != null && fragment != null
+                && text.toLowerCase().contains(fragment.toLowerCase());
+    }
+
+    private String readProductFieldText() {
+        try {
+            String text = readElementText(productAos);
+            if (text != null && !text.isBlank()) {
+                return text;
+            }
+        } catch (RuntimeException ignored) {
+        }
+        try {
+            for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
+                String text = readElementText(el);
+                for (String name : knownProductNames()) {
+                    if (containsIgnoreCase(text, name)) {
+                        return name;
                     }
-                    if (value.equals(text)) {
-                        return true;
-                    }
-                } catch (StaleElementReferenceException ignored) {
                 }
             }
         } catch (StaleElementReferenceException ignored) {
         }
-        return false;
+        return null;
+    }
+
+    private String readElementText(WebElement element) {
+        try {
+            String text = element.getText();
+            if (text != null && !text.isBlank()) {
+                return text.trim();
+            }
+        } catch (RuntimeException ignored) {
+        }
+        for (String attr : List.of("text", "content-desc", "contentDescription")) {
+            try {
+                String value = element.getAttribute(attr);
+                if (value != null && !value.isBlank() && !"null".equalsIgnoreCase(value)) {
+                    return value.trim();
+                }
+            } catch (RuntimeException ignored) {
+            }
+        }
+        return "";
     }
 
     private String adjacentTextValue(String label) {
@@ -155,15 +331,27 @@ public class AppPendingOrderDetailsPage {
             List<String> texts = new ArrayList<>();
             for (WebElement element : elements) {
                 try {
-                    texts.add(element.getText());
+                    texts.add(readElementText(element));
                 } catch (StaleElementReferenceException ignored) {
                     texts.add("");
                 }
             }
             for (int i = 0; i < texts.size() - 1; i++) {
                 String currentLabel = texts.get(i);
-                if (currentLabel != null && currentLabel.equalsIgnoreCase(label)) {
-                    return texts.get(i + 1);
+                if (currentLabel == null || currentLabel.isBlank()) {
+                    continue;
+                }
+                if (currentLabel.equalsIgnoreCase(label) || currentLabel.replace('\n', ' ').equalsIgnoreCase(label)) {
+                    for (int j = i + 1; j < Math.min(i + 4, texts.size()); j++) {
+                        String next = texts.get(j);
+                        if (next == null || next.isBlank()) {
+                            continue;
+                        }
+                        if (isDetailFieldLabel(next) || !isUsableProductName(next)) {
+                            return null;
+                        }
+                        return next;
+                    }
                 }
             }
         } catch (StaleElementReferenceException ignored) {

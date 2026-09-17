@@ -126,14 +126,13 @@ public class BaseTest {
                 driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(50));
                 driver.get(setDomain(productEnv, productType, productEntity));
             } else if (mobilePlatform.getPlatform().equalsIgnoreCase("ANDROID")) {
+                if (canReuseAppiumSession()) {
+                    System.out.println("Reusing existing Android session; app will not be relaunched");
+                    return driver;
+                }
                 // Initialize Android driver
                 driver = mobileDriver.initializeAndroidDriver(appConfig.getAndroidAppPath(),appConfig.getAndroidPackage());
-//                driver = mobileDriver.initializeAndroidDriver(
-//                        "com.emperorfs.ebltrading",
-//                        "com.emperorfs.ebltrading.MainActivity"
-//                );
-
-                ((CanRecordScreen) driver).startRecordingScreen();
+                startAndroidScreenRecording();
             } else if (mobilePlatform.getPlatform().equalsIgnoreCase("IOS")) {
                 // Initialize iOS driver
                 driver = mobileDriver.initializeiOSDriver();
@@ -146,6 +145,57 @@ public class BaseTest {
             System.err.println("Failed to initialize driver: " + e.getMessage());
             throw new RuntimeException("Driver initialization failed", e);
         }
+    }
+
+    private boolean canReuseAppiumSession() {
+        if (!(driver instanceof AppiumDriver appiumDriver) || appiumDriver.getSessionId() == null) {
+            return false;
+        }
+        try {
+            if (appiumDriver instanceof io.appium.java_client.android.AndroidDriver androidDriver) {
+                String pkg = androidDriver.getCurrentPackage();
+                return pkg != null && !pkg.isBlank();
+            }
+            return true;
+        } catch (Exception e) {
+            System.err.println("Existing Appium session is not reusable: " + e.getMessage());
+            try {
+                driver.quit();
+            } catch (Exception ignored) {
+            }
+            driver = null;
+            return false;
+        }
+    }
+
+    private void startAndroidScreenRecording() {
+        try {
+            ((CanRecordScreen) driver).startRecordingScreen();
+        } catch (WebDriverException e) {
+            System.err.println("startRecordingScreen failed: " + e.getMessage());
+            if (!isSessionHangUp(e)) {
+                throw e;
+            }
+            System.err.println("Recreating Android session after recording proxy failure");
+            try {
+                driver.quit();
+            } catch (Exception ignored) {
+            }
+            driver = null;
+            try {
+                driver = mobileDriver.initializeAndroidDriver(appConfig.getAndroidAppPath(), appConfig.getAndroidPackage());
+                ((CanRecordScreen) driver).startRecordingScreen();
+            } catch (Exception retryError) {
+                throw new RuntimeException("Failed to start Android screen recording", retryError);
+            }
+        }
+    }
+
+    private boolean isSessionHangUp(Throwable error) {
+        String message = String.valueOf(error.getMessage()).toLowerCase(Locale.ROOT);
+        return message.contains("socket hang up")
+                || message.contains("could not proxy")
+                || message.contains("cannot be proxied");
     }
 
     /**

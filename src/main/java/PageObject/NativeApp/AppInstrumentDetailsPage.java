@@ -223,7 +223,24 @@ public class AppInstrumentDetailsPage {
 
     private WebElement tpslEditField(String fieldName) {
         revealTpslField(fieldName);
-        WebElement label = tpslFieldLabel(fieldName);
+        return editFieldNear(tpslFieldLabel(fieldName), fieldName);
+    }
+
+    private WebElement pendingPriceEditField() {
+        WebElement label = pendingPriceLabel();
+        if (label != null) {
+            try {
+                return editFieldNear(label, "Price");
+            } catch (NoSuchElementException ignored) {
+            }
+        }
+        if (editTextFieldAos != null && editTextFieldAos.size() > 1) {
+            return editTextFieldAos.get(1);
+        }
+        throw new NoSuchElementException("Could not find Price EditText");
+    }
+
+    private WebElement editFieldNear(WebElement label, String fieldName) {
         int[] labelBounds = parseBounds(elementAttribute(label, "bounds"));
         WebElement closest = null;
         int bestScore = Integer.MAX_VALUE;
@@ -322,10 +339,15 @@ public class AppInstrumentDetailsPage {
     }
 
     private String nearbyConstraintText(WebElement label) {
+        return nearbyConstraintText(label, 48);
+    }
+
+    private String nearbyConstraintText(WebElement label, int maxYGap) {
         int[] labelBounds = parseBounds(elementAttribute(label, "bounds"));
         if (labelBounds == null) {
             return "";
         }
+        int gap = Math.max(48, maxYGap);
         StringBuilder extra = new StringBuilder();
         int labelCenterY = (labelBounds[1] + labelBounds[3]) / 2;
         for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
@@ -335,13 +357,13 @@ public class AppInstrumentDetailsPage {
                     continue;
                 }
                 int centerY = (bounds[1] + bounds[3]) / 2;
-                if (Math.abs(centerY - labelCenterY) > 48 && bounds[1] > labelBounds[3] + 80) {
+                if (Math.abs(centerY - labelCenterY) > gap && bounds[1] > labelBounds[3] + gap) {
                     continue;
                 }
-                if (Math.abs(centerY - labelCenterY) > 48 && bounds[1] < labelBounds[1] - 20) {
+                if (Math.abs(centerY - labelCenterY) > gap && bounds[1] < labelBounds[1] - 20) {
                     continue;
                 }
-                extra.append(' ').append(safeLabelText(el));
+                extra.append(' ').append(firstNonBlank(safeLabelText(el), elementAttribute(el, "content-desc")));
             } catch (StaleElementReferenceException ignored) {
             }
         }
@@ -448,51 +470,120 @@ public class AppInstrumentDetailsPage {
         if (AppSettingPage.isTradeConfirmNeeded) {
             executedPrice = stopOrderPrice;
         }
-        return price;
+        getPageElement.logInfo("Pending order price from constraint " + threshold + " -> " + stopOrderPrice);
+        return stopOrderPrice;
     }
 
     private String waitForConstraintPrice(boolean greaterOrEqual) {
-        try {
-            return new WebDriverWait(driver, Duration.ofSeconds(10))
-                    .ignoring(StaleElementReferenceException.class)
-                    .until(d -> readConstraintPrice(greaterOrEqual));
-        } catch (TimeoutException e) {
-            return readConstraintPrice(greaterOrEqual);
+        TimeoutException lastTimeout = null;
+        for (int swipe = 0; swipe < 3; swipe++) {
+            try {
+                String price = new WebDriverWait(driver, Duration.ofSeconds(8))
+                        .ignoring(StaleElementReferenceException.class)
+                        .until(d -> readConstraintPrice(greaterOrEqual));
+                if (price != null && !price.isBlank()) {
+                    return price;
+                }
+            } catch (TimeoutException e) {
+                lastTimeout = e;
+            }
+            String immediate = readConstraintPrice(greaterOrEqual);
+            if (immediate != null && !immediate.isBlank()) {
+                return immediate;
+            }
+            if (swipe < 2) {
+                abs.swipeUp(driver);
+            }
         }
+        if (lastTimeout != null) {
+            getPageElement.logInfo("Pending Price constraint not visible: " + lastTimeout.getMessage());
+        }
+        return readConstraintPrice(greaterOrEqual);
     }
 
     private String readConstraintPrice(boolean greaterOrEqual) {
-        List<String> needles = greaterOrEqual
-                ? List.of("≥", ">=", "＞=")
-                : List.of("≤", "<=", "＜=");
+        String sign = greaterOrEqual ? "\u2265" : "\u2264";
+        String altSign = greaterOrEqual ? ">=" : "<=";
+        WebElement label = pendingPriceLabel();
+        if (label != null) {
+            int yGap = Math.max(120, (int) (driver.manage().window().getSize().getHeight() * 0.08));
+            String combined = tpslLabelText(label) + " " + nearbyConstraintText(label, yGap);
+            String fromLabel = extractConstraintNumber(combined, sign, altSign);
+            if (fromLabel != null) {
+                return fromLabel;
+            }
+        }
+        return scanConstraintFromVisibleText(sign, altSign);
+    }
+
+    private WebElement pendingPriceLabel() {
+        WebElement best = null;
+        int bestY = Integer.MAX_VALUE;
+        int minY = (int) (driver.manage().window().getSize().getHeight() * 0.12);
         for (WebElement el : driver.findElements(By.xpath(
                 "//*[contains(@text,'Price') or contains(@content-desc,'Price')]"))) {
             try {
-                String text = el.getText();
-                if (text == null || text.isBlank()) {
-                    text = el.getAttribute("content-desc");
-                }
-                if (text == null || !text.contains("Price")) {
+                String text = tpslLabelText(el);
+                if (!isPendingPriceConstraintLabel(text)) {
                     continue;
                 }
-                boolean matches = false;
-                for (String needle : needles) {
-                    if (text.contains(needle)) {
-                        matches = true;
-                        break;
-                    }
-                }
-                if (!matches) {
+                int[] box = parseBounds(elementAttribute(el, "bounds"));
+                if (box == null || box[1] < minY) {
                     continue;
                 }
-                Matcher matcher = Pattern.compile("(\\d+[.,]\\d+)").matcher(text);
-                if (matcher.find()) {
-                    return matcher.group(1).replace(",", "");
+                if (box[1] < bestY) {
+                    bestY = box[1];
+                    best = el;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return best;
+    }
+
+    private boolean isPendingPriceConstraintLabel(String text) {
+        if (text == null || text.isBlank() || !text.toLowerCase(Locale.ROOT).contains("price")) {
+            return false;
+        }
+        String lower = text.toLowerCase(Locale.ROOT);
+        return !lower.contains("last")
+                && !lower.contains("bid")
+                && !lower.contains("ask")
+                && !lower.contains("stop loss")
+                && !lower.contains("take profit")
+                && !lower.contains("spread")
+                && !lower.contains("change");
+    }
+
+    private String scanConstraintFromVisibleText(String sign, String altSign) {
+        for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
+            try {
+                String text = firstNonBlank(safeLabelText(el), elementAttribute(el, "content-desc"));
+                if (text.isBlank()) {
+                    continue;
+                }
+                if (!isPendingPriceConstraintLabel(text) && !looksLikeConstraintHint(text, sign, altSign)) {
+                    continue;
+                }
+                String price = extractConstraintNumber(text, sign, altSign);
+                if (price != null) {
+                    return price;
                 }
             } catch (StaleElementReferenceException ignored) {
             }
         }
         return null;
+    }
+
+    private boolean looksLikeConstraintHint(String text, String sign, String altSign) {
+        return text.contains(sign)
+                || text.contains(altSign)
+                || text.contains("\u2264")
+                || text.contains("\u2265")
+                || text.contains("<=")
+                || text.contains(">=")
+                || text.contains("<")
+                || text.contains(">");
     }
 
     public String getDefaultPrice(String direction, String priceType, String decimal) {
@@ -522,9 +613,10 @@ public class AppInstrumentDetailsPage {
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), lotSize);
                 }
                 case "Price" -> {
-                    abs.waitUntilElementFind(editTextFieldAos.get(1));
-                    editTextFieldAos.get(1).clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType, decimal));
+                    WebElement priceField = pendingPriceEditField();
+                    priceField.clear();
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, priceField,
+                            getStopOrderPrice(direction, stopOrderType, decimal));
                 }
             }
         }
@@ -557,9 +649,10 @@ public class AppInstrumentDetailsPage {
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), lotSize);
                 }
                 case "Price" -> {
-                    abs.waitUntilElementFind(editTextFieldAos.get(1));
-                    editTextFieldAos.get(1).clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType, decimal));
+                    WebElement priceField = pendingPriceEditField();
+                    priceField.clear();
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, priceField,
+                            getStopOrderPrice(direction, stopOrderType, decimal));
                 }
             }
         }
@@ -592,8 +685,10 @@ public class AppInstrumentDetailsPage {
                 }
                 case "Lot Size" -> editTextFieldAos.getFirst().sendKeys("0.45");
                 case "Price" -> {
-                    editTextFieldAos.get(1).clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.get(1), getStopOrderPrice(direction, stopOrderType, decimal));
+                    WebElement priceField = pendingPriceEditField();
+                    priceField.clear();
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, priceField,
+                            getStopOrderPrice(direction, stopOrderType, decimal));
                 }
                 case "Stop" -> {
                     String editStopPrice = getEditPrice(direction, decimal);
