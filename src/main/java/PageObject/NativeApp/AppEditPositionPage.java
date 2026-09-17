@@ -607,15 +607,35 @@ public class AppEditPositionPage {
     }
 
     public void tapsButton(String buttonName) {
-        if (driver instanceof AndroidDriver) {
-            if (buttonName.contains("Cancel Order")) {
-                WebElement button = driver.findElement(By.xpath("//android.widget.TextView[@text=\"" + buttonName + "\"]/parent::android.view.ViewGroup"));
-                abs.waitUntilElementFind(button);
-                button.click();
-            } else {
-                driver.findElement(By.xpath("(//android.widget.TextView[@text=\"" + buttonName + "\"])[2]/parent::android.view.ViewGroup")).click();
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        // Keyboard covers the pinned submit bar after typing Stop Loss / Take Profit.
+        hideAndroidKeyboard();
+        TimeoutException lastError = null;
+        for (By locator : submitButtonLocators(buttonName)) {
+            try {
+                // Header title is also "Edit Position"; tap the bottom-most control (the submit CTA).
+                abs.tapBottomMost(locator, 10);
+                System.out.println("Tapped edit-position page button: " + buttonName);
+                return;
+            } catch (TimeoutException e) {
+                lastError = e;
             }
         }
+        throw lastError != null
+                ? lastError
+                : new TimeoutException("Button was not visible on Edit Position: " + buttonName);
+    }
+
+    private List<By> submitButtonLocators(String buttonName) {
+        return List.of(
+                By.xpath("//*[@clickable='true' and @content-desc='" + buttonName + "']"),
+                By.xpath("//android.view.ViewGroup[@clickable='true' and @content-desc='" + buttonName + "']"),
+                By.xpath("//android.widget.TextView[@text='" + buttonName
+                        + "']/parent::android.view.ViewGroup[@clickable='true']"),
+                By.xpath("//*[@text='" + buttonName + "' or @content-desc='" + buttonName + "']")
+        );
     }
 
     public boolean getTextMessage(String messageContent) {

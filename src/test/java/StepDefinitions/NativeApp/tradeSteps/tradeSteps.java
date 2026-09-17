@@ -243,7 +243,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees expected default volume on the instrument details page")
     public void the_user_sees_expected_default_volume_on_the_instrument_details_page() {
-        Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getInputFieldValue("Lots"), "1.00");
+        Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getInputFieldValue("Lots"), "0.10");
     }
 
     @And("the user fills in the text field {string} with the value less than minimum on the instrument details page")
