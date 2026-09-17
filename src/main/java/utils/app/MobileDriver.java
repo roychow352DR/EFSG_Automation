@@ -130,8 +130,40 @@ public class MobileDriver {
 
     private void waitForAndroidAppReady(AppiumDriver driver, String appPackage) {
         System.out.println("Waiting for Android app to be ready...");
-        waitUntilAppInForeground(driver, appPackage);
         waitForFirstScreen(driver);
+    }
+
+    private boolean isRecoverableSessionError(Throwable error) {
+        String message = String.valueOf(error.getMessage()).toLowerCase(Locale.ROOT);
+        if (message.contains("socket hang up")
+                || message.contains("could not proxy")
+                || message.contains("cannot be proxied")
+                || message.contains("instrumentation process is not running")
+                || (message.contains("cannot start the") && message.contains("uiautomator2"))) {
+            return true;
+        }
+        Throwable cause = error.getCause();
+        return cause != null && cause != error && isRecoverableSessionError(cause);
+    }
+
+    private void quitQuietly() {
+        if (driver == null) {
+            return;
+        }
+        try {
+            driver.quit();
+        } catch (Exception ignored) {
+        } finally {
+            driver = null;
+        }
+    }
+
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private void waitUntilAppInForeground(AppiumDriver driver, String appPackage) {
@@ -207,47 +239,33 @@ public class MobileDriver {
      * Initializes and configures the Android driver with UiAutomator2
      */
     public AndroidDriver initializeAndroidDriver(String androidAppPath,String androidPackage) throws MalformedURLException {
-        try {
-            // Start Appium server
-            startAppiumServer();
-
-            // Configure Android options
-            aosOptions = new UiAutomator2Options();
-            configureAndroidOptions(androidAppPath,androidPackage);
-
-            // Initialize Android driver
-            System.out.println("Initializing Android driver...");
-            driver = new AndroidDriver(new URL(APPIUM_SERVER_URL), aosOptions);
-            driver.manage().timeouts().implicitlyWait(IMPLICIT_WAIT);
-            System.out.println("Android driver initialized successfully. Session ID: " + driver.getSessionId());
-
+        startAppiumServer();
+        Exception lastError = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
             try {
-                if (driver instanceof InteractsWithApps apps) {
-                    var state = apps.queryAppState(androidPackage);
-                    System.out.println("Initial app state after driver creation: " + state);
-                    if (state.name().contains("NOT_RUNNING") || state.name().contains("RUNNING_IN_BACKGROUND")) {
-                        System.out.println("Activating app to bring to foreground...");
-                        apps.activateApp(androidPackage);
-                    }
+                if (attempt > 1) {
+                    System.out.println("Retrying Android session create, attempt " + attempt);
+                    quitQuietly();
+                    sleepQuietly(2000);
                 }
-            } catch (Exception e) {
-                System.err.println("Warning: Error activating app after driver init: " + e.getMessage());
-            }
-
-            // Wait for app to be ready (with error handling)
-            try {
+                aosOptions = new UiAutomator2Options();
+                configureAndroidOptions(androidAppPath, androidPackage);
+                System.out.println("Initializing Android driver...");
+                driver = new AndroidDriver(new URL(APPIUM_SERVER_URL), aosOptions);
+                driver.manage().timeouts().implicitlyWait(IMPLICIT_WAIT);
+                System.out.println("Android driver initialized successfully. Session ID: " + driver.getSessionId());
                 waitForAppReady(driver, androidPackage);
+                return (AndroidDriver) driver;
             } catch (Exception e) {
-                System.err.println("Warning: Error during app readiness check, but continuing: " + e.getMessage());
-                // Continue anyway - the app might still be usable
+                lastError = e;
+                System.err.println("Error initializing Android driver (attempt " + attempt + "): " + e.getMessage());
+                if (!isRecoverableSessionError(e) || attempt == 3) {
+                    e.printStackTrace();
+                    throw new RuntimeException("Failed to initialize Android driver", e);
+                }
             }
-
-            return (AndroidDriver) driver;
-        } catch (Exception e) {
-            System.err.println("Error initializing Android driver: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Failed to initialize Android driver", e);
         }
+        throw new RuntimeException("Failed to initialize Android driver", lastError);
     }
 
     /**
@@ -361,6 +379,10 @@ public class MobileDriver {
         aosOptions.setCapability("autoLaunch", true);
         aosOptions.setCapability("skipUnlock", true);
         aosOptions.setCapability("skipServerInstallation", false);
+        aosOptions.setNewCommandTimeout(Duration.ofSeconds(300));
+        aosOptions.setCapability("appium:uiautomator2ServerLaunchTimeout", 60_000);
+        aosOptions.setCapability("appium:uiautomator2ServerInstallTimeout", 60_000);
+        aosOptions.setCapability("appium:adbExecTimeout", 60_000);
 
         // Handle app path configuration. A .zip is unpacked first so Appium receives a real APK.
         if (androidAppPath != null && !androidAppPath.isBlank()) {

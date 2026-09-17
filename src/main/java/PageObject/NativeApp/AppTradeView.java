@@ -488,6 +488,9 @@ public class AppTradeView {
             return;
         }
         retryOnStale(() -> {
+            if ("detail".equals(buttonName) && detailsFormVisible()) {
+                return;
+            }
             hideAndroidKeyboard();
             waitUntilOverlayGone();
             dismissTradeConfirmIfShown();
@@ -773,8 +776,14 @@ public class AppTradeView {
     }
 
     private void openRowDetails() {
+        if (detailsFormVisible()) {
+            return;
+        }
         waitForFirstListRow();
-        if (openRowAction("detail", () -> isRowDetailsOpen(8))) {
+        if (openRowAction("detail", this::detailsFormVisible)) {
+            return;
+        }
+        if (detailsFormVisible()) {
             return;
         }
         throw new TimeoutException("Details page did not open after tapping the detail CTA");
@@ -843,18 +852,21 @@ public class AppTradeView {
         }
     }
 
-    private boolean isRowDetailsOpen(int seconds) {
-        try {
-            new WebDriverWait(driver, Duration.ofSeconds(seconds))
-                    .ignoring(StaleElementReferenceException.class)
-                    .until(d ->
-                    !d.findElements(By.xpath(
-                            "//*[@text='Position Details' or @text='Pending Order Details' or @text='Position Detail'"
-                                    + " or @content-desc='Position Details' or @content-desc='Pending Order Details']"
-                    )).isEmpty()
-            );
+    private boolean detailsFormVisible() {
+        if (!safeFindElements(By.xpath(
+                "//*[contains(@text,'Order Detail') or contains(@content-desc,'Order Detail')"
+                        + " or @text='Position Details' or @content-desc='Position Details'"
+                        + " or @text='Position Detail' or @content-desc='Position Detail'"
+                        + " or @text='Target Price' or @text='Product Name' or @text='Cancel Order']"
+        )).isEmpty()) {
             return true;
-        } catch (TimeoutException e) {
+        }
+        try {
+            return !driver.findElements(AppiumBy.androidUIAutomator(
+                    "new UiSelector().textContains(\"Order Detail\")")).isEmpty()
+                    || !driver.findElements(AppiumBy.androidUIAutomator(
+                    "new UiSelector().descriptionContains(\"Order Detail\")")).isEmpty();
+        } catch (RuntimeException e) {
             return false;
         }
     }
@@ -2179,7 +2191,17 @@ public class AppTradeView {
             return;
         }
         waitUntilOverlayGone();
-        tapBackChevron();
+        hideAndroidKeyboard();
+        tapHeaderBack();
+        waitUntilOverlayGone();
+        if (stillOnTradeView()) {
+            getPageElement.logInfo("Still on trade view after back; tapping header back again");
+            tapHeaderBack();
+        }
+    }
+
+    private boolean stillOnTradeView() {
+        return compactTabPoint("Positions") != null && compactTabPoint("Pending Orders") != null;
     }
 
     private void tapBackChevron() {
@@ -2188,23 +2210,159 @@ public class AppTradeView {
 
     private void tapHeaderBack() {
         hideAndroidKeyboard();
-        List<By> locators = Arrays.asList(
-                By.xpath("//*[@content-desc='Back']"),
-                By.xpath("//*[@text='Back']"),
-                By.xpath("//*[@content-desc='Navigate up']"),
-                By.xpath("//*[@content-desc='back']")
-        );
-        for (By locator : locators) {
-            try {
-                abs.tapVisible(locator, 1);
+        Point svg = topLeftHeaderSvg();
+        if (svg != null) {
+            getPageElement.logInfo("Tapping header back icon at " + svg.getX() + "," + svg.getY());
+            abs.tapAt(svg.getX(), svg.getY());
+            return;
+        }
+        WebElement back = headerBackElement();
+        if (back != null) {
+            int[] box = visibleBox(back);
+            if (box != null) {
+                Point point = headerIconTapPoint(box);
+                getPageElement.logInfo("Tapping header back control at " + point.getX() + "," + point.getY()
+                        + " bounds=" + elementAttribute(back, "bounds"));
+                abs.tapAt(point.getX(), point.getY());
                 return;
-            } catch (TimeoutException | NoSuchElementException ignored) {
             }
         }
+        Point point = headerBackPoint();
+        getPageElement.logInfo("Tapping header back fallback at " + point.getX() + "," + point.getY());
+        abs.tapAt(point.getX(), point.getY());
+    }
+
+    private Point headerBackPoint() {
+        Point svg = topLeftHeaderSvg();
+        if (svg != null) {
+            return svg;
+        }
+        WebElement back = headerBackElement();
+        if (back != null) {
+            int[] box = visibleBox(back);
+            if (box != null) {
+                return headerIconTapPoint(box);
+            }
+        }
+        Point labeled = firstHeaderBackLabel();
+        if (labeled != null) {
+            return labeled;
+        }
         Dimension window = driver.manage().window().getSize();
-        int y = Math.max(px(20), Math.min(px(48), (int) (window.getHeight() * 0.07)));
-        int x = Math.max(px(16), Math.min(px(28), window.getWidth() / 12));
-        abs.tapAt(x, y);
+        int x = Math.max(48, (int) (window.getWidth() * 0.066));
+        int y = Math.max(200, (int) (window.getHeight() * 0.084));
+        y = Math.min(y, (int) (window.getHeight() * 0.12));
+        return new Point(x, y);
+    }
+
+    private WebElement headerBackElement() {
+        Dimension window = driver.manage().window().getSize();
+        int maxLeft = (int) (window.getWidth() * 0.15);
+        int maxTop = (int) (window.getHeight() * 0.16);
+        int maxRight = (int) (window.getWidth() * 0.20);
+        int maxWidth = (int) (window.getWidth() * 0.16);
+        int maxHeight = (int) (window.getHeight() * 0.14);
+        int maxBottom = (int) (window.getHeight() * 0.22);
+        for (int index = 0; index < 4; index++) {
+            List<WebElement> matches = safeFindElements(AppiumBy.androidUIAutomator(
+                    "new UiSelector().className(\"android.view.ViewGroup\").clickable(true).instance(" + index + ")"));
+            if (matches.isEmpty()) {
+                break;
+            }
+            WebElement el = matches.get(0);
+            if (looksLikeTradeCta(elementAttribute(el, "content-desc"))) {
+                continue;
+            }
+            int[] box = visibleBox(el);
+            if (box != null && isHeaderBackBox(box, maxLeft, maxTop, maxRight, maxWidth, maxHeight, maxBottom)) {
+                return el;
+            }
+        }
+        return null;
+    }
+
+    private Point topLeftHeaderSvg() {
+        Dimension window = driver.manage().window().getSize();
+        int maxLeft = (int) (window.getWidth() * 0.15);
+        int maxTop = (int) (window.getHeight() * 0.14);
+        int maxRight = (int) (window.getWidth() * 0.18);
+        for (int index = 0; index < 3; index++) {
+            List<WebElement> matches = safeFindElements(AppiumBy.androidUIAutomator(
+                    "new UiSelector().className(\"com.horcrux.svg.SvgView\").instance(" + index + ")"));
+            if (matches.isEmpty()) {
+                break;
+            }
+            int[] box = visibleBox(matches.get(0));
+            if (box == null) {
+                continue;
+            }
+            int width = box[2] - box[0];
+            int height = box[3] - box[1];
+            if (box[0] > maxLeft || box[1] > maxTop || box[2] > maxRight) {
+                continue;
+            }
+            if (width < 24 || width > 160 || height < 24 || height > 160) {
+                continue;
+            }
+            return new Point((box[0] + box[2]) / 2, (box[1] + box[3]) / 2);
+        }
+        return null;
+    }
+
+    private Point firstHeaderBackLabel() {
+        Dimension window = driver.manage().window().getSize();
+        int maxBottom = (int) (window.getHeight() * 0.22);
+        for (By locator : List.of(
+                By.xpath("//*[@content-desc='Back' or @content-desc='back' or @content-desc='Navigate up']"),
+                By.xpath("//*[@text='Back']")
+        )) {
+            for (WebElement el : safeFindElements(locator)) {
+                if (looksLikeTradeCta(elementAttribute(el, "content-desc"))
+                        || looksLikeTradeCta(elementAttribute(el, "text"))) {
+                    continue;
+                }
+                int[] box = visibleBox(el);
+                if (box == null || box[1] > maxBottom || box[3] > window.getHeight() / 2) {
+                    continue;
+                }
+                return headerIconTapPoint(box);
+            }
+        }
+        return null;
+    }
+
+    private boolean isHeaderBackBox(int[] box, int maxLeft, int maxTop, int maxRight,
+                                    int maxWidth, int maxHeight, int maxBottom) {
+        int width = box[2] - box[0];
+        int height = box[3] - box[1];
+        return box[0] <= maxLeft
+                && box[1] <= maxTop
+                && box[2] <= maxRight
+                && box[3] <= maxBottom
+                && width >= 40
+                && width <= maxWidth
+                && height >= 40
+                && height <= maxHeight;
+    }
+
+    private Point headerIconTapPoint(int[] box) {
+        int x = (box[0] + box[2]) / 2;
+        int iconHeight = Math.min(box[3] - box[1], Math.max(48, (box[3] - box[1]) * 2 / 5));
+        int y = box[1] + iconHeight / 2;
+        return new Point(x, y);
+    }
+
+    private boolean looksLikeTradeCta(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        String upper = value.toUpperCase(Locale.ROOT);
+        return upper.startsWith("BUY")
+                || upper.startsWith("SELL")
+                || upper.contains("MARKETS")
+                || upper.contains("POSITION")
+                || upper.contains("PENDING")
+                || upper.contains("OVERVIEW");
     }
 
     private WebElement pageTitleInHeader() {

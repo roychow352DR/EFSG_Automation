@@ -336,12 +336,26 @@ public class GetPageElement {
         if ("Status".equals(uiLabel)) {
             return value.matches("(?i)Open|Pending|Filled|Cancelled|Canceled|Partial.*");
         }
-        if ("Product".equals(uiLabel)) {
-            String text = value.trim();
-            return !text.equalsIgnoreCase("Name")
-                    && text.matches("[A-Z]{3,}[A-Z0-9]{2,}");
+        if ("Product".equals(uiLabel) || "Product Name".equals(uiLabel)) {
+            return isProductNameValue(value);
         }
         return true;
+    }
+
+    private boolean isProductNameValue(String value) {
+        String text = value.trim().replace('\n', ' ');
+        if (text.equalsIgnoreCase("Name") || text.equalsIgnoreCase("Product")
+                || text.equalsIgnoreCase("Product Name")) {
+            return false;
+        }
+        if (text.matches("(?i).*(limit\\s*/\\s*stop|buy limit|sell limit|buy stop|sell stop|market order).*")) {
+            return false;
+        }
+        if (text.matches("(?i).*(gold|silver).*")) {
+            return true;
+        }
+        return text.matches("[A-Z]{3,}[A-Z0-9]{2,}")
+                || text.matches("(?i)[A-Za-z][A-Za-z ]{1,40}");
     }
 
     private boolean isMoneyLabel(String label) {
