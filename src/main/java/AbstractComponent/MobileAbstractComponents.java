@@ -836,6 +836,84 @@ public class MobileAbstractComponents {
         }
     }
 
+    public void waitUntilLaunchComplete(Duration timeout) {
+        relaxUiAutomatorIdleWait();
+        long deadline = System.nanoTime() + timeout.toNanos();
+        while (System.nanoTime() < deadline) {
+            dismissAndroidLaunchBlockers();
+            if (isAndroidHomeChromeVisible()) {
+                return;
+            }
+            sleep(400);
+        }
+        dismissAndroidLaunchBlockers();
+        if (isAndroidHomeChromeVisible()) {
+            return;
+        }
+        throw new TimeoutException("App home chrome was not visible after launch wait of " + timeout.toSeconds() + "s");
+    }
+
+    public void relaxUiAutomatorIdleWait() {
+        if (!(driver instanceof AndroidDriver androidDriver)) {
+            return;
+        }
+        try {
+            androidDriver.setSetting("waitForIdleTimeout", 0);
+        } catch (Exception e) {
+            System.err.println("Could not set waitForIdleTimeout: " + e.getMessage());
+        }
+    }
+
+    public void dismissAndroidLaunchBlockers() {
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        for (By locator : launchBlockerLocators()) {
+            try {
+                for (WebElement element : driver.findElements(locator)) {
+                    if (!element.isDisplayed()) {
+                        continue;
+                    }
+                    System.out.println("Dismissing Android launch blocker: " + locator);
+                    element.click();
+                    sleep(400);
+                    return;
+                }
+            } catch (RuntimeException ignored) {
+            }
+        }
+    }
+
+    public boolean isAndroidHomeChromeVisible() {
+        try {
+            for (WebElement element : driver.findElements(androidHomeChromeLocator())) {
+                if (element.isDisplayed()) {
+                    return true;
+                }
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return false;
+    }
+
+    private By androidHomeChromeLocator() {
+        return By.xpath(
+                "//*[@text='Home' or @text='Markets' or @text='Me' or @text='Sign Up / Login'"
+                        + " or @text='Login' or @text='Open a Live Trading Accounts']"
+        );
+    }
+
+    private List<By> launchBlockerLocators() {
+        return List.of(
+                By.id("com.android.permissioncontroller:id/permission_allow_button"),
+                By.id("com.android.permissioncontroller:id/permission_allow_foreground_only_button"),
+                By.id("com.android.permissioncontroller:id/permission_allow_one_time_button"),
+                By.id("com.android.packageinstaller:id/permission_allow_button"),
+                By.xpath("//*[@text='While using the app' or @text='Allow all the time']"),
+                By.xpath("//*[@text='Allow' or @text='ALLOW']"),
+                By.xpath("//*[@text='Agree' or @text='AGREE']")
+        );
+    }
 
 }
 

@@ -76,8 +76,7 @@ public class AppHomePage {
 
     public boolean bottomButtonIsTapped() {
         if (driver instanceof AndroidDriver) {
-            abs.waitUntilElementVisible(By.xpath(
-                    "//*[@text='Home' or @text='Sign Up / Login' or @text='Markets']"));
+            abs.waitUntilLaunchComplete(Duration.ofSeconds(30));
             return true;
         }
         applicationButtonIos.click();
