@@ -6,6 +6,7 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.options.UiAutomator2Options;
 import io.appium.java_client.ios.IOSDriver;
 import io.appium.java_client.ios.options.XCUITestOptions;
+import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.service.local.AppiumDriverLocalService;
 import io.appium.java_client.service.local.AppiumServiceBuilder;
 import org.openqa.selenium.remote.DesiredCapabilities;
@@ -39,12 +40,9 @@ public class MobileDriver {
     private static final String APPIUM_SERVER_URL = "http://127.0.0.1:4723";
     private static final String APPIUM_JS_PATH = "//usr//local//lib//node_modules//appium//build//lib//main.js";
     private static final Duration IMPLICIT_WAIT = Duration.ZERO;
-    private static final Duration APP_READY_WAIT = Duration.ofSeconds(15);
+    private static final Duration APP_READY_WAIT = Duration.ofSeconds(45);
     // Package is entity-specific; the RN launcher class is still CopyMaster MainActivity.
     private static final String ANDROID_LAUNCH_ACTIVITY = "com.mfinance.copymaster.MainActivity";
-    private static final By ANDROID_FIRST_SCREEN = By.xpath(
-            "//*[@text='Home' or @text='Markets' or @text='Me' or @text='Sign Up / Login']"
-    );
     private static final Duration WDA_LAUNCH_TIMEOUT = Duration.ofSeconds(20);
     private static final String IOS_BUNDLE_ID = "com.efsg.eiehktrading.ios.sit";
     private static final String IOS_DEEPLINK = "eunify.eiehk.uat://app/tabDirectory?screen=Tab_Me";
@@ -130,7 +128,7 @@ public class MobileDriver {
 
     private void waitForAndroidAppReady(AppiumDriver driver, String appPackage) {
         System.out.println("Waiting for Android app to be ready...");
-        waitForFirstScreen(driver);
+        new MobileAbstractComponents(driver).waitUntilLaunchComplete(APP_READY_WAIT);
     }
 
     private boolean isRecoverableSessionError(Throwable error) {
@@ -189,8 +187,7 @@ public class MobileDriver {
 
     private boolean waitForFirstScreen(AppiumDriver driver) {
         try {
-            new WebDriverWait(driver, APP_READY_WAIT)
-                    .until(ExpectedConditions.visibilityOfElementLocated(ANDROID_FIRST_SCREEN));
+            new MobileAbstractComponents(driver).waitUntilLaunchComplete(APP_READY_WAIT);
             System.out.println("First screen is visible");
             return true;
         } catch (Exception e) {
@@ -383,6 +380,8 @@ public class MobileDriver {
         aosOptions.setCapability("appium:uiautomator2ServerLaunchTimeout", 60_000);
         aosOptions.setCapability("appium:uiautomator2ServerInstallTimeout", 60_000);
         aosOptions.setCapability("appium:adbExecTimeout", 60_000);
+        aosOptions.setCapability("appium:ignoreHiddenApiPolicyError", true);
+        aosOptions.setCapability("appium:settings[waitForIdleTimeout]", 0);
 
         // Handle app path configuration. A .zip is unpacked first so Appium receives a real APK.
         if (androidAppPath != null && !androidAppPath.isBlank()) {
