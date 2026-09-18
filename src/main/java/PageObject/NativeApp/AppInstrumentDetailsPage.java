@@ -442,9 +442,9 @@ public class AppInstrumentDetailsPage {
         if (text == null || text.isBlank()) {
             return null;
         }
-        String normalized = text.replace('\u00A0', ' ')
+        String normalized = normalizeConstraintDigits(text.replace('\u00A0', ' ')
                 .replace('\u2266', '\u2264')
-                .replace('\u2267', '\u2265');
+                .replace('\u2267', '\u2265'));
         boolean preferLower = "\u2264".equals(sign) || "<=".equals(sign) || "<".equals(sign);
         String[] tokens = preferLower
                 ? new String[]{sign, altSign, "\u2264", "<=", "<"}
@@ -462,11 +462,26 @@ public class AppInstrumentDetailsPage {
         if (idx < 0) {
             return null;
         }
-        Matcher matcher = Pattern.compile("(\\d+(?:[.,]\\d+)?)").matcher(normalized.substring(idx));
+        // Join split fragments so "4 352.39" / "4352 .39" stay 4352.39, not 352.39.
+        Matcher matcher = Pattern.compile("((?:\\d+[\\s,]*)+(?:[.,]\\d+)?)")
+                .matcher(normalized.substring(idx));
         if (!matcher.find()) {
             return null;
         }
-        return matcher.group(1).replace(",", "");
+        return matcher.group(1).replace(",", "").replace(" ", "");
+    }
+
+    private String normalizeConstraintDigits(String text) {
+        StringBuilder out = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c >= '\uFF10' && c <= '\uFF19') {
+                out.append((char) ('0' + (c - '\uFF10')));
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
     }
 
     private String safeLabelText(WebElement element) {
