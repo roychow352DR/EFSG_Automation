@@ -334,22 +334,80 @@ public class MobileAbstractComponents {
     }
 
     public void typeWithAndroidKeys(AndroidDriver driver, WebElement element, String text) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        StaleElementReferenceException lastStale = null;
         for (int attempt = 1; attempt <= 3; attempt++) {
             try {
                 tapElement(element);
-                break;
-            } catch (StaleElementReferenceException e) {
-                if (attempt == 3) {
-                    throw e;
+                sleep(250);
+                try {
+                    element.clear();
+                } catch (RuntimeException ignored) {
                 }
+                for (int i = 0; i < text.length(); i++) {
+                    driver.pressKey(new KeyEvent(mapCharToAndroidKey(text.charAt(i))));
+                    if (i == 0) {
+                        // First pressKey is often swallowed while the RN field is still focusing.
+                        sleep(80);
+                    }
+                }
+                String typed = readableFieldText(element);
+                if (firstCharacterDropped(text, typed) && attempt < 3) {
+                    System.out.println("First character dropped when typing '" + text + "', field='" + typed + "'");
+                    continue;
+                }
+                driver.pressKey(new KeyEvent(AndroidKey.ENTER));
+                return;
+            } catch (StaleElementReferenceException e) {
+                lastStale = e;
             }
         }
-
-        for (char c : text.toCharArray()) {
-            AndroidKey key = mapCharToAndroidKey(c);
-            driver.pressKey(new KeyEvent(key));
-        }
         driver.pressKey(new KeyEvent(AndroidKey.ENTER));
+        if (lastStale != null) {
+            throw lastStale;
+        }
+    }
+
+    private String readableFieldText(WebElement element) {
+        try {
+            String text = element.getText();
+            if (text != null && !text.isBlank() && !"null".equalsIgnoreCase(text)) {
+                return text.trim();
+            }
+        } catch (RuntimeException ignored) {
+        }
+        try {
+            String attr = element.getAttribute("text");
+            if (attr != null && !attr.isBlank() && !"null".equalsIgnoreCase(attr)) {
+                return attr.trim();
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return "";
+    }
+
+    private boolean firstCharacterDropped(String expected, String actual) {
+        String exp = digitsOf(expected);
+        String act = digitsOf(actual);
+        if (exp.isEmpty()) {
+            return false;
+        }
+        if (act.isEmpty()) {
+            return true;
+        }
+        if (act.equals(exp)) {
+            return false;
+        }
+        return exp.length() > 1 && act.equals(exp.substring(1));
+    }
+
+    private String digitsOf(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace(",", "").replaceAll("[^0-9.]", "");
     }
 
     public void tapEmptySpace(AppiumDriver driver) {
@@ -360,9 +418,15 @@ public class MobileAbstractComponents {
     }
 
     public void tapElement(WebElement element) {
+        Point point = centerIfShown(element);
+        if (point != null) {
+            tapAt(point.getX(), point.getY());
+            return;
+        }
         Point location = element.getLocation();
         Dimension size = element.getSize();
-        tapAt(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+        tapAt(location.getX() + Math.max(1, size.getWidth() / 2),
+                location.getY() + Math.max(1, size.getHeight() / 2));
     }
 
     public void tapVisible(By locator) {
