@@ -627,19 +627,31 @@ public class AppPortfolioPage {
 
     private void tapFirstRowDetailsCta(String buttonName) {
         waitForFirstPortfolioRow();
-        Point arrow = firstRowArrowPoint();
-        if (arrow != null) {
-            System.out.println("Tapping portfolio " + buttonName + " CTA at "
-                    + arrow.getX() + "," + arrow.getY());
-            abs.tapAt(arrow.getX(), arrow.getY());
-            if (detailsPageVisible(5)) {
+        List<Point> candidates = new ArrayList<>();
+        addUniquePoint(candidates, firstRowCtaPoint(buttonName));
+        addUniquePoint(candidates, firstRowArrowPoint());
+        addUniquePoint(candidates, estimatedCtaPoint("detail"));
+        for (Point point : candidates) {
+            System.out.println("Tapping portfolio first-row " + buttonName + " CTA at "
+                    + point.getX() + "," + point.getY());
+            abs.tapAt(point.getX(), point.getY());
+            if (detailsPageVisible(4)) {
                 return;
             }
         }
-        Point estimated = estimatedCtaPoint("arrow");
-        System.out.println("Retrying portfolio arrow CTA at estimated "
-                + estimated.getX() + "," + estimated.getY());
-        abs.tapAt(estimated.getX(), estimated.getY());
+    }
+
+    private void addUniquePoint(List<Point> points, Point point) {
+        if (point == null) {
+            return;
+        }
+        for (Point existing : points) {
+            if (Math.abs(existing.getX() - point.getX()) <= px(8)
+                    && Math.abs(existing.getY() - point.getY()) <= px(8)) {
+                return;
+            }
+        }
+        points.add(point);
     }
 
     private void waitForFirstPortfolioRow() {
@@ -652,14 +664,14 @@ public class AppPortfolioPage {
     }
 
     private Point firstRowArrowPoint() {
-        Dimension window = driver.manage().window().getSize();
-        int listTop = listAreaTopY();
-        int footerTop = footerTopY();
-        int minRight = (int) (window.getWidth() * 0.88);
+        int[] row = firstRowBand();
+        int rowTop = row[1];
+        int rowBottom = row[1] + row[3];
+        int rowRight = row[2] > row[0] ? row[2] : driver.manage().window().getSize().getWidth();
+        int minCenterX = rowRight / 2;
         int[] best = null;
-        int bestTop = Integer.MAX_VALUE;
-        for (WebElement el : driver.findElements(By.xpath(
-                "//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']"))) {
+        int bestRight = Integer.MIN_VALUE;
+        for (WebElement el : clickableRowCandidates()) {
             try {
                 int[] box = visibleBox(el);
                 if (box == null) {
@@ -667,18 +679,19 @@ public class AppPortfolioPage {
                 }
                 int width = box[2] - box[0];
                 int height = box[3] - box[1];
+                int centerX = (box[0] + box[2]) / 2;
                 int centerY = (box[1] + box[3]) / 2;
-                if (centerY < listTop || centerY > footerTop - 20) {
+                if (centerY < rowTop - px(8) || centerY > rowBottom + px(8)) {
                     continue;
                 }
-                if (box[2] < minRight) {
+                if (centerX < minCenterX) {
                     continue;
                 }
-                if (height < 16 || height > 120 || width < 16 || width > 500) {
+                if (width < px(12) || height < px(12) || width > px(180) || height > px(96)) {
                     continue;
                 }
-                if (box[1] < bestTop) {
-                    bestTop = box[1];
+                if (box[2] > bestRight) {
+                    bestRight = box[2];
                     best = box;
                 }
             } catch (StaleElementReferenceException ignored) {
@@ -687,8 +700,11 @@ public class AppPortfolioPage {
         if (best == null) {
             return null;
         }
-        // History arrow is the chevron on the right of the PnL chip, not the chip center.
-        int x = best[2] - Math.min(18, Math.max(8, (best[2] - best[0]) / 10));
+        int width = best[2] - best[0];
+        // Compact detail icon: tap center. Wide History PnL chip: tap the right-edge chevron.
+        int x = width > px(80)
+                ? best[2] - Math.min(px(16), Math.max(px(8), width / 10))
+                : (best[0] + best[2]) / 2;
         int y = (best[1] + best[3]) / 2;
         return new Point(x, y);
     }
@@ -721,15 +737,15 @@ public class AppPortfolioPage {
     }
 
     private List<int[]> firstRowIconsByGeometry() {
-        int[] row = firstPositionRowBounds();
-        int listTop = row != null ? row[1] : listAreaTopY();
-        int footerTop = row != null ? row[1] + row[3] : footerTopY();
-        int minLeft = (int) (driver.manage().window().getSize().getWidth() * 0.58);
+        int[] row = firstRowBand();
+        int rowTop = row[1];
+        int rowBottom = row[1] + row[3];
+        int minLeft = row[2] / 2;
         List<int[]> all = new ArrayList<>();
         for (WebElement el : clickableRowCandidates()) {
             try {
                 int[] box = visibleBox(el);
-                if (!isPortfolioRowCta(box, listTop, footerTop, minLeft)) {
+                if (!isPortfolioRowCta(box, rowTop, rowBottom, minLeft)) {
                     continue;
                 }
                 all.add(box);
@@ -740,14 +756,26 @@ public class AppPortfolioPage {
             return List.of();
         }
         all.sort(Comparator.comparingInt(box -> box[1]));
-        int rowTop = all.getFirst()[1];
+        int clusterTop = all.getFirst()[1];
+        int clusterSlack = px(24);
         List<int[]> clustered = new ArrayList<>();
         for (int[] box : all) {
-            if (Math.abs(box[1] - rowTop) <= 80) {
+            if (Math.abs(box[1] - clusterTop) <= clusterSlack) {
                 clustered.add(box);
             }
         }
         return dedupeByX(clustered);
+    }
+
+    private int[] firstRowBand() {
+        Dimension window = driver.manage().window().getSize();
+        int maxHeight = Math.min(px(120), Math.max(px(72), (int) (window.getHeight() * 0.12)));
+        int[] row = firstPositionRowBounds();
+        if (row == null) {
+            int top = listAreaTopY();
+            return new int[]{0, top, window.getWidth(), maxHeight};
+        }
+        return new int[]{row[0], row[1], row[2], Math.min(row[3], maxHeight)};
     }
 
     private int[] firstPositionRowBounds() {
@@ -785,9 +813,9 @@ public class AppPortfolioPage {
                     }
                     if (box[1] < bestY) {
                         bestY = box[1];
-                        int top = Math.max(listTop, box[1] - 28);
-                        int bottom = Math.min(footerTop - 8, box[3] + 120);
-                        best = new int[]{0, top, window.getWidth(), Math.max(88, bottom - top)};
+                        int top = Math.max(listTop, box[1] - px(16));
+                        int bottom = Math.min(footerTop - px(8), box[3] + px(72));
+                        best = new int[]{0, top, window.getWidth(), Math.max(px(72), bottom - top)};
                     }
                 } catch (StaleElementReferenceException ignored) {
                 }
@@ -820,9 +848,9 @@ public class AppPortfolioPage {
                 }
                 if (box[1] < bestY) {
                     bestY = box[1];
-                    int top = Math.max(listTop, box[1] - 20);
-                    int bottom = Math.min(footerTop - 8, box[3] + 140);
-                    best = new int[]{0, top, window.getWidth(), Math.max(120, bottom - top)};
+                    int top = Math.max(listTop, box[1] - px(12));
+                    int bottom = Math.min(footerTop - px(8), box[3] + px(80));
+                    best = new int[]{0, top, window.getWidth(), Math.max(px(72), bottom - top)};
                 }
             } catch (StaleElementReferenceException ignored) {
             }
@@ -849,16 +877,14 @@ public class AppPortfolioPage {
         }
         int width = box[2] - box[0];
         int height = box[3] - box[1];
-        if (width < 16 || width > 240 || height < 16 || height > 300) {
+        int centerY = (box[1] + box[3]) / 2;
+        if (width < px(12) || width > px(180) || height < px(12) || height > px(120)) {
             return false;
         }
         if (box[0] < minLeft) {
             return false;
         }
-        if (box[1] < listTop - 20 || box[3] > footerTop - 8) {
-            return false;
-        }
-        return true;
+        return centerY >= listTop - px(8) && centerY <= footerTop + px(8);
     }
 
     private boolean closePositionPageVisible(int seconds) {
@@ -896,6 +922,8 @@ public class AppPortfolioPage {
                                     + " or @text='Position Detail' or @content-desc='Position Detail'"
                                     + " or contains(@text,'Pending Order Detail')"
                                     + " or contains(@content-desc,'Pending Order Detail')"
+                                    + " or contains(@text,'Pending Order Details')"
+                                    + " or contains(@content-desc,'Pending Order Details')"
                                     + " or @text='Pending Order\nDetails'"
                                     + " or @content-desc='Pending Order\nDetails']"
                     )).isEmpty());
@@ -930,20 +958,15 @@ public class AppPortfolioPage {
     private Point estimatedCtaPoint(String buttonName) {
         Dimension window = driver.manage().window().getSize();
         String name = buttonName == null ? "" : buttonName.trim().toLowerCase();
-        double ratio = switch (name) {
-            case "close", "cancel" -> 0.70;
-            case "edit" -> 0.82;
-            case "arrow", "detail" -> 0.94;
-            default -> 0.93;
+        float dpFromRight = switch (name) {
+            case "close", "cancel" -> 108f;
+            case "edit" -> 68f;
+            default -> 28f;
         };
-        int[] row = firstPositionRowBounds();
-        int y;
-        if (row != null) {
-            y = row[1] + Math.max(36, row[3] / 2);
-        } else {
-            y = listAreaTopY() + Math.max(90, (int) (window.getHeight() * 0.04));
-        }
-        return new Point((int) (window.getWidth() * ratio), y);
+        int[] row = firstRowBand();
+        int x = Math.max(row[2] / 2, window.getWidth() - px(dpFromRight));
+        int y = row[1] + Math.max(px(20), row[3] / 2);
+        return new Point(x, y);
     }
 
     private List<int[]> dedupeByX(List<int[]> boxes) {
@@ -957,7 +980,7 @@ public class AppPortfolioPage {
             int[] last = unique.getLast();
             int lastCenter = (last[0] + last[2]) / 2;
             int center = (box[0] + box[2]) / 2;
-            if (Math.abs(center - lastCenter) <= 24) {
+            if (Math.abs(center - lastCenter) <= px(16)) {
                 if ((box[2] - box[0]) * (box[3] - box[1]) > (last[2] - last[0]) * (last[3] - last[1])) {
                     unique.set(unique.size() - 1, box);
                 }
@@ -995,7 +1018,25 @@ public class AppPortfolioPage {
                 return box[1];
             }
         }
-        return window.getHeight() - 140;
+        return window.getHeight() - px(88);
+    }
+
+    private int px(float dp) {
+        return Math.max(1, Math.round(dp * pxPerDp()));
+    }
+
+    private float pxPerDp() {
+        if (driver instanceof AndroidDriver androidDriver) {
+            try {
+                int dpi = Math.toIntExact(androidDriver.getDisplayDensity());
+                if (dpi > 0) {
+                    return dpi / 160f;
+                }
+            } catch (RuntimeException ignored) {
+            }
+        }
+        Dimension window = driver.manage().window().getSize();
+        return Math.max(1f, window.getWidth() / 360f);
     }
 
     public boolean confirmationDialogueIsDisplayed() {

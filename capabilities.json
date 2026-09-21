@@ -3,7 +3,7 @@
     "platformName": "Android",
     "appium:platformVersion": "16",
     "appium:deviceName": "emulator-5556",
-    "appium:app": "/Users/roychow/IdeaProjects/EFSG_auto/src/main/resources/com.emperorfs.ebltrading.android_uat-0.0.301-0102.apk",
+    "appium:app": "/Users/roychow/IdeaProjects/EFSG_auto/src/main/resources/com.emperorfs.ebltrading.android_uat-0.0.303-0909.apk.zip",
     "appium:automationName": "UiAutomator2",
     "appium:ensureWebviewsHavePages": true,
     "appium:nativeWebScreenshot": true,

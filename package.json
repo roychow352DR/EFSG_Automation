@@ -1,5 +1,12 @@
 {
   "devDependencies": {
+    "@wdio/cli": "^9.31.9",
     "cucumber": "^6.0.7"
+  },
+  "dependencies": {
+    "@gavrix/appium-mcp": "^0.3.0"
+  },
+  "scripts": {
+    "wdio": "wdio run ./wdio.conf.js"
   }
 }
