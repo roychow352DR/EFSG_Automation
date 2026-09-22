@@ -418,7 +418,13 @@ public class AppInstrumentDetailsPage {
         int gap = Math.max(48, maxYGap);
         StringBuilder extra = new StringBuilder();
         int labelCenterY = (labelBounds[1] + labelBounds[3]) / 2;
-        for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
+        appendNearbyConstraintText(extra, labelBounds, labelCenterY, gap, By.className("android.widget.TextView"));
+        appendNearbyConstraintText(extra, labelBounds, labelCenterY, gap, By.className("android.widget.EditText"));
+        return extra.toString();
+    }
+
+    private void appendNearbyConstraintText(StringBuilder extra, int[] labelBounds, int labelCenterY, int gap, By locator) {
+        for (WebElement el : driver.findElements(locator)) {
             try {
                 int[] bounds = parseBounds(elementAttribute(el, "bounds"));
                 if (bounds == null) {
@@ -431,11 +437,19 @@ public class AppInstrumentDetailsPage {
                 if (Math.abs(centerY - labelCenterY) > gap && bounds[1] < labelBounds[1] - 20) {
                     continue;
                 }
-                extra.append(' ').append(firstNonBlank(safeLabelText(el), elementAttribute(el, "content-desc")));
+                extra.append(' ').append(constraintNodeText(el));
             } catch (StaleElementReferenceException ignored) {
             }
         }
-        return extra.toString();
+    }
+
+    private String constraintNodeText(WebElement element) {
+        StringBuilder combined = new StringBuilder();
+        appendNodeText(combined, safeLabelText(element));
+        appendNodeText(combined, elementAttribute(element, "text"));
+        appendNodeText(combined, elementAttribute(element, "content-desc"));
+        appendNodeText(combined, elementAttribute(element, "hint"));
+        return combined.toString();
     }
 
     private String extractConstraintNumber(String text, String sign, String altSign) {
@@ -450,12 +464,14 @@ public class AppInstrumentDetailsPage {
                 ? new String[]{sign, altSign, "\u2264", "<=", "<"}
                 : new String[]{sign, altSign, "\u2265", ">=", ">"};
         int idx = -1;
+        String matchedToken = "";
         for (String token : tokens) {
             if (token == null || token.isBlank()) {
                 continue;
             }
             idx = normalized.indexOf(token);
             if (idx >= 0) {
+                matchedToken = token;
                 break;
             }
         }
@@ -463,12 +479,36 @@ public class AppInstrumentDetailsPage {
             return null;
         }
         // Join split fragments so "4 352.39" / "4352 .39" stay 4352.39, not 352.39.
-        Matcher matcher = Pattern.compile("((?:\\d+[\\s,]*)+(?:[.,]\\d+)?)")
-                .matcher(normalized.substring(idx));
+        String afterSign = firstConstraintDigits(normalized.substring(Math.min(normalized.length(), idx + matchedToken.length())));
+        if (afterSign != null) {
+            return afterSign;
+        }
+        return lastConstraintDigits(normalized.substring(0, idx));
+    }
+
+    private String firstConstraintDigits(String text) {
+        Matcher matcher = constraintDigits().matcher(text);
         if (!matcher.find()) {
             return null;
         }
-        return matcher.group(1).replace(",", "").replace(" ", "");
+        return cleanConstraintDigits(matcher.group(1));
+    }
+
+    private String lastConstraintDigits(String text) {
+        Matcher matcher = constraintDigits().matcher(text);
+        String last = null;
+        while (matcher.find()) {
+            last = matcher.group(1);
+        }
+        return last == null ? null : cleanConstraintDigits(last);
+    }
+
+    private Pattern constraintDigits() {
+        return Pattern.compile("((?:\\d+[\\s,]*)+(?:[.,]\\d+)?)");
+    }
+
+    private String cleanConstraintDigits(String raw) {
+        return raw.replace(",", "").replace(" ", "");
     }
 
     private String normalizeConstraintDigits(String text) {
@@ -558,8 +598,14 @@ public class AppInstrumentDetailsPage {
     }
 
     private String waitForConstraintPrice(boolean greaterOrEqual) {
+        prepareConstraintHierarchy();
         TimeoutException lastTimeout = null;
         for (int swipe = 0; swipe < 3; swipe++) {
+            String fromAttributes = readConstraintFromAttributeValues(greaterOrEqual);
+            if (fromAttributes != null && !fromAttributes.isBlank()) {
+                getPageElement.logInfo("Pending Price constraint from hierarchy attributes: " + fromAttributes);
+                return fromAttributes;
+            }
             try {
                 String price = new WebDriverWait(driver, Duration.ofSeconds(8))
                         .ignoring(StaleElementReferenceException.class)
@@ -581,7 +627,27 @@ public class AppInstrumentDetailsPage {
         if (lastTimeout != null) {
             getPageElement.logInfo("Pending Price constraint not visible: " + lastTimeout.getMessage());
         }
+        String fromAttributes = readConstraintFromAttributeValues(greaterOrEqual);
+        if (fromAttributes != null && !fromAttributes.isBlank()) {
+            return fromAttributes;
+        }
         return readConstraintPrice(greaterOrEqual);
+    }
+
+    private void prepareConstraintHierarchy() {
+        if (!(driver instanceof AndroidDriver androidDriver)) {
+            return;
+        }
+        try {
+            androidDriver.setSetting("ignoreUnimportantViews", false);
+            androidDriver.setSetting("allowInvisibleElements", true);
+            androidDriver.setSetting("snapshotMaxDepth", 100);
+            androidDriver.setSetting("shouldUseCompactResponses", false);
+            androidDriver.setSetting("elementResponseAttributes",
+                    "name,text,contentDescription,class,bounds,hint,displayed");
+        } catch (RuntimeException e) {
+            getPageElement.logInfo("Skip pending price hierarchy settings: " + e.getMessage());
+        }
     }
 
     private String readConstraintPrice(boolean greaterOrEqual) {
@@ -590,13 +656,25 @@ public class AppInstrumentDetailsPage {
         WebElement label = pendingPriceLabel();
         if (label != null) {
             int yGap = Math.max(120, (int) (driver.manage().window().getSize().getHeight() * 0.08));
-            String combined = tpslLabelText(label) + " " + nearbyConstraintText(label, yGap);
+            String combined = constraintNodeText(label) + " " + nearbyConstraintText(label, yGap);
             String fromLabel = extractConstraintNumber(combined, sign, altSign);
             if (fromLabel != null) {
                 return fromLabel;
             }
         }
+        String fromField = readConstraintFromPriceField(sign, altSign);
+        if (fromField != null) {
+            return fromField;
+        }
         return scanConstraintFromVisibleText(sign, altSign);
+    }
+
+    private String readConstraintFromPriceField(String sign, String altSign) {
+        try {
+            return extractConstraintNumber(constraintNodeText(pendingPriceEditField()), sign, altSign);
+        } catch (NoSuchElementException e) {
+            return null;
+        }
     }
 
     private WebElement pendingPriceLabel() {
@@ -607,7 +685,7 @@ public class AppInstrumentDetailsPage {
                 "//*[contains(@text,'Price') or contains(@content-desc,'Price')]"))) {
             try {
                 String text = tpslLabelText(el);
-                if (!isPendingPriceConstraintLabel(text)) {
+                if (!isPendingPriceConstraintLabel(text) && !isPendingPriceConstraintLabel(constraintNodeText(el))) {
                     continue;
                 }
                 int[] box = parseBounds(elementAttribute(el, "bounds"));
@@ -639,10 +717,22 @@ public class AppInstrumentDetailsPage {
     }
 
     private String scanConstraintFromVisibleText(String sign, String altSign) {
-        for (WebElement el : driver.findElements(By.className("android.widget.TextView"))) {
+        for (By locator : List.of(
+                By.className("android.widget.TextView"),
+                By.className("android.widget.EditText"))) {
+            String price = scanConstraintElements(locator, sign, altSign);
+            if (price != null) {
+                return price;
+            }
+        }
+        return null;
+    }
+
+    private String scanConstraintElements(By locator, String sign, String altSign) {
+        for (WebElement el : driver.findElements(locator)) {
             try {
-                String text = firstNonBlank(safeLabelText(el), elementAttribute(el, "content-desc"));
-                if (text.isBlank()) {
+                String text = constraintNodeText(el);
+                if (text.isBlank() || isTpslConstraintText(text)) {
                     continue;
                 }
                 if (!isPendingPriceConstraintLabel(text) && !looksLikeConstraintHint(text, sign, altSign)) {
@@ -656,6 +746,67 @@ public class AppInstrumentDetailsPage {
             }
         }
         return null;
+    }
+
+    private String readConstraintFromAttributeValues(boolean greaterOrEqual) {
+        String xml;
+        try {
+            xml = driver.getPageSource();
+        } catch (RuntimeException e) {
+            getPageElement.logInfo("Skip pending price page source: " + e.getMessage());
+            return null;
+        }
+        if (xml == null || xml.isBlank()) {
+            return null;
+        }
+        List<String> values = new ArrayList<>();
+        Matcher matcher = Pattern.compile("(?:\\btext|content-desc|hint)=\"([^\"]*)\"").matcher(xml);
+        while (matcher.find()) {
+            String value = unescapeConstraintText(matcher.group(1)).trim();
+            if (!value.isBlank()) {
+                values.add(value);
+            }
+        }
+        String sign = greaterOrEqual ? "\u2265" : "\u2264";
+        String altSign = greaterOrEqual ? ">=" : "<=";
+        for (int i = 0; i < values.size(); i++) {
+            String window = joinConstraintWindow(values, i, 6);
+            if (!window.toLowerCase(Locale.ROOT).contains("price") || isTpslConstraintText(window)) {
+                continue;
+            }
+            String price = extractConstraintNumber(window, sign, altSign);
+            if (price != null) {
+                return price;
+            }
+        }
+        return null;
+    }
+
+    private String joinConstraintWindow(List<String> values, int start, int maxNodes) {
+        StringBuilder window = new StringBuilder();
+        int end = Math.min(values.size(), start + maxNodes);
+        for (int i = start; i < end; i++) {
+            if (i > start && isTpslConstraintText(values.get(i))) {
+                break;
+            }
+            window.append(' ').append(values.get(i));
+        }
+        return window.toString();
+    }
+
+    private boolean isTpslConstraintText(String text) {
+        String lower = text.toLowerCase(Locale.ROOT);
+        return lower.contains("stop loss") || lower.contains("take profit");
+    }
+
+    private String unescapeConstraintText(String value) {
+        return value.replace("&#8805;", "\u2265")
+                .replace("&#8804;", "\u2264")
+                .replace("&#x2265;", "\u2265")
+                .replace("&#x2264;", "\u2264")
+                .replace("&gt;", ">")
+                .replace("&lt;", "<")
+                .replace("&amp;", "&");
     }
 
     private boolean looksLikeConstraintHint(String text, String sign, String altSign) {
@@ -680,6 +831,13 @@ public class AppInstrumentDetailsPage {
         return "Invalid price type";
     }
 
+    private void typePendingOrderPrice(String direction, String decimal) {
+        String price = getStopOrderPrice(direction, stopOrderType, decimal);
+        WebElement priceField = pendingPriceEditField();
+        priceField.clear();
+        abs.typeWithAndroidKeys((AndroidDriver) driver, priceField, price);
+    }
+
     public void fillInTextField(String textFieldName, String direction, String decimal) {
         if (driver instanceof AndroidDriver) {
             switch (textFieldName) {
@@ -695,12 +853,7 @@ public class AppInstrumentDetailsPage {
                     editTextFieldAos.getFirst().clear();
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), lotSize);
                 }
-                case "Price" -> {
-                    WebElement priceField = pendingPriceEditField();
-                    priceField.clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, priceField,
-                            getStopOrderPrice(direction, stopOrderType, decimal));
-                }
+                case "Price" -> typePendingOrderPrice(direction, decimal);
             }
         }
     }
@@ -731,12 +884,7 @@ public class AppInstrumentDetailsPage {
                     editTextFieldAos.getFirst().clear();
                     abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), lotSize);
                 }
-                case "Price" -> {
-                    WebElement priceField = pendingPriceEditField();
-                    priceField.clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, priceField,
-                            getStopOrderPrice(direction, stopOrderType, decimal));
-                }
+                case "Price" -> typePendingOrderPrice(direction, decimal);
             }
         }
     }
@@ -767,12 +915,7 @@ public class AppInstrumentDetailsPage {
                     takeProfitPrice = abs.normalizePriceToDecimals(editedTakeProfit, decimal);
                 }
                 case "Lot Size" -> editTextFieldAos.getFirst().sendKeys("0.45");
-                case "Price" -> {
-                    WebElement priceField = pendingPriceEditField();
-                    priceField.clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, priceField,
-                            getStopOrderPrice(direction, stopOrderType, decimal));
-                }
+                case "Price" -> typePendingOrderPrice(direction, decimal);
                 case "Stop" -> {
                     String editStopPrice = getEditPrice(direction, decimal);
                     editTextFieldAos.getFirst().clear();
@@ -849,7 +992,10 @@ public class AppInstrumentDetailsPage {
         // return driver.findElement(By.className("android.widget.EditText")).getText();
         if (driver instanceof AndroidDriver) {
             return switch (inputFieldName) {
-                case "Lots" -> editTextFieldAos.getFirst().getText();
+                case "Lots", "Lot Size", "Volume" -> {
+                    String text = lotsEditField().getText();
+                    yield text == null ? "" : text.trim();
+                }
                 case "Stop Loss" -> editTextFieldAos.get(1).getText();
                 case "Take Profit" -> editTextFieldAos.getLast().getText();
                 default -> "";
@@ -1199,8 +1345,7 @@ public class AppInstrumentDetailsPage {
             case "Stop Loss Price", "Stop Loss" -> stopLossPrice;
             case "Take Profit Price", "Take Profit" -> takeProfitPrice;
             case "Direction" -> AppTradeView.selectedDirection;
-            case "Lots" -> displayedLotSize(lotSize);
-            case "Volume" -> displayedLotSize(lotSize);
+            case "Lots", "Volume", "Lot Size" -> displayedLotSize(lotSize);
             case "Stop Order Price" -> stopOrderPrice;
             case "Validity" -> validity;
             case "Est. Margin", "Estimated Margin" -> estMargin;
@@ -1254,8 +1399,48 @@ public class AppInstrumentDetailsPage {
         abs.tapAt(point.getX(), point.getY());
     }
 
+    private WebElement inputEditField(String fieldName) {
+        if (isLotSizeField(fieldName)) {
+            return lotsEditField();
+        }
+        return tpslEditField(fieldName);
+    }
+
+    private boolean isLotSizeField(String fieldName) {
+        if (fieldName == null) {
+            return false;
+        }
+        String name = fieldName.trim();
+        return name.equalsIgnoreCase("Lot Size")
+                || name.equalsIgnoreCase("Lots")
+                || name.equalsIgnoreCase("Volume");
+    }
+
+    private WebElement lotsEditField() {
+        WebElement label = lotsFieldLabel();
+        if (label != null) {
+            try {
+                return editFieldNear(label, "Lots");
+            } catch (NoSuchElementException ignored) {
+                getPageElement.logInfo("Could not resolve Lots EditText from label; falling back to first EditText");
+            }
+        }
+        abs.waitUntilElementVisible(By.className("android.widget.EditText"));
+        List<WebElement> fields = driver.findElements(By.className("android.widget.EditText"));
+        if (fields.isEmpty()) {
+            throw new NoSuchElementException("Could not find Lots EditText");
+        }
+        return fields.getFirst();
+    }
+
+    private WebElement lotsFieldLabel() {
+        List<WebElement> labels = driver.findElements(By.xpath(
+                "//android.widget.TextView[@text='Lots' or @text='Lot Size' or @text='Volume']"));
+        return labels.isEmpty() ? null : labels.getFirst();
+    }
+
     private Point tpslStepperPoint(String fieldName, String ctaBtn) {
-        WebElement field = tpslEditField(fieldName);
+        WebElement field = inputEditField(fieldName);
         int[] fieldBounds = parseBounds(elementAttribute(field, "bounds"));
         if (fieldBounds == null) {
             throw new NoSuchElementException("Could not read bounds for " + fieldName);
@@ -1308,7 +1493,7 @@ public class AppInstrumentDetailsPage {
         if (text.equals("+") || text.equalsIgnoreCase("plus")) {
             return "plus";
         }
-        if (text.equals("-") || text.equalsIgnoreCase("minus")) {
+        if (text.equals("-") || text.equals("\u2212") || text.equalsIgnoreCase("minus")) {
             return "minus";
         }
         if (text.equals("✕") || text.equals("×") || text.equalsIgnoreCase("x")
@@ -1322,7 +1507,7 @@ public class AppInstrumentDetailsPage {
         List<int[]> found = new ArrayList<>();
         List<By> locators = List.of(
                 By.xpath("//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']"),
-                By.xpath("//*[@text='+' or @text='-' or @text='✕' or @text='×' or @text='x' or @text='X']"),
+                By.xpath("//*[@text='+' or @text='-' or @text='\u2212' or @text='✕' or @text='×' or @text='x' or @text='X']"),
                 By.className("android.widget.ImageView")
         );
         for (By locator : locators) {

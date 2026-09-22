@@ -16,10 +16,10 @@ public class TradeSymbolConfig {
 
     public Double getMinLotSize(String symbol) {
         return switch (symbol) {
-            case "XAUUSD" -> 0.05;
-            case "XAGUSD" -> 0.05;
-            case "RKGCNH" -> 0.05;
-            case "HKGHKD" -> 0.05;
+            case "XAUUSD" -> 0.01;
+            case "XAGUSD" -> 0.01;
+            case "RKGCNH" -> 0.01;
+            case "HKGHKD" -> 0.01;
             default -> 0.0;
         };
     }

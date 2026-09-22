@@ -1,5 +1,6 @@
 package Data;
 
+import PageObject.NativeApp.AppInstrumentDetailsPage;
 import PageObject.NativeApp.AppMarketsPage;
 import PageObject.NativeApp.AppPOManager;
 import PageObject.NativeApp.AppSettingPage;
@@ -36,6 +37,18 @@ public class TradeRecord {
         confirmPlaceOrder(direction);
     }
 
+    public void placePendingOrderWithValiditySelected(String direction, String orderType, TradeSymbolConfig tradeSymbolConfig,String validity) throws InterruptedException, IOException {
+        isOpenPosition = false;
+        tapSymbol();
+        selectDirection(direction);
+        selectOrderType("Limit / Stop Order");
+        fillLotSize();
+        selectStopLimitOption(orderType);
+        selectValidity(validity);
+        fillStopLimitPrice(direction, tradeSymbolConfig);
+        confirmPlaceOrder(direction);
+    }
+
     public void placePendingOrder(String direction, String orderType, TradeSymbolConfig tradeSymbolConfig,String symbol) throws InterruptedException, IOException {
         isOpenPosition = false;
         tapSymbol(symbol);
@@ -55,7 +68,7 @@ public class TradeRecord {
         fillLotSize();
         selectStopLimitOption(orderType);
         fillStopLimitPrice(direction, tradeSymbolConfig);
-        selectValidity();
+        selectValidity(VALIDITY);
         switchStopLossOn();
         scrollPageDown();
         fillStopLossPrice(direction, tradeSymbolConfig);
@@ -153,7 +166,8 @@ public class TradeRecord {
         appPoManager.getAppSettingPage().tabBack();
     }
 
-    public void selectValidity(){
+    public void selectValidity(String validity){
+        VALIDITY = validity;
         appPoManager.getAppInstrumentDetailsPage().selectValidity(VALIDITY);
     }
 }
