@@ -420,6 +420,7 @@ public class AppPendingOrderDetailsPage {
             case "Status" -> "Pending";
             case "Product Name" -> abs.getProductName(AppMarketsPage.tradeSymbol);
             case "Order Type" -> AppInstrumentDetailsPage.stopOrderType.split(" ")[1];
+            case "Validity" -> AppInstrumentDetailsPage.validity;
             default -> null;
         };
     }

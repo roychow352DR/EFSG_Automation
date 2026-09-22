@@ -1,183 +1,103 @@
-# AGENTS — Web Automation
+# AGENTS — Web automation
 
-Guidelines for creating **web UI test scripts** using Playwright Java in this repository.
+Apply [AGENTS.md](AGENTS.md) first. Reviewed against the working tree on **2026-09-21**. New web scenarios use **Playwright Java**. See [ARCHITECTURE.md](ARCHITECTURE.md) for the implementation and [AGENTS-API.md](AGENTS-API.md) for backend assertions.
 
-For system design, see [`ARCHITECTURE.md`](ARCHITECTURE.md). For shared rules, see [`AGENTS.md`](AGENTS.md).
+When delegated as `efsg-web`, follow the [specialist contract](AGENTS-ORCHESTRATOR.md#specialist-contract): work within assigned file ownership, report backend dependencies to the orchestrator, and return changes and validation evidence. The orchestrator coordinates shared files and execution approval.
 
----
+## Product and source mapping
 
-## Scope
+| Product setting | Features under `src/test/java/Features` | Page objects under `src/main/java/PageObject` | Manager | Qase prefix |
+|---|---|---|---|---|
+| `adminPortal` | `AdminPortal/` | `AdminPortalPW/` | `AOPOManager` | `AP` |
+| `mio` | `MIO/` | `MIOadmin/` | `MIOPOManager` | `MIO` |
 
-| Aspect | Detail |
-|--------|--------|
-| **Products** | Admin Portal (`adminPortal`), MIO Admin (`mio`) |
-| **Driver** | Playwright (`Page`, `Locator`, `BrowserContext`) |
-| **Runner** | `WebTestRunner` / `WebFailedTestRunner` |
-| **Maven profile** | `WebTests` / `WebFailedTests` |
-| **Legacy** | Selenium (`PageObject.AdminPortal`) — do **not** extend |
+Admin Portal modules map as follows, relative to the respective feature/step roots:
 
----
+- `AdminPortal/login` → `StepDefinitions/AdminPortal/login`
+- `AdminPortal/aoApplication` → `StepDefinitions/AdminPortal/aoApplicationSteps`
+- `AdminPortal/cm` → `StepDefinitions/AdminPortal/cm`
+- `AdminPortal/aoBlacklist` → `StepDefinitions/AdminPortal/aoBlacklistSteps`
+- `AdminPortal/aoUserManagement` → `StepDefinitions/AdminPortal/aoUserManagementSteps`
+- `AdminPortal/aoRolesPermission` → `StepDefinitions/AdminPortal/aoRolesPermissionSteps`
+- `MIO/login` → `StepDefinitions/MIO/login`
+- `MIO/depositManagement` → `StepDefinitions/MIO/transactionManagement`
 
-## Key Paths
+Use [BaseTest.java](src/main/java/utils/BaseTest.java) for initialization, [AbstractComponentsPW.java](src/main/java/AbstractComponent/AbstractComponentsPW.java) for shared helpers, and [Hooks.java](src/test/java/StepDefinitions/Hooks.java) for existing teardown behavior. Legacy `PageObject/AdminPortal` and `AbstractComponents` remain for compatibility; do not add new Selenium web page objects.
 
-| Layer | Path |
-|-------|------|
-| Runner | `src/test/java/CucumberRunner/WebTestRunner.java` |
-| Failed rerun | `src/test/java/CucumberRunner/WebFailedTestRunner.java` |
-| Features | `src/test/java/Features/AdminPortal/`, `Features/MIO/` |
-| Step definitions | `src/test/java/StepDefinitions/AdminPortal/`, `StepDefinitions/MIO/` |
-| Page objects | `src/main/java/PageObject/AdminPortalPW/`, `PageObject/MIOadmin/` |
-| PO managers | `AOPOManager`, `MIOPOManager` |
-| Base utilities | `src/main/java/utils/BaseTest.java` |
-| Shared helpers | `src/main/java/AbstractComponent/AbstractComponentsPW.java` |
-| Hooks | `src/test/java/StepDefinitions/Hooks.java` |
+## Runtime and routing
 
----
+`initializePage()` resolves `product`, `env`, `entity`, and `browser` from `src/main/java/DataResources/GlobalData.properties`, with system-property overrides. It creates Playwright, launches a browser, creates a video-recording context/page, navigates through `setDomain()`, and waits for `NETWORKIDLE`.
 
-## Product Mapping
+Browser values permitted for execution are `chrome`, `firefox`, `webkit`, and `edge`. `chrome` launches Playwright Chromium; `edge` uses Chromium's `msedge` channel. The implementation recognizes headless names, but repository policy requires headed execution.
 
-| Product | `-Dproduct` | PO package | PO manager | Qase prefix | Feature folder |
-|---------|-------------|------------|------------|-------------|----------------|
-| Admin Portal | `adminPortal` | `PageObject.AdminPortalPW` | `AOPOManager` | `AP` | `Features/AdminPortal/` |
-| MIO Admin | `mio` | `PageObject.MIOadmin` | `MIOPOManager` | `MIO` | `Features/MIO/` |
+Web environment mappings in `BaseTest.setDomain()`:
 
-### Admin Portal modules
+| Product | Environment | Login URL |
+|---|---|---|
+| Admin Portal | `bausit` | `https://d13ckj22o5rgah.cloudfront.net/login` |
+| Admin Portal | `bauuat` | `https://bau-uat-aocm-ap.empfs.net/login` |
+| Admin Portal | `mt5sit` | `https://d3lyp6p86bdjbb.cloudfront.net/login` |
+| Admin Portal | `mt5uat`, `egmuat` | `https://uat-aocm-ap.empfs.net/login` |
+| MIO | `bausit`, `bauuat` | `https://d27ekljjcs6mcs.cloudfront.net/login` |
+| MIO | `mt5uat` | `https://uat-mt5mio-ap.empfs.net/login` |
 
-| Feature folder | Step definitions |
-|----------------|------------------|
-| `Features/AdminPortal/login/` | `StepDefinitions/AdminPortal/login/` |
-| `Features/AdminPortal/aoApplication/` | `StepDefinitions/AdminPortal/aoApplicationSteps/` |
-| `Features/AdminPortal/cm/` | `StepDefinitions/AdminPortal/cm/` |
-| `Features/AdminPortal/aoBlacklist/` | `StepDefinitions/AdminPortal/aoBlacklistSteps/` |
-| `Features/AdminPortal/aoUserManagement/` | `StepDefinitions/AdminPortal/aoUserManagementSteps/` |
-| `Features/AdminPortal/aoRolesPermission/` | `StepDefinitions/AdminPortal/aoRolesPermissionSteps/` |
+The method accepts `entity` but does not use it to select the web URL. Entity still affects test data, filters, and Qase configuration. API/CRM mappings differ from these browser URLs; check them separately for mixed scenarios.
 
-### MIO modules
+## Implementation workflow
 
-| Feature folder | Step definitions |
-|----------------|------------------|
-| `Features/MIO/login/` | `StepDefinitions/MIO/login/` |
-| `Features/MIO/` (transaction) | `StepDefinitions/MIO/transactionManagement/` |
+1. Search the exact Gherkin text in `src/test/java/StepDefinitions` and inspect the binding body. Cucumber glue is shared globally; avoid duplicate expressions across modules.
+2. Initialize the page in the existing first `Given` and create the correct manager. Reuse `AOLoginSteps` or `MIOLoginSteps` entry flows instead of introducing competing sessions.
+3. Put UI actions and locator definitions in the product's page objects. Access pages from steps through the manager; register each new page there.
+4. Prefer `getByRole`, `getByLabel`, stable test IDs, or exact/scoped text. Scope repeated labels to a dialog, row, or page section.
+5. Prefer Playwright's locator auto-wait and retrying assertions. Wait for a concrete result/state when needed; do not add arbitrary sleeps or treat network-idle alone as a business assertion.
+6. Use `AbstractComponentsPW.userinfoList()`, `blacklistInfoList()`, and existing AO/CM data helpers where appropriate. Cache generated data for the scenario: repeated calls can generate different random values.
+7. Keep expected results in assertion steps. Use Playwright `assertThat` for locator state and TestNG assertions for returned values. Verify record identity before making a backend assertion.
+8. For API/SQL work, establish the logged-in page, initialized environment/entity, token, and UI-derived identity required by the backend bindings.
 
----
-
-## Environment URLs
-
-Resolved by `BaseTest.setDomain(env, product, entity)` during `initializePage()`.
-
-**Admin Portal** (`product=adminPortal`):
-
-| `env` | URL |
-|-------|-----|
-| `bausit` | `https://d13ckj22o5rgah.cloudfront.net/login` |
-| `bauuat` | `https://bau-uat-aocm-ap.empfs.net/login` |
-| `mt5sit` | `https://d3lyp6p86bdjbb.cloudfront.net/login` |
-| `mt5uat` | `https://uat-aocm-ap.empfs.net/login` |
-| `egmuat` | `https://uat-aocm-ap.empfs.net/login` |
-
-**MIO Admin** (`product=mio`):
-
-| `env` | URL |
-|-------|-----|
-| `bausit` / `bauuat` | `https://d27ekljjcs6mcs.cloudfront.net/login` |
-| `mt5uat` | `https://uat-mt5mio-ap.empfs.net/login` |
-
-System properties (`-Denv`, `-Dentity`, `-Dbrowser`) override `GlobalData.properties`.
-
----
-
-## Working Rules
-
-1. Reuse existing framework patterns before creating new structures.
-2. **Playwright only** — use `Page`, `Locator`, `PlaywrightAssertions.assertThat(...)`. Do not add Selenium page objects.
-3. Feature files: `<QaseProject>-<CaseId>.feature` (e.g. `AP-141.feature`).
-4. In the first `@Given` step: `page = initializePage()`, then create the PO manager.
-5. Access pages **only through** `AOPOManager` or `MIOPOManager`. Register new page classes in the manager.
-6. Prefer robust locators: `getByRole`, `getByLabel`, `getByTestId`, stable text.
-7. Prefer Playwright auto-wait; add explicit waits only when needed.
-8. Use `AbstractComponentsPW.userinfoList()` for randomized test data.
-9. Tag scenarios with `@Test` (required) plus module/entity tags (`@Regression`, `@Smoke`, `@EBL_MT5`, `@CM`, etc.).
-10. For API or DB assertions in the same scenario, reuse steps from `BackendSteps` — see [`AGENTS-API.md`](AGENTS-API.md).
-
-### Step definition pattern
+Existing initialization pattern:
 
 ```java
 page = initializePage();
 aopoManager = new AOPOManager(page);
 aopoManager.getAdminLoginPage().fillCredential(username, password);
+aopoManager.getAdminLoginPage().clickLogin();
 assertThat(aopoManager.getApplicationListPage().getMenuText()).isVisible();
 ```
 
----
+Use existing framework imports and supplied test data. For MIO, the shared manager is `MIOLoginSteps.mioPoManager`; its login accessor is `getLoginPage()`.
 
-## When User Provides Test Steps
+## Existing implementation limits
 
-1. Create/extend `.feature` file under `Features/<Product>/<module>/`, named `<QaseProject>-<id>.feature`.
-2. Implement step definitions in the matching `StepDefinitions/<product>/` package.
-3. Reuse existing step bindings when text matches exactly; otherwise create new bindings.
-4. Add/update page object methods in `AdminPortalPW` or `MIOadmin`.
-5. Update `AOPOManager` or `MIOPOManager` if a new page class is introduced.
-6. Include assertion steps, not only actions.
-7. Keep runner compatibility: `glue = "StepDefinitions"`, `tags = "@Test"`.
+- A profile or `-Dproduct` does not select only that product's features: normal runners start at the shared feature root. Always scope the command to a product folder or case file and an appropriate tag filter.
+- `BaseTest.page`, `context`, `browser`, managers, and captured data are shared/static. Do not assume parallel scenario safety from Surefire's configured parallel options.
+- `initializePage()` catches initialization errors and can return a null/stale page. Diagnose the first setup error before adding locator retries.
+- The blank-credentials binding in `AOLoginSteps` still calls a legacy Selenium `login` field; do not assume every web step has completed the Playwright migration.
+- Active `@After` resets the Admin Portal menu where applicable and closes the page/context/browser. It does not close the locally created Playwright owner.
+- Qase hooks and per-step failure screenshot capture are currently disabled. Video capture is configured, but preservation/upload depends on teardown and cleanup flags. Do not promise screenshots, Qase results, or generated HTML merely because an output directory exists.
 
----
+Preserve unrelated legacy behavior. If a requested scenario depends on an incomplete binding, implement that path and explain the change rather than silently leaving it ineffective.
 
-## Input Checklist (Ask If Missing)
+## Features and deliverables
 
-- **Product** (`adminPortal` or `mio`)
-- **Module/page** (login, customer management, deposit management, etc.)
-- **Scenario name** and **Qase case ID**
-- **Tags** (`@Test`, `@Regression`, `@Smoke`, entity tags)
-- **Test data** (username, password, client type, search text, etc.)
-- **Expected assertions**
-- **Environment** (`bauuat`, `mt5uat`, etc.) and **entity** (`EBL_MT5`, `EIEHK`, `XPro`, `EGM`)
-- **Browser** (`chrome`, `firefox`, `edge`, `webkit`)
+Use `AP-<CaseId>.feature` or `MIO-<CaseId>.feature` in the correct module. New default-runner scenarios require `@Test`; add relevant product, module, suite, and entity tags. Existing tags differ, so inspect the selected feature before writing its command. Case IDs for Qase come from filenames, not tags.
 
----
+Establish product/module, case ID/title, environment/entity, browser, test data, and expected assertions from the request and existing context. Generate all needed feature, binding, page-object, and manager changes plus `generated-prompts/<featureId>_<scenarioTitleSafe>.md`. List assumptions and validation performed without exposing credentials.
 
-## Output Expectations
-
-- Feature file, step definitions, page object methods, PO manager updates
-- Runnable Maven command (headed mode)
-- Reference prompt under `generated-prompts/<featureId>_<scenarioTitleSafe>.md`
+Examples for existing login cases, **only after explicit execution approval**:
 
 ```bash
-# Admin Portal
-mvn test -PWebTests -Dproduct=adminPortal -Denv=bauuat -Dentity=EBL_MT5 -Dbrowser=chrome
+# Admin Portal: this existing case has @Login, not @Test
+mvn test -PWebTests -Dproduct=adminPortal -Denv=bauuat -Dentity=EBL_MT5 -Dbrowser=chrome \
+  -Dcucumber.features=src/test/java/Features/AdminPortal/login/AP-560.feature \
+  -Dcucumber.filter.tags="@Login"
 
-# MIO Admin
-mvn test -PWebTests -Dproduct=mio -Denv=mt5uat -Dbrowser=chrome
+# MIO: explicitly select its feature and existing tag
+mvn test -PWebTests -Dproduct=mio -Denv=mt5uat -Dentity=EBL_MT5 -Dbrowser=chrome \
+  -Dcucumber.features=src/test/java/Features/MIO/login/MIO-429.feature \
+  -Dcucumber.filter.tags="@MIO"
 
-# Rerun failed web tests
+# Rerun recorded web failures with matching original product/environment
 mvn test -PWebFailedTests -Dproduct=adminPortal -Denv=bauuat -Dentity=EBL_MT5 -Dbrowser=chrome
 ```
 
----
-
-## Execution Policy
-
-- Run in **headed mode** only (no `*-headless`).
-- Do **not** execute Maven commands without explicit user approval.
-
----
-
-## Definition of Done
-
-1. Feature with `@Test` tag, correct filename and folder.
-2. Every step has an implemented step definition.
-3. Step definitions delegate to PO manager methods (no stubs/TODO).
-4. Assertions cover expected results.
-5. Compile-ready with clean imports.
-6. Headed Maven command provided.
-7. Assumptions listed when test data was not provided.
-8. Reference prompt file created under `generated-prompts/`.
-
----
-
-## Default Behavior
-
-If the user gives plain-language steps only:
-
-1. Propose scenario title, Qase case ID, product, and tags.
-2. Generate complete feature + steps + page objects.
-3. List assumptions at the end.
+Do not run `clean` before rerunning, or override the rerun feature source with the normal feature root. All execution remains subject to [AGENTS.md](AGENTS.md): headed web only and explicit approval before Maven/test commands.

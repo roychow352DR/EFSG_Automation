@@ -691,4 +691,32 @@ public class tradeSteps extends BaseTest {
     public void the_user_selects_list_pending_orders_on_the_app_trade_view(String listName) {
         appPoManager.getAppTradeView().selectList(listName);
     }
+
+    @And("the user places a pending order with direction {string},validity {string} and order type {string} on the instrument details page")
+    public void the_user_places_a_pending_order_with_direction_validity_and_order_type_on_the_instrument_details_page(String direction,String validity,String orderType) throws IOException, InterruptedException {
+        tradeRecord.placePendingOrderWithValiditySelected(direction, orderType, tradeSymbolConfig,validity);
+    }
+
+    @Then("the user sees the value {string} is decreased by the step size on the instrument details page")
+    public void the_user_sees_the_value_is_decreased_by_the_step_size_on_the_instrument_details_page(String fieldName) {
+        assertLotSizeChangedByStep(fieldName, -1);
+    }
+
+    @Then("the user sees the value {string} is increased by the step size on the instrument details page")
+    public void the_user_sees_the_value_is_increased_by_the_step_size_on_the_instrument_details_page(String fieldName) {
+        assertLotSizeChangedByStep(fieldName, 1);
+    }
+
+    private void assertLotSizeChangedByStep(String fieldName, int direction) {
+        String displayedValue = appPoManager.getAppInstrumentDetailsPage().getInputFieldValue(fieldName);
+        String capturedValue = appPoManager.getAppInstrumentDetailsPage().getValidationValue(fieldName);
+        Assert.assertNotNull(displayedValue, "Displayed " + fieldName + " was missing");
+        Assert.assertFalse(displayedValue.isBlank(), "Displayed " + fieldName + " was blank");
+        Assert.assertNotNull(capturedValue, "Captured " + fieldName + " was missing");
+        Assert.assertFalse(capturedValue.isBlank(), "Captured " + fieldName + " was blank");
+        Assert.assertEquals(
+                displayedValue,
+                lotsAfterStep(capturedValue, tradeSymbolConfig.getStepSize(), direction)
+        );
+    }
 }

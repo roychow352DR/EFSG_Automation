@@ -1,191 +1,111 @@
-# AGENTS — API Automation
+# AGENTS — API and database automation
 
-Guidelines for creating **API and backend validation** test steps in this repository. API tests are typically combined with web UI scenarios via shared Cucumber steps.
+Apply [AGENTS.md](AGENTS.md) first. Reviewed against the working tree on **2026-09-21**; see [ARCHITECTURE.md](ARCHITECTURE.md) for the full lifecycle.
 
-For system design, see [`ARCHITECTURE.md`](ARCHITECTURE.md). For shared rules, see [`AGENTS.md`](AGENTS.md).
+When delegated as `efsg-api`, follow the [specialist contract](AGENTS-ORCHESTRATOR.md#specialist-contract): work within assigned file ownership, agree service/binding contracts with the UI owner through the orchestrator, and return changes and validation evidence. The orchestrator coordinates shared files and execution approval.
 
----
+## Scope and prerequisites
 
-## Scope
+The Java suite has no dedicated API runner/profile. Backend bindings share the Cucumber glue with UI scenarios. The existing authenticated API steps depend on an initialized, logged-in Playwright page; SQL assertions often also require Admin Portal page-object state. They are not automatically usable in a native-only scenario simply because the glue is shared.
 
-| Aspect | Detail |
-|--------|--------|
-| **API client** | Playwright `APIRequestContext` via `ApiClient` |
-| **Business layer** | `CoreService` (REST orchestration, JSON parsing) |
-| **Step definitions** | `StepDefinitions/Backend/BackendSteps.java` |
-| **DB validation** | `StepDefinitions/Background/BackgroundSteps.java`, `Data/SQLDatabase.java` |
-| **Typical usage** | Mixed UI + API + SQL assertions in the same feature scenario |
+## Implementation map
 
-API automation does not have a separate Cucumber runner — API steps are invoked from web or app feature files through shared step bindings.
+| Responsibility | Source |
+|---|---|
+| HTTP transport and resource lifecycle | [ApiClient.java](src/test/java/API/ApiClient.java) |
+| Business requests and JSON parsing | [CoreService.java](src/test/java/API/CoreService.java) |
+| API/CM assertion bindings | [BackendSteps.java](src/test/java/StepDefinitions/Backend/BackendSteps.java) |
+| Existing-person-ID precondition | [BackgroundSteps.java](src/test/java/StepDefinitions/Background/BackgroundSteps.java) |
+| Parameterized MySQL reads and allowed query shapes | [SQLDatabase.java](src/test/java/Data/SQLDatabase.java) |
+| JDBC connection mapping | [SQLConnection.java](src/main/java/utils/SQLConnection.java) |
+| Token and shared runtime state | [BaseTest.java](src/main/java/utils/BaseTest.java) |
+| Core API domain and entity/test-data helpers | [AbstractComponentsPW.java](src/main/java/AbstractComponent/AbstractComponentsPW.java) |
 
----
+AO application steps also call `CoreService` directly for referral/trading-group checks. Reuse the appropriate existing binding rather than duplicating it in `BackendSteps`.
 
-## Key Paths
+## HTTP and authentication
 
-| Layer | Path |
-|-------|------|
-| API client | `src/test/java/API/ApiClient.java` |
-| Core service | `src/test/java/API/CoreService.java` |
-| Backend steps | `src/test/java/StepDefinitions/Backend/BackendSteps.java` |
-| Background steps | `src/test/java/StepDefinitions/Background/BackgroundSteps.java` |
-| SQL helper | `src/test/java/Data/SQLDatabase.java` |
-| API domain resolution | `AbstractComponentsPW.getApiEndpointDomain(env)` |
-| CRM domain | `CoreService.getCrmDomain(entity, env)` |
-| Auth token (from UI) | `BaseTest.retrieveLocalStorageVal()` |
-| Test data builders | `Data/AoAccountCreation.java`, `Data/CmAccountStatus.java` |
+`ApiClient` creates its own Playwright instance and `APIRequestContext`; it does not inherit browser cookies. It supports `get(url, token)`, `post(url, token, body)`, and POST with extra headers. It adds the `Bearer ` prefix unless already present and defaults POST content type to JSON unless a custom content type is supplied.
 
----
+Use try-with-resources inside `CoreService`. Validate and extract the response before closing the client; closing disposes both the request context and Playwright. Do not return a live response whose context has already been disposed.
 
-## Architecture
+`BaseTest.retrieveLocalStorageVal()` searches browser localStorage keys containing `accessToken` and returns the last iterated match, or an empty string if none matched. Establish login and verify a usable token first; do not assume a unique token key or print the token.
 
-```
-Feature scenario (web UI steps)
-        ↓
-BackendSteps / BackgroundSteps
-        ↓
-CoreService  →  ApiClient  →  REST API
-        ↓
-SQLDatabase  →  MySQL (post-condition checks)
-```
+`CoreService(Page, productEnv)` captures the environment and the entity from shared `BaseTest` state through `userinfoList()`. Construct it only after that state is initialized. Existing `BackendSteps` initializes services in field initializers, so step order and object-creation timing matter.
 
-`CoreService` is constructed with a Playwright `Page` and environment — it uses `AbstractComponentsPW` for entity/env and API endpoint resolution.
+## Current service contracts
 
----
+| Method | Current behavior |
+|---|---|
+| `getAccountStatus(token)` | GET status for a hardcoded default account; prints it, returns `void` |
+| `getAccountId(token)` | POST to initialize a level-3 individual customer; prints its ID; mutates backend data |
+| `getAoAccountDetail(uuid, token, field)` | GET AO detail; prints a field, returns `void` |
+| `getCmList(token, field)` | POST paginated CM query using static `clientType`/`status` and entity; prints first usable field, returns `void` |
+| `getAoList(token, field)` | Returns first usable field from paginated AO data |
+| `getAoListItem(token, field, conditionField, conditionValue)` | Returns a field from a matching AO record |
+| `getAoClient(...)` | Filters AO records by field, client type, entity, and creator |
+| `getDefaultTradeGroupInfo(field, token, entity)` | Referral/trading info with an empty referral code |
+| `getTradeGroupInfoBasedOnEntity(field, token, entity)` | Referral/trading info using the configured entity referral code |
+| `setParamVal(param, value)` | Sets only static `clientType` or `status`; other names are ignored |
 
-## ApiClient
+There is no current `getTradeGroupInfo(...)` method. Pagination is bounded to 100 pages of 10 records. Lookup methods throw when no usable value is found within that limit. The service does not provide a general typed response or schema-validation framework.
 
-Thin wrapper around Playwright `APIRequestContext`:
+`ensureSuccess()` rejects null/non-2xx responses. JSON helpers expect a `response` object and, for lists, `response.content[]`; missing/null fields commonly become empty strings or arrays. HTTP success or console output alone is not a business assertion. Add explicit expected-value checks and distinguish absent data from an expected empty value.
 
-- `get(url, token)` — Bearer auth via `Authorization` header
-- `post(url, token, body)` — JSON POST with Bearer auth
-- `post(url, token, body, extraHeaders)` — POST with custom headers
-- Implements `AutoCloseable` — use try-with-resources
+## Environment routing
 
-```java
-try (ApiClient apiClient = new ApiClient()) {
-    APIResponse response = apiClient.get(endpoint, token);
-}
-```
+- Core-service base URL: `AbstractComponentsPW.getApiEndpointDomain(env)` maps `bauuat`, `egmuat`, `mt5sit`, and `mt5uat`; unrecognized values, including `bausit`, return an empty string.
+- CRM base URL: `CoreService.getCrmDomain(entity, env)` maps `bauuat`/`mt5uat` for `EBL_MT5`, `EIEHK`, `EGM`, and `XPro`; unsupported combinations return an empty string.
+- JDBC: `SQLConnection` maps only `bauuat` and `mt5uat`. Both currently point to the same BAU UAT CM database. Do not assume `-Denv=mt5uat` chooses a separate MT5 database.
 
----
+Keep endpoint routing in these existing helpers. Check the selected mapping rather than concatenating paths onto an empty base URL. Connection credentials are currently embedded in source; do not reproduce them in docs or prompts.
 
-## CoreService
+## SQL contracts
 
-Business-level API methods (extend here for new endpoints):
+`SQLDatabase` uses `PreparedStatement` for filter values, closes connection/statement/result set per query, and returns `Optional<String>`. Table and column identifiers are permitted only through exact `QueryShape` entries in `buildAllowedQueries()`; they are not arbitrary user-supplied SQL identifiers.
 
-| Method | Purpose |
-|--------|---------|
-| `getAccountStatus(token)` | Account opening status |
-| `getAoAccountDetail(uuid, token, field)` | Single AO record detail |
-| `getCmList(token, extractVal)` | Paginated CM list lookup |
-| `getAoList(token, extractVal)` | Paginated AO list lookup |
-| `getAoListItem(token, extractVal, conditionVal, conditionParam)` | Filtered AO item |
-| `getAoClient(...)` | Client lookup with entity/creator filters |
-| `getTradeGroupInfo(extractVal, token)` | Referral/trading group |
-| `setParamVal(param, value)` | Set static filters (`clientType`, `status`) |
-| `parseJson(responseBody, field)` | Gson JSON field extraction |
+Allowed `(table, selected column, filter column)` combinations currently are:
 
-Response parsing expects `{ "response": { ... } }` structure with optional `content[]` arrays.
+- `person_email`, `profile_id`, `email_addr`
+- `product_user`, `account_id`, `profile_id`
+- `product_user`, `person_id`, `profile_id`
+- `trade`, `status`, `account_id`
+- `authentication`, `username`, `person_id`
+- `trade`, `settlement_currency`, `account_id`
+- `person_phone`, `phone_num`, `profile_id`
 
----
+`retrieveValueFromDb()` prefixes tables with `cm.`, returns empty for a null filter value, and reads the first result. Email lookups order by descending creation date. `getPersonIdCount()` separately performs a parameterized count from `cm.person`.
 
-## BackendSteps (existing bindings)
+Use `getPersonProfileId`, `getAccountId`, `getPersonId`, or `getValueBasedOnEmail` to resolve UI-derived identities. Add a reviewed query shape when a new assertion needs it; do not bypass the allowlist or embed SQL in step definitions. Preserve read-only validation unless the user explicitly requests data setup or modification.
 
-Reuse these step patterns when possible:
+## Reusing bindings
 
-| Step pattern | Action |
-|--------------|--------|
-| `{string} retrieved from api endpoint` | `getAoAccountDetail` |
-| `the user extracts value {string} from the cm page api` | `getCmList` |
-| `the parameter {string} is set to the value {string}` | `setParamVal` |
-| `value {string} is retrieved according to the param value {string} of param {string} from the ao page api` | `getAoListItem` |
-| `{string} is {string} in CM {string} database table where {string} retrieved by {string}` | SQL assertion |
-| `{string} is updated to modified value in CM {string} database table where {string} retrieved by {string}` | SQL compare to UI data |
+`BackendSteps` currently supports:
 
-`BackendSteps` uses `retrieveLocalStorageVal()` for the bearer token and `aopoManager` for UI-derived values (e.g. email).
+- `{string} retrieved from api endpoint` — uses a hardcoded AO UUID and prints a value; not a reusable assertion by itself.
+- `the user extracts value {string} from the cm page api` — prints a CM field.
+- `the parameter {string} is set to the value {string}` — sets the two supported filters.
+- `value {string} is retrieved according to the param value {string} of param {string} from the ao page api` — stores the result through `setRetrievedData()`.
+- `{string} is {string} in CM {string} database table where {string} retrieved by {string}` — resolves the current CM email and asserts a DB value.
+- `{string} is updated to modified value in CM {string} database table where {string} retrieved by {string}` — compares DB data to the shared captured value.
 
----
+`BackgroundSteps`' existing-person-ID step checks a count of four; it does not create four accounts. Reuse assertions only after checking their setup dependencies and missing-value behavior.
 
-## Working Rules
+## Adding or changing a scenario
 
-1. Reuse `BackendSteps` bindings when step text matches exactly.
-2. Add new API methods to `CoreService`, not directly in step definitions.
-3. Use `ApiClient` inside `CoreService` with try-with-resources.
-4. Use `ensureSuccess()` / response validation patterns already in `CoreService`.
-5. Parse JSON via existing `getResponseObject`, `getContentArray`, `getString` helpers.
-6. For DB checks, use `SQLDatabase` methods — do not embed raw SQL in step definitions.
-7. API steps that need auth assume a prior web login step has populated Playwright `localStorage`.
-8. Keep API step text generic and reusable across scenarios.
-9. When adding CRM-specific calls, use `getCrmDomain(entity, env)` for endpoint resolution.
+1. Establish product, environment/entity, business operation, authentication, identifying data, and expected values. For DB checks, establish the exact allowed query shape.
+2. Reuse implemented bindings; put new requests and parsing in `CoreService` and transport concerns in `ApiClient`.
+3. Keep setup mutations explicit. Do not use `getAccountId()` as though it were a read-only lookup.
+4. Assert status and business results. Existing `Optional.orElse("")` and JSON empty-string defaults can hide missing records if used without a presence check.
+5. Avoid extending static filters/captured values without reset planning; this layer is not scenario-isolated or safe for concurrent use.
+6. Deliver the feature, implemented bindings/service methods, reference prompt, assumptions, and scoped command required by [AGENTS.md](AGENTS.md).
 
-### Adding a new API method
-
-1. Add method to `CoreService` using `ApiClient` and existing JSON helpers.
-2. Add a Cucumber step binding in `BackendSteps` (or extend an existing one).
-3. If the step needs UI context, read from `aopoManager` or `BaseTest` static state.
-4. Add assertion via `Assert` or return value stored with `setRetrievedData()`.
-
----
-
-## When User Provides API Test Steps
-
-1. Check if an existing `BackendSteps` binding matches the step text.
-2. If not, add the method to `CoreService` and a new step in `BackendSteps`.
-3. For DB validation, use `SQLDatabase` with parameterized table/column/filter values.
-4. Wire the API steps into the existing feature file (usually alongside UI steps).
-5. Ensure a prior UI step provides auth token or test data the API step depends on.
-
----
-
-## Input Checklist (Ask If Missing)
-
-- **Endpoint or business operation** (AO status, CM list, referral code, etc.)
-- **Auth context** — does the scenario include a web login step?
-- **Filter parameters** (client type, status, entity, createdBy)
-- **Expected response field and value**
-- **DB table/column** for SQL assertions (if any)
-- **Environment** and **entity**
-
----
-
-## Output Expectations
-
-- Updated `CoreService` method(s) if new API calls are needed
-- Updated `BackendSteps` (and/or `BackgroundSteps`) bindings
-- Feature file steps referencing the new bindings
-- If mixed with UI: confirm web steps exist for login/data setup
-- Runnable Maven command for the parent web scenario:
+Example command for an existing CM subset, **only after explicit execution approval**:
 
 ```bash
-mvn test -PWebTests -Dproduct=adminPortal -Denv=bauuat -Dentity=EBL_MT5 -Dbrowser=chrome
+mvn test -PWebTests -Dproduct=adminPortal -Denv=bauuat -Dentity=EBL_MT5 -Dbrowser=chrome \
+  -Dcucumber.features=src/test/java/Features/AdminPortal/cm \
+  -Dcucumber.filter.tags="@CM and @EBL_MT5"
 ```
 
----
-
-## Execution Policy
-
-- API steps run as part of web/app Cucumber scenarios — use the parent product's Maven profile.
-- Do **not** execute Maven commands without explicit user approval.
-
----
-
-## Definition of Done
-
-1. API logic implemented in `CoreService` (not inline in steps).
-2. Step definition binding exists and is reusable.
-3. JSON parsing and error handling follow existing `CoreService` patterns.
-4. SQL assertions use `SQLDatabase` helpers when applicable.
-5. Feature scenario includes required UI setup steps (login, navigation) if token/UI data is needed.
-6. Compile-ready with clean imports.
-7. Assumptions listed (endpoint, test data, auth dependency).
-
----
-
-## Default Behavior
-
-If the user gives plain-language API validation steps:
-
-1. Map to existing `BackendSteps` bindings first.
-2. Propose `CoreService` method signature and step text.
-3. Identify UI prerequisites (login, record creation) for mixed scenarios.
-4. List assumptions at the end.
+Choose the actual feature path/tag expression for the requested case. Backend/API work does not waive the headed-web or explicit test-execution approval requirements. Do not change Qase behavior as part of endpoint work.
