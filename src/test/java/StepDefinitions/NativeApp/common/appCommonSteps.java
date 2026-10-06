@@ -34,6 +34,10 @@ public class appCommonSteps extends BaseTest {
 
     @Then("the user sees header {string} on the page")
     public void the_user_sees_header_on_the_page(String expectedHeader) throws InterruptedException {
+        if ("Deposit".equals(expectedHeader) || "Withdraw".equals(expectedHeader) || "Records".equals(expectedHeader)) {
+            Assert.assertEquals(appPoManager.getAppDepositPage().getHeader(expectedHeader), expectedHeader);
+            return;
+        }
         String actualHeaderTitle = "";
         switch (expectedHeader) {
             case "Position Details" -> actualHeaderTitle = appPoManager.getAppPositionDetailsPage().getHeader();

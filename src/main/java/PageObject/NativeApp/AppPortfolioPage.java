@@ -112,6 +112,34 @@ public class AppPortfolioPage {
                 : new TimeoutException("Button was not visible on the portfolio page: " + buttonName);
     }
 
+    public void waitUntilDisplayed() {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new TimeoutException("Portfolio landing is implemented for Android only");
+        }
+        new WebDriverWait(driver, Duration.ofSeconds(20))
+                .ignoring(StaleElementReferenceException.class)
+                .withMessage("Portfolio page was not visible after leaving Deposit")
+                .until(d -> portfolioListChromeVisible() || openPositionsTabVisible());
+    }
+
+    private boolean openPositionsTabVisible() {
+        Dimension window = driver.manage().window().getSize();
+        int maxY = (int) (window.getHeight() * 0.70);
+        for (WebElement el : driver.findElements(By.xpath(
+                "//*[@text='Open Positions' or @content-desc='Open Positions']"
+        ))) {
+            try {
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (location.getY() < maxY && size.getHeight() > 0 && size.getHeight() <= 140) {
+                    return true;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return false;
+    }
+
     private void waitForPortfolioPage() {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(15))

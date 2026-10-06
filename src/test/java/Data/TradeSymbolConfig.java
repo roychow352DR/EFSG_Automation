@@ -61,4 +61,12 @@ public class TradeSymbolConfig {
         };
     }
 
+    public String getDefaultLotSize(String entity)
+    {
+        return switch (entity) {
+            case "EBL_UAT" -> "1.0";
+            default -> "0.10";
+        };
+    }
+
 }

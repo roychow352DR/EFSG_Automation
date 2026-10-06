@@ -17,6 +17,8 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.GetPageElement;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -858,27 +860,26 @@ public class AppInstrumentDetailsPage {
         }
     }
 
+    private String offsetPrice(String price, int delta, String decimal) {
+        int scale = Integer.parseInt(decimal);
+        return new BigDecimal(price)
+                .add(BigDecimal.valueOf(delta))
+                .setScale(scale, RoundingMode.HALF_UP)
+                .toPlainString();
+    }
+
     public void fillInTextField(String textFieldName, String direction, String decimal, int priceDifVal) {
-        String enterPrice;
         if (driver instanceof AndroidDriver) {
             switch (textFieldName) {
                 case "Stop Loss" -> {
-                    if (direction.equalsIgnoreCase("BUY")) {
-                        enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) - priceDifVal);
-                    } else {
-                        enterPrice = String.valueOf(Float.parseFloat(getStopLossPrice(direction, decimal)) + priceDifVal);
-                    }
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, tpslEditField("Stop Loss"), enterPrice);
-                    stopLossPrice = abs.normalizePriceToDecimals(enterPrice,decimal);
+                    int delta = direction.equalsIgnoreCase("BUY") ? -priceDifVal : priceDifVal;
+                    stopLossPrice = offsetPrice(getStopLossPrice(direction, decimal), delta, decimal);
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, tpslEditField("Stop Loss"), stopLossPrice);
                 }
                 case "Take Profit" -> {
-                    if (direction.equalsIgnoreCase("BUY")) {
-                        enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) + priceDifVal);
-                    } else {
-                        enterPrice = String.valueOf(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - priceDifVal);
-                    }
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, tpslEditField("Take Profit"), enterPrice);
-                    takeProfitPrice = abs.normalizePriceToDecimals(enterPrice,decimal);
+                    int delta = direction.equalsIgnoreCase("BUY") ? priceDifVal : -priceDifVal;
+                    takeProfitPrice = offsetPrice(getTakeProfitPrice(direction, decimal), delta, decimal);
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, tpslEditField("Take Profit"), takeProfitPrice);
                 }
                 case "Lot Size" -> {
                     editTextFieldAos.getFirst().clear();
@@ -893,26 +894,14 @@ public class AppInstrumentDetailsPage {
         if (driver instanceof AndroidDriver) {
             switch (textFieldName) {
                 case "Stop Loss" -> {
-                    String editedStopLoss;
-                    if (direction.equalsIgnoreCase("BUY")) {
-                        editedStopLoss = Float.toString(Float.parseFloat(getStopLossPrice(direction, decimal)) - 25);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, editedStopLoss);
-                    } else {
-                        editedStopLoss = Float.toString(Float.parseFloat(getStopLossPrice(direction, decimal)) + 25);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, editedStopLoss);
-                    }
-                    stopLossPrice = abs.normalizePriceToDecimals(editedStopLoss, decimal);
+                    int delta = direction.equalsIgnoreCase("BUY") ? -25 : 25;
+                    stopLossPrice = offsetPrice(getStopLossPrice(direction, decimal), delta, decimal);
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, stopLossEditFieldAos, stopLossPrice);
                 }
                 case "Take Profit" -> {
-                    String editedTakeProfit;
-                    if (direction.equalsIgnoreCase("BUY")) {
-                        editedTakeProfit = Float.toString(Float.parseFloat(getTakeProfitPrice(direction, decimal)) + 25);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, editedTakeProfit);
-                    } else {
-                        editedTakeProfit = Float.toString(Float.parseFloat(getTakeProfitPrice(direction, decimal)) - 25);
-                        abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, editedTakeProfit);
-                    }
-                    takeProfitPrice = abs.normalizePriceToDecimals(editedTakeProfit, decimal);
+                    int delta = direction.equalsIgnoreCase("BUY") ? 25 : -25;
+                    takeProfitPrice = offsetPrice(getTakeProfitPrice(direction, decimal), delta, decimal);
+                    abs.typeWithAndroidKeys((AndroidDriver) driver, takeProfitEditFieldAos, takeProfitPrice);
                 }
                 case "Lot Size" -> editTextFieldAos.getFirst().sendKeys("0.45");
                 case "Price" -> typePendingOrderPrice(direction, decimal);
