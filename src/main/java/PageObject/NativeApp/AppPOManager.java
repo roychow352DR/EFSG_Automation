@@ -21,6 +21,8 @@ public class AppPOManager {
     private final AppPositionDetailsPage appPositionDetailsPage;
     private final AppSettingPage appSettingPage;
     private final AppPendingOrderDetailsPage appPendingOrderDetailsPage;
+    private final AppDepositPage appDepositPage;
+    private final AppWithdrawPage appWithdrawPage;
 
     public AppPOManager(AppiumDriver driver) {
         this.appLoginPage = new AppLoginPage(driver);
@@ -40,6 +42,8 @@ public class AppPOManager {
         this.appPositionDetailsPage = new AppPositionDetailsPage(driver);
         this.appSettingPage = new AppSettingPage(driver);
         this.appPendingOrderDetailsPage = new AppPendingOrderDetailsPage(driver);
+        this.appDepositPage = new AppDepositPage(driver);
+        this.appWithdrawPage = new AppWithdrawPage(driver);
     }
 
     public AppLoginPage getAppLoginPage() {
@@ -108,5 +112,13 @@ public class AppPOManager {
 
     public AppPendingOrderDetailsPage getAppPendingOrderDetailsPage() {
         return appPendingOrderDetailsPage;
+    }
+
+    public AppDepositPage getAppDepositPage() {
+        return appDepositPage;
+    }
+
+    public AppWithdrawPage getAppWithdrawPage() {
+        return appWithdrawPage;
     }
 }

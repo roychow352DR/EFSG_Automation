@@ -31,6 +31,20 @@ public class tradeSteps extends BaseTest {
 
     }
 
+    @And("the user taps direction {string} on the app trade view")
+    public void the_user_taps_direction_on_the_app_trade_view(String direction) {
+        appPoManager.getAppTradeView().tapDirectionQuote(direction);
+    }
+
+    @Then("the user sees a page with a content {string}")
+    public void the_user_sees_a_page_with_a_content(String expectedContent) {
+        Assert.assertEquals(
+                appPoManager.getAppTradeView().getVisiblePageContent(expectedContent),
+                expectedContent,
+                "Registration gate content was not shown"
+        );
+    }
+
     @And("the user switches on take profit and stop loss on the instrument details page")
     public void the_user_switches_on_take_profit_and_stop_loss_on_the_app_trade_view() throws InterruptedException {
         appPoManager.getAppInstrumentDetailsPage().switchProfitStopLoss();
@@ -243,7 +257,7 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees expected default volume on the instrument details page")
     public void the_user_sees_expected_default_volume_on_the_instrument_details_page() {
-        Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getInputFieldValue("Lots"), "0.10");
+        Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getInputFieldValue("Lots"), tradeSymbolConfig.getDefaultLotSize(BaseTest.productEntity));
     }
 
     @And("the user fills in the text field {string} with the value less than minimum on the instrument details page")
@@ -408,6 +422,21 @@ public class tradeSteps extends BaseTest {
     @When("the user taps button {string} on the portfolio page")
     public void the_user_taps_button_on_the_portfolio_page(String buttonText) {
         appPoManager.getAppPortfolioPage().clickButton(buttonText);
+    }
+
+    @And("the user taps back button on the deposit page")
+    public void the_user_taps_back_button_on_the_deposit_page() {
+        appPoManager.getAppDepositPage().tapBack();
+    }
+
+    @And("the user taps back button on the withdraw page")
+    public void the_user_taps_back_button_on_the_withdraw_page() {
+        appPoManager.getAppWithdrawPage().tapBack();
+    }
+
+    @Then("the user lands on app portfolio page")
+    public void the_user_lands_on_app_portfolio_page() {
+        appPoManager.getAppPortfolioPage().waitUntilDisplayed();
     }
 
     @Then("the user sees the portfolio filtering page with correct items displayed")

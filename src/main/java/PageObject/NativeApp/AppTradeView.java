@@ -170,6 +170,123 @@ public class AppTradeView {
                 : new TimeoutException("Direction was not visible: " + direction);
     }
 
+    public void tapDirectionQuote(String direction) {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new UnsupportedOperationException("Tapping a direction quote is supported on Android only");
+        }
+        selectedDirection = direction;
+        resetLeftoverTpslValues();
+        TimeoutException lastError = null;
+        boolean ticketOpen = isOrderTicketVisible();
+        for (By locator : directionLocators(direction)) {
+            try {
+                // Quote chips use content-desc "BUY, 4312, .32". Submit CTA is exact "BUY" and must not be used here.
+                if (ticketOpen) {
+                    abs.tapVisible(locator, 15);
+                } else {
+                    abs.tapBottomMost(locator, 15);
+                }
+                System.out.println("Tapped direction quote without waiting for the order ticket: " + direction
+                        + " ticketOpen=" + ticketOpen);
+                return;
+            } catch (TimeoutException e) {
+                lastError = e;
+            }
+        }
+        if (lastError != null) {
+            throw lastError;
+        }
+        throw new TimeoutException("Direction quote was not visible: " + direction);
+    }
+
+    public String getVisiblePageContent(String expectedContent) {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new UnsupportedOperationException("Reading visible page content is supported on Android only");
+        }
+        return new WebDriverWait(driver, Duration.ofSeconds(20))
+                .ignoring(StaleElementReferenceException.class)
+                .until(d -> observedExactContent(expectedContent));
+    }
+
+    private String observedExactContent(String expectedContent) {
+        String literal = xpathLiteral(expectedContent);
+        By locator = By.xpath("//*[@text=" + literal + " or @content-desc=" + literal + "]");
+        for (WebElement element : driver.findElements(locator)) {
+            try {
+                if (!isDisplayedOnScreen(element)) {
+                    continue;
+                }
+                String text = observedText(element);
+                if (expectedContent.equals(text)) {
+                    return text;
+                }
+                String contentDesc = elementAttribute(element, "content-desc");
+                if (expectedContent.equals(contentDesc)) {
+                    return contentDesc;
+                }
+            } catch (StaleElementReferenceException ignored) {
+                // Hierarchy can refresh while the registration gate is opening.
+            }
+        }
+        return null;
+    }
+
+    private String observedText(WebElement element) {
+        String text = elementAttribute(element, "text");
+        if (text != null) {
+            return text;
+        }
+        try {
+            String raw = element.getText();
+            if (raw == null || raw.isBlank() || "null".equalsIgnoreCase(raw)) {
+                return null;
+            }
+            return raw;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private boolean isDisplayedOnScreen(WebElement element) {
+        try {
+            if (element.isDisplayed()) {
+                return true;
+            }
+        } catch (StaleElementReferenceException e) {
+            throw e;
+        } catch (RuntimeException ignored) {
+            // React Native nodes often report isDisplayed false while bounds are on screen.
+        }
+        int[] box = visibleBox(element);
+        if (box == null) {
+            return false;
+        }
+        Dimension window = driver.manage().window().getSize();
+        return box[0] < window.getWidth()
+                && box[1] < window.getHeight()
+                && box[2] > 0
+                && box[3] > 0;
+    }
+
+    private String xpathLiteral(String value) {
+        if (!value.contains("'")) {
+            return "'" + value + "'";
+        }
+        if (!value.contains("\"")) {
+            return "\"" + value + "\"";
+        }
+        StringBuilder literal = new StringBuilder("concat(");
+        String[] parts = value.split("'", -1);
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                literal.append(", \"'\", ");
+            }
+            literal.append("'").append(parts[i]).append("'");
+        }
+        literal.append(')');
+        return literal.toString();
+    }
+
     private void waitForOrderTicket() {
         new WebDriverWait(driver, Duration.ofSeconds(10))
                 .until(ExpectedConditions.visibilityOfElementLocated(By.xpath(
