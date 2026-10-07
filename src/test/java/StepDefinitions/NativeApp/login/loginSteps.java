@@ -85,4 +85,13 @@ public class loginSteps extends BaseTest {
         appPOManager.getAppLoginPage().loginAs(username, password);
     }
 
+    @And("the user logs in on the App login page")
+    public void the_user_logs_in_on_the_app_login_page() throws InterruptedException {
+        // EBL_MT5 resolves to a username; other mapped entities resolve to an email.
+        AppCredential credential = new AppCredential(productEntity);
+        appPOManager.getAppLoginPage().loginAs(
+                credential.getLoginCredential(),
+                credential.getLoginPassword());
+    }
+
 }

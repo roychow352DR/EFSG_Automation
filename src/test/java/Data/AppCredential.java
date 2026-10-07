@@ -10,8 +10,8 @@ public class AppCredential {
 
     public String getLoginCredential() {
         return switch (entity) {
-            case "EBL_MT5" -> "rc60";
-            case "EIEK" -> "eieuat564@yopmail.com";
+            case "EBL_MT5" -> "autol3";
+            case "EIEHK" -> "eieuat005@yopmail.com";
             default -> throw new IllegalArgumentException("Invalid entity: " + entity);
         };
     }
@@ -19,7 +19,7 @@ public class AppCredential {
     public String getLoginPassword() {
         return switch (entity) {
             case "EBL_MT5" -> "Test1234@";
-            case "EIEK" -> "Test1234@";
+            case "EIEHK" -> "Test1234@";
             default -> throw new IllegalArgumentException("Invalid entity: " + entity);
         };
     }
