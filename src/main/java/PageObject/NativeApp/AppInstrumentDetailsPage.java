@@ -15,6 +15,7 @@ import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.BaseTest;
 import utils.GetPageElement;
 
 import java.math.BigDecimal;
@@ -851,13 +852,16 @@ public class AppInstrumentDetailsPage {
                     abs.typeWithAndroidKeys((AndroidDriver) driver, tpslEditField("Take Profit"),
                             getTakeProfitPrice(direction, decimal));
                 }
-                case "Lot Size" -> {
-                    editTextFieldAos.getFirst().clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), lotSize);
-                }
+                case "Lot Size" -> typeCapturedLotSize();
                 case "Price" -> typePendingOrderPrice(direction, decimal);
             }
         }
+    }
+
+    private void typeCapturedLotSize() {
+        WebElement lotField = lotsEditField();
+        lotField.clear();
+        abs.typeWithAndroidKeys((AndroidDriver) driver, lotField, lotSize);
     }
 
     private String offsetPrice(String price, int delta, String decimal) {
@@ -881,10 +885,7 @@ public class AppInstrumentDetailsPage {
                     takeProfitPrice = offsetPrice(getTakeProfitPrice(direction, decimal), delta, decimal);
                     abs.typeWithAndroidKeys((AndroidDriver) driver, tpslEditField("Take Profit"), takeProfitPrice);
                 }
-                case "Lot Size" -> {
-                    editTextFieldAos.getFirst().clear();
-                    abs.typeWithAndroidKeys((AndroidDriver) driver, editTextFieldAos.getFirst(), lotSize);
-                }
+                case "Lot Size" -> typeCapturedLotSize();
                 case "Price" -> typePendingOrderPrice(direction, decimal);
             }
         }
@@ -1024,16 +1025,29 @@ public class AppInstrumentDetailsPage {
     }
 
     private List<String> lotChipTexts(String value) {
-        List<String> texts = new ArrayList<>();
-        texts.add(value.trim());
+        List<String> numeric = new ArrayList<>();
+        addLotChipText(numeric, value.trim());
         try {
             double number = Double.parseDouble(value.trim());
-            addLotChipText(texts, String.valueOf(number));
-            addLotChipText(texts, String.format(Locale.US, "%.1f", number));
-            addLotChipText(texts, String.format(Locale.US, "%.2f", number));
+            addLotChipText(numeric, String.format(Locale.US, "%.1f", number));
+            addLotChipText(numeric, String.format(Locale.US, "%.2f", number));
         } catch (NumberFormatException ignored) {
         }
-        return texts;
+        List<String> labeled = new ArrayList<>();
+        for (String text : numeric) {
+            addLotChipText(labeled, text + " Lot");
+            addLotChipText(labeled, text + " Lots");
+        }
+        // EIEHK chips read "0.5 Lot". EBL_MT5 chips read "0.5". Try the entity form first.
+        List<String> ordered = new ArrayList<>();
+        if ("EIEHK".equalsIgnoreCase(BaseTest.productEntity)) {
+            ordered.addAll(labeled);
+            ordered.addAll(numeric);
+        } else {
+            ordered.addAll(numeric);
+            ordered.addAll(labeled);
+        }
+        return ordered;
     }
 
     private void addLotChipText(List<String> texts, String text) {
@@ -1139,6 +1153,34 @@ public class AppInstrumentDetailsPage {
 
 
 
+    // EIEHK order ticket uses a Switch beside "Pending Order". The switch has no resource-id or content-desc.
+    private static final By PENDING_ORDER_SWITCH = By.xpath(
+            "//android.widget.TextView[starts-with(normalize-space(@text),'Pending Order')]"
+                    + "/following-sibling::android.widget.Switch[1]"
+    );
+
+    public void toggleOnPendingOrder() {
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        WebElement toggle = new WebDriverWait(driver, Duration.ofSeconds(10))
+                .ignoring(StaleElementReferenceException.class)
+                .until(ExpectedConditions.visibilityOfElementLocated(PENDING_ORDER_SWITCH));
+        if (isSwitchChecked(toggle)) {
+            getPageElement.logInfo("Pending Order switch is already on");
+            return;
+        }
+        abs.tapVisible(PENDING_ORDER_SWITCH, 8);
+        new WebDriverWait(driver, Duration.ofSeconds(8))
+                .ignoring(StaleElementReferenceException.class)
+                .until(d -> isSwitchChecked(d.findElement(PENDING_ORDER_SWITCH)));
+    }
+
+    private boolean isSwitchChecked(WebElement toggle) {
+        String checked = toggle.getAttribute("checked");
+        return checked != null && Boolean.parseBoolean(checked);
+    }
+
     public void selectOrderType(String orderType) {
         if (!(driver instanceof AndroidDriver)) {
             return;
@@ -1154,7 +1196,7 @@ public class AppInstrumentDetailsPage {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(15))
                     .until(ExpectedConditions.visibilityOfElementLocated(By.xpath(
-                            "//android.widget.TextView[@text='Market Order' or @text='Limit / Stop Order' or @text='Lots']"
+                            "//android.widget.TextView[@text='Market Order' or @text='Limit / Stop Order' or @text='Lots' or @text='Lot']"
                     )));
         } catch (TimeoutException e) {
             throw new TimeoutException("Order ticket was not visible", e);
@@ -1375,9 +1417,24 @@ public class AppInstrumentDetailsPage {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
+        abs.dismissAndroidKeyboardSafely();
+        if (isLotSizeField(priceType)) {
+            captureLotsBeforeAdjust();
+        }
         Point point = tpslStepperPoint(priceType, ctaBtn);
         getPageElement.logInfo("Tapping " + ctaBtn + " on " + priceType + " at " + point.getX() + "," + point.getY());
         abs.tapAt(point.getX(), point.getY());
+    }
+
+    private void captureLotsBeforeAdjust() {
+        try {
+            String text = lotsEditField().getText();
+            if (text != null && !text.isBlank()) {
+                lotSize = displayedLotSize(text);
+            }
+        } catch (RuntimeException e) {
+            getPageElement.logInfo("Could not capture Lots value before stepper tap: " + e.getMessage());
+        }
     }
 
     public void clearPrice(String priceType) {
@@ -1402,17 +1459,18 @@ public class AppInstrumentDetailsPage {
         String name = fieldName.trim();
         return name.equalsIgnoreCase("Lot Size")
                 || name.equalsIgnoreCase("Lots")
+                || name.equalsIgnoreCase("Lot")
                 || name.equalsIgnoreCase("Volume");
     }
 
     private WebElement lotsEditField() {
         WebElement label = lotsFieldLabel();
         if (label != null) {
-            try {
-                return editFieldNear(label, "Lots");
-            } catch (NoSuchElementException ignored) {
-                getPageElement.logInfo("Could not resolve Lots EditText from label; falling back to first EditText");
+            WebElement nearest = nearestEditField(label);
+            if (nearest != null) {
+                return nearest;
             }
+            getPageElement.logInfo("Could not resolve Lots EditText from label; falling back to first EditText");
         }
         abs.waitUntilElementVisible(By.className("android.widget.EditText"));
         List<WebElement> fields = driver.findElements(By.className("android.widget.EditText"));
@@ -1422,9 +1480,34 @@ public class AppInstrumentDetailsPage {
         return fields.getFirst();
     }
 
+    private WebElement nearestEditField(WebElement label) {
+        int[] labelBounds = parseBounds(elementAttribute(label, "bounds"));
+        if (labelBounds == null) {
+            return null;
+        }
+        int labelCenterY = (labelBounds[1] + labelBounds[3]) / 2;
+        WebElement closest = null;
+        int bestGap = Integer.MAX_VALUE;
+        for (WebElement field : driver.findElements(By.className("android.widget.EditText"))) {
+            int[] fieldBounds = parseBounds(elementAttribute(field, "bounds"));
+            if (fieldBounds == null) {
+                continue;
+            }
+            int fieldCenterY = (fieldBounds[1] + fieldBounds[3]) / 2;
+            int gap = Math.abs(fieldCenterY - labelCenterY);
+            // EIEHK draws "Lot" under the value. EBL_MT5 draws "Lots" above it.
+            if (gap > 320 || gap >= bestGap) {
+                continue;
+            }
+            bestGap = gap;
+            closest = field;
+        }
+        return closest;
+    }
+
     private WebElement lotsFieldLabel() {
         List<WebElement> labels = driver.findElements(By.xpath(
-                "//android.widget.TextView[@text='Lots' or @text='Lot Size' or @text='Volume']"));
+                "//android.widget.TextView[@text='Lots' or @text='Lot' or @text='Lot Size' or @text='Volume']"));
         return labels.isEmpty() ? null : labels.getFirst();
     }
 
@@ -1437,6 +1520,10 @@ public class AppInstrumentDetailsPage {
         int fieldCenterY = (fieldBounds[1] + fieldBounds[3]) / 2;
         int fieldLeft = fieldBounds[0];
         int fieldRight = fieldBounds[2];
+        String action = normalizeStepperAction(ctaBtn);
+        if (isLotSizeField(fieldName) && ("minus".equals(action) || "plus".equals(action))) {
+            return lotsStepperPoint(fieldBounds, fieldCenterY, action);
+        }
         List<int[]> left = new ArrayList<>();
         List<int[]> right = new ArrayList<>();
         for (int[] bounds : compactControlsOnRow(fieldCenterY)) {
@@ -1450,8 +1537,7 @@ public class AppInstrumentDetailsPage {
         left.sort(Comparator.comparingInt(bounds -> bounds[0]));
         right.sort(Comparator.comparingInt(bounds -> bounds[0]));
 
-        // Filled row is [minus] [field] [clear] [plus]; empty row has no clear.
-        String action = normalizeStepperAction(ctaBtn);
+        // Stop Loss / Take Profit / Price: filled row is [minus] [field] [clear] [plus]; empty row has no clear.
         if ("plus".equals(action)) {
             if (!right.isEmpty()) {
                 return controlCenter(right.getLast());
@@ -1472,6 +1558,43 @@ public class AppInstrumentDetailsPage {
             return new Point(fieldRight + 28, fieldCenterY);
         }
         throw new IllegalArgumentException("Unsupported stepper button: " + ctaBtn);
+    }
+
+    private Point lotsStepperPoint(int[] fieldBounds, int fieldCenterY, String action) {
+        boolean minus = "minus".equals(action);
+        int fieldEdge = minus ? fieldBounds[0] : fieldBounds[2];
+        // Center of a 72px icon flush with the Lots box. Plus may overlap the right edge.
+        int anchorX = minus ? Math.max(8, fieldEdge - 36) : fieldEdge + 36;
+        Dimension window = driver.manage().window().getSize();
+        anchorX = Math.min(Math.max(8, anchorX), window.getWidth() - 8);
+        int[] best = null;
+        int bestDistance = Integer.MAX_VALUE;
+        for (int[] bounds : compactControlsOnRow(fieldCenterY)) {
+            int width = bounds[2] - bounds[0];
+            int height = bounds[3] - bounds[1];
+            if (width < 40 || width > 100 || height < 40 || height > 100) {
+                continue;
+            }
+            if (Math.abs(width - height) > 20) {
+                continue;
+            }
+            int centerX = (bounds[0] + bounds[2]) / 2;
+            if (minus && centerX > fieldEdge + 48) {
+                continue;
+            }
+            if (!minus && centerX < fieldEdge - 48) {
+                continue;
+            }
+            int distance = Math.abs(centerX - anchorX);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = bounds;
+            }
+        }
+        if (best != null && bestDistance <= 72) {
+            return controlCenter(best);
+        }
+        return new Point(anchorX, fieldCenterY);
     }
 
     private String normalizeStepperAction(String ctaBtn) {

@@ -1,5 +1,7 @@
 package Data;
 
+import utils.BaseTest;
+
 public class TradeSymbolConfig {
 
     public static boolean isInitialMarginZero = false;
@@ -24,14 +26,26 @@ public class TradeSymbolConfig {
         };
     }
 
-    public Double getMaxLotSize(String symbol) {
-        return switch (symbol) {
-            case "XAUUSD" -> 5.00;
-            case "XAGUSD" -> 5.00;
-            case "RKGCNH" -> 5.00;
-            case "HKGHKD" -> 5.00;
-            default -> 0.0;
-        };
+    public Double getMaxLotSize(String symbol,String entity) {
+        if (entity.equalsIgnoreCase("EBL_MT5")) {
+            return switch (symbol) {
+                case "XAUUSD" -> 5.00;
+                case "XAGUSD" -> 5.00;
+                case "RKGCNH" -> 5.00;
+                case "HKGHKD" -> 5.00;
+                default -> 0.0;
+            };
+        }
+        else if (entity.equalsIgnoreCase("EIEHK")){
+            return switch (symbol) {
+                case "XAUUSD" -> 10.00;
+                case "XAGUSD" -> 10.00;
+                case "RKGCNH" -> 10.00;
+                case "HKGHKD" -> 10.00;
+                default -> 0.0;
+            };
+        }
+        return 0.0;
     }
 
     public Integer getInitialMargin(String symbol) {
@@ -48,6 +62,14 @@ public class TradeSymbolConfig {
     }
 
     public String getStepSize() {
+        return getStepSize(BaseTest.productEntity);
+    }
+
+    public String getStepSize(String entity) {
+        // EIEHK lot stepper moves 0.01. EBL_MT5 moves 0.05.
+        if (entity != null && entity.equalsIgnoreCase("EIEHK")) {
+            return "0.01";
+        }
         return "0.05";
     }
 

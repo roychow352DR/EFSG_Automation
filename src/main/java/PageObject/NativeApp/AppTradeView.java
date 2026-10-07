@@ -290,13 +290,13 @@ public class AppTradeView {
     private void waitForOrderTicket() {
         new WebDriverWait(driver, Duration.ofSeconds(10))
                 .until(ExpectedConditions.visibilityOfElementLocated(By.xpath(
-                        "//android.widget.TextView[@text='Market Order' or @text='Limit / Stop Order' or @text='Lots']"
+                        "//android.widget.TextView[@text='Market Order' or @text='Limit / Stop Order' or @text='Lots' or @text='Lot']"
                 )));
     }
 
     private boolean isOrderTicketVisible() {
         return !driver.findElements(By.xpath(
-                "//android.widget.TextView[(@text='Market Order' or @text='Limit / Stop Order' or @text='Lots') and @displayed='true']"
+                "//android.widget.TextView[(@text='Market Order' or @text='Limit / Stop Order' or @text='Lots' or @text='Lot') and @displayed='true']"
         )).isEmpty();
     }
 
@@ -2029,7 +2029,7 @@ public class AppTradeView {
             for (WebElement el : driver.findElements(By.xpath(
                     "//*[contains(@text,'Market Order') or contains(@text,'Limit / Stop')"
                             + " or contains(@text,'Est. Margin') or contains(@text,'Estimated Margin')"
-                            + " or @text='Lot Size' or @text='Lots']"))) {
+                            + " or @text='Lot Size' or @text='Lots' or @text='Lot']"))) {
                 String text = el.getText();
                 if (text != null && text.matches(".*\\d+\\.\\d+.*Lots.*")) {
                     continue;

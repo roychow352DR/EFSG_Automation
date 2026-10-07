@@ -22,9 +22,9 @@ public class AppConfig {
             };
             case "EIEHK" -> switch (env) {
                 case "mt5uat" ->
-                        System.getProperty("user.dir") + "/src/main/resources/com.efsg.eiehktrading.android_uat-0.0.214-0805.apk";
+                        System.getProperty("user.dir") + "/src/main/resources/com.efsg.eietrading.android_0.0.220-20261007.apk.zip";
                 case "bauuat" ->
-                        System.getProperty("user.dir") + "/src/main/resources/com.efsg.eiehktrading.android_uat-0.0.214-0805.apk";
+                        System.getProperty("user.dir") + "/src/main/resources/com.efsg.eietrading.android_0.0.220-20261007.apk.zip";
                 default -> "";
             };
             default -> throw new IllegalArgumentException("Invalid app path");
@@ -39,8 +39,8 @@ public class AppConfig {
                 default -> "";
             };
             case "EIEHK" -> switch (env) {
-                case "mt5uat" -> "com.efsg.eiehktrading.android_uat";
-                case "bauuat" -> "com.efsg.eiehktrading.android_uat";
+                case "mt5uat" -> "com.efsg.eiehktrading.android";
+                case "bauuat" -> "com.efsg.eiehktrading.android";
                 default -> "";
             };
             default -> throw new IllegalArgumentException("Invalid app package");

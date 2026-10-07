@@ -260,16 +260,31 @@ public class tradeSteps extends BaseTest {
         Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getInputFieldValue("Lots"), tradeSymbolConfig.getDefaultLotSize(BaseTest.productEntity));
     }
 
+    @And("the user toggles on pending order on the instrument details page")
+    public void the_user_toggles_on_pending_order_on_the_instrument_details_page() {
+        appPoManager.getAppInstrumentDetailsPage().toggleOnPendingOrder();
+    }
+
     @And("the user fills in the text field {string} with the value less than minimum on the instrument details page")
     public void the_user_fills_in_the_text_field_with_the_value_less_than_minimum_on_the_instrument_details_page(String textFieldName) throws InterruptedException {
-        appPoManager.getAppInstrumentDetailsPage().setLotSize(String.valueOf(tradeSymbolConfig.getMinLotSize(AppMarketsPage.tradeSymbol) - 0.01));
+        appPoManager.getAppInstrumentDetailsPage().setLotSize(
+                offsetLotBound(tradeSymbolConfig.getMinLotSize(AppMarketsPage.tradeSymbol), new BigDecimal("-0.01")));
         appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, AppTradeView.selectedDirection, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
     }
 
     @And("the user fills in the text field {string} with the value more than maximum on the instrument details page")
     public void the_user_fills_in_the_text_field_with_the_value_more_than_maximum_on_the_instrument_details_page(String textFieldName) throws InterruptedException {
-        appPoManager.getAppInstrumentDetailsPage().setLotSize(String.valueOf(tradeSymbolConfig.getMaxLotSize(AppMarketsPage.tradeSymbol) + 0.01));
+        appPoManager.getAppInstrumentDetailsPage().setLotSize(
+                offsetLotBound(tradeSymbolConfig.getMaxLotSize(AppMarketsPage.tradeSymbol,BaseTest.productEntity), new BigDecimal("0.01")));
         appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, AppTradeView.selectedDirection, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol));
+    }
+
+    // Two decimal places keep Android key entry off a binary double string such as 5.010000000000001.
+    private String offsetLotBound(Double bound, BigDecimal delta) {
+        return BigDecimal.valueOf(bound)
+                .add(delta)
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString();
     }
 
     @Then("the user sees an error message {string} is displayed on the instrument details page")
@@ -724,6 +739,16 @@ public class tradeSteps extends BaseTest {
     @And("the user places a pending order with direction {string},validity {string} and order type {string} on the instrument details page")
     public void the_user_places_a_pending_order_with_direction_validity_and_order_type_on_the_instrument_details_page(String direction,String validity,String orderType) throws IOException, InterruptedException {
         tradeRecord.placePendingOrderWithValiditySelected(direction, orderType, tradeSymbolConfig,validity);
+    }
+
+    @Then("the user sees the lots value is decreased by default step size on the instrument details page")
+    public void the_user_sees_the_lots_value_is_decreased_by_default_step_size_on_the_instrument_details_page() {
+        assertLotSizeChangedByStep("Lots", -1);
+    }
+
+    @Then("the user sees the lots value is increased by default step size on the instrument details page")
+    public void the_user_sees_the_lots_value_is_increased_by_default_step_size_on_the_instrument_details_page() {
+        assertLotSizeChangedByStep("Lots", 1);
     }
 
     @Then("the user sees the value {string} is decreased by the step size on the instrument details page")
