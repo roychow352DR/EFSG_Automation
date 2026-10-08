@@ -3,7 +3,7 @@ Feature: Native App trade
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
     Scenario: User sees Sell Stop order Confirmation page info based on the input values in previous page
       Given the user launch the app
-      And the user login as username "autol3" and password "Test1234@" on App login page
+      And the user logs in on the App login page
       And the user taps button "Markets" on the app footer
       When the user taps symbol on the app markets page
       And the user selects direction "SELL" on the app trade view

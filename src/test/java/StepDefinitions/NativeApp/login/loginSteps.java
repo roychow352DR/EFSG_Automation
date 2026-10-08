@@ -94,4 +94,13 @@ public class loginSteps extends BaseTest {
                 credential.getLoginPassword());
     }
 
+    @And("the l2 user logs in on the App login page")
+    public void the_l2_user_logs_in_on_the_app_login_page() throws InterruptedException {
+        // L2 uses the same entity password as the default login account.
+        AppCredential credential = new AppCredential(productEntity);
+        appPOManager.getAppLoginPage().loginAs(
+                credential.getL2LoginCredential(),
+                credential.getLoginPassword());
+    }
+
 }

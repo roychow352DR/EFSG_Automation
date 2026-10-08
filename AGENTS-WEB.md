@@ -1,8 +1,12 @@
 # AGENTS — Web automation
 
-Apply [AGENTS.md](AGENTS.md) first. Reviewed against the working tree on **2026-09-21**. New web scenarios use **Playwright Java**. See [ARCHITECTURE.md](ARCHITECTURE.md) for the implementation and [AGENTS-API.md](AGENTS-API.md) for backend assertions.
+Apply [AGENTS.md](AGENTS.md) first. Reviewed by static inspection against the working tree on **2026-10-08**. New web scenarios use **Playwright Java**. See [ARCHITECTURE.md](ARCHITECTURE.md) for the implementation and [AGENTS-API.md](AGENTS-API.md) for backend assertions.
 
 When delegated as `efsg-web`, follow the [specialist contract](AGENTS-ORCHESTRATOR.md#specialist-contract): work within assigned file ownership, report backend dependencies to the orchestrator, and return changes and validation evidence. The orchestrator coordinates shared files and execution approval.
+
+## Approval before changes
+
+**Ask for explicit user approval before making any change**, following [AGENTS.md](AGENTS.md#approval-before-changes). Inspect and propose the exact feature, binding, page-object, manager, configuration, or application-state changes first. Apply only the explicitly approved scope; existing approval for that scope need not be requested again. If delegated without approval, return the proposal to the orchestrator and continue read-only inspection. Browser/test execution requires its own authorization.
 
 ## Product and source mapping
 
@@ -46,7 +50,7 @@ The method accepts `entity` but does not use it to select the web URL. Entity st
 ## Implementation workflow
 
 1. Search the exact Gherkin text in `src/test/java/StepDefinitions` and inspect the binding body. Cucumber glue is shared globally; avoid duplicate expressions across modules.
-2. Initialize the page in the existing first `Given` and create the correct manager. Reuse `AOLoginSteps` or `MIOLoginSteps` entry flows instead of introducing competing sessions.
+2. Initialize the page in the existing first `Given` and create the correct manager. Reuse the appropriate `AOLoginSteps`, combined `ApplicationSteps`, or `MIOLoginSteps` entry flow instead of introducing competing sessions. The combined Admin Portal login calls `ApplicationSteps.objectInit()` for SQL, AO data, and CoreService helpers; `AOLoginSteps` initializes only `AOPOManager`. Choose the binding that establishes the prerequisites of downstream steps.
 3. Put UI actions and locator definitions in the product's page objects. Access pages from steps through the manager; register each new page there.
 4. Prefer `getByRole`, `getByLabel`, stable test IDs, or exact/scoped text. Scope repeated labels to a dialog, row, or page section.
 5. Prefer Playwright's locator auto-wait and retrying assertions. Wait for a concrete result/state when needed; do not add arbitrary sleeps or treat network-idle alone as a business assertion.
@@ -72,7 +76,10 @@ Use existing framework imports and supplied test data. For MIO, the shared manag
 - `BaseTest.page`, `context`, `browser`, managers, and captured data are shared/static. Do not assume parallel scenario safety from Surefire's configured parallel options.
 - `initializePage()` catches initialization errors and can return a null/stale page. Diagnose the first setup error before adding locator retries.
 - The blank-credentials binding in `AOLoginSteps` still calls a legacy Selenium `login` field; do not assume every web step has completed the Playwright migration.
-- Active `@After` resets the Admin Portal menu where applicable and closes the page/context/browser. It does not close the locally created Playwright owner.
+- Active `@After` attempts the Admin Portal menu reset where applicable, then page/context/browser cleanup. Cleanup is sequential and an earlier error can prevent later resources from closing; it does not close the locally created Playwright owner.
+- MIO deposit coverage is incomplete: `MIO-1127.feature` includes unimplemented steps, the transaction binding only clicks a dropdown, and `DepositManagementPage.clickDropdown(...)` always selects Deposit. Its column-index method prints a value rather than asserting a transaction result.
+- Inspect filter assertions for pagination and quantifier errors. `ApplicationListPagePW` and `UserManagementPage` can skip single-page/final-page checks; shared row filters check for any matching row, not every row. These methods do not establish that all returned records match a filter.
+- `ApplicationSteps` contains a DB existence check using `assertNotNull(optional.orElse("0"))`, which passes on an absent result. New/reused assertions must verify presence and the requested value, not a non-null fallback.
 - Qase hooks and per-step failure screenshot capture are currently disabled. Video capture is configured, but preservation/upload depends on teardown and cleanup flags. Do not promise screenshots, Qase results, or generated HTML merely because an output directory exists.
 
 Preserve unrelated legacy behavior. If a requested scenario depends on an incomplete binding, implement that path and explain the change rather than silently leaving it ineffective.

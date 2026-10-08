@@ -3,7 +3,7 @@ Feature: Native App trade
   @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
   Scenario: The Contract value is displayed correctly on the pending order details page of XAGUSD
     Given the user launch the app
-    And the user login as username "autol3" and password "Test1234@" on App login page
+    And the user logs in on the App login page
     And the user taps button "Me" on the app footer
     And the user taps button "Markets" on the app footer
     And the user places a pending order with direction "BUY" and order type "Buy Stop" symbol "XAGUSD" on the instrument details page

@@ -52,7 +52,7 @@ public class TradeSymbolConfig {
         if (isInitialMarginZero) return 0;
         else {
             return switch (symbol) {
-                case "XAUUSD" -> 3000;
+                case "XAUUSD" -> 1000;
                 case "XAGUSD" -> 10000;
                 case "RKGCNH" -> 1300;
                 case "HKGHKD" -> 4000;
@@ -71,6 +71,14 @@ public class TradeSymbolConfig {
             return "0.01";
         }
         return "0.05";
+    }
+
+    public String getConfirmationMarginRate(String entity, String symbol) {
+        // EIEHK XAUUSD confirmation margin is 2.7% of price * volume * contract size.
+        if (entity != null && entity.equalsIgnoreCase("EIEHK") && "XAUUSD".equalsIgnoreCase(symbol)) {
+            return "0.027";
+        }
+        return null;
     }
 
     public Integer getContractSize(String symbol){

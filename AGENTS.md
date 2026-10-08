@@ -1,17 +1,25 @@
 # AGENTS.md
 
-Repository-wide instructions for maintaining and generating EFSG automation. Reviewed against the local working tree on **2026-09-21**. For implementation details and known limitations, see [ARCHITECTURE.md](ARCHITECTURE.md).
+Repository-wide instructions for maintaining and generating EFSG automation. Reviewed by static inspection against the local working tree on **2026-10-08**, including in-progress user changes. For implementation details and known limitations, see [ARCHITECTURE.md](ARCHITECTURE.md). This review does not establish compilation or test pass status.
+
+## Approval before changes
+
+**Ask for explicit user approval before making any change.** First inspect read-only and present the proposed files/actions, intended behavior, and scope for review; wait for approval before creating, editing, deleting, or renaming files, applying fixes or formatting, changing configuration or dependencies, or mutating Git, application, backend, or Qase state. Prepare proposals in the response without applying them while approval is pending.
+
+An existing explicit user instruction approving the same changes is sufficient; do not ask again for that approved scope. A request to inspect or review alone does not authorize fixes. Ask for approval before expanding the approved scope. Read-only inspection may continue while awaiting an answer.
+
+This rule applies to the orchestrator and every specialist, including the reviewer. Record the user's change approval in delegation briefs; file ownership or a parent's assignment alone is not user approval. Change approval does not authorize Maven/test execution, which requires the separate explicit approval described below.
 
 ## Orchestration and delegation
 
 The primary agent acts as the EFSG orchestrator and owns the complete user request. Follow [AGENTS-ORCHESTRATOR.md](AGENTS-ORCHESTRATOR.md) to plan work, assign specialists, integrate changes, and report validation.
 
-- For work that can be split into independent, bounded tasks, delegate to the relevant `efsg-web`, `efsg-app`, or `efsg-api` specialist. Use only the specialists needed for the request; handle small, tightly coupled changes directly.
+- For work that can be split into independent, bounded tasks, delegate to the relevant `efsg-web`, `efsg-app`, or `efsg-api` specialist. Use `efsg-reviewer` for independent code review. Use only the specialists needed for the request; handle small, tightly coupled changes directly.
 - Assign one active writer per file and serialize shared-framework changes. Parallel code inspection does not authorize parallel test/device execution.
-- Pass repository rules, exact file ownership, dependencies, acceptance criteria, and existing execution authorization to each specialist. Specialists return evidence and unresolved issues to the orchestrator.
+- Pass repository rules, exact file ownership, dependencies, acceptance criteria, and existing change and execution approvals to each specialist. Specialists return evidence and unresolved issues to the orchestrator.
 - The orchestrator reviews every result and provides one consolidated response. Delegation does not expand permission to run tests, modify Qase behavior, or change unrelated files.
 
-Named agent definitions live in [.codex/agents](.codex/agents): `efsg-orchestrator`, `efsg-web`, `efsg-app`, and `efsg-api`. If the client cannot select custom agents, pass the appropriate guide and task brief to its available subagent tool. If delegation is unavailable, follow the same workflow sequentially and disclose that no separate agents ran.
+Named agent definitions live in [.codex/agents](.codex/agents): `efsg-orchestrator`, `efsg-web`, `efsg-app`, `efsg-api`, and `efsg-reviewer`. If the client cannot select custom agents, pass the appropriate guide and task brief to its available subagent tool. If delegation is unavailable, follow the same workflow sequentially and disclose that no separate agents ran.
 
 ## Choose the applicable guide
 
@@ -19,6 +27,7 @@ Named agent definitions live in [.codex/agents](.codex/agents): `efsg-orchestrat
 - [AGENTS-WEB.md](AGENTS-WEB.md): Admin Portal and MIO web automation with Playwright Java.
 - [AGENTS-APP.md](AGENTS-APP.md): native Android/iOS automation with Appium Java; Appium MCP inspection.
 - [AGENTS-API.md](AGENTS-API.md): REST calls, JSON validation, and MySQL checks.
+- [AGENTS-REVIEW.md](AGENTS-REVIEW.md): read-only code review, evidence, severity, and framework-specific regression checks.
 
 For mixed scenarios, apply the UI guide to features/page objects and the API guide to backend steps. These documents define agent responsibilities; Maven/Cucumber remain the test execution system.
 
@@ -27,6 +36,7 @@ For mixed scenarios, apply the UI guide to features/page objects and the API gui
 - Java 21, Maven, Cucumber 7.20.1, and TestNG 7.10.2.
 - Playwright 1.53.0 is the current web stack. Preserve legacy Selenium flows; do not extend them for new web tests.
 - Appium Java client 9.4.0 drives native tests. Java runners are the primary execution path; root WebdriverIO files are auxiliary scaffolding.
+- Dependency versions above are local POM declarations. Duplicate Jackson declarations and inactive/incomplete HTML reporting configuration remain; do not infer resolved dependencies or generated HTML from declarations alone.
 - Features live in `src/test/java/Features`; all four Cucumber runners use `glue = "StepDefinitions"`.
 - Page objects live in `src/main/java/PageObject`; steps in `src/test/java/StepDefinitions`; configuration in `src/main/java/DataResources`.
 
@@ -65,6 +75,7 @@ Use explicit overrides in commands; local defaults change between tasks. Entity 
 5. Preserve unrelated scenarios, bindings, application behavior, and user changes, including staged files and generated evidence. Do not reformat or revert unrelated work.
 6. Do not copy repository credentials, API tokens, or connection passwords into documentation, generated prompts, or new fixtures. Use the existing approved data source or user-supplied test data.
 7. Shared drivers, managers, API filters, and trading values are largely static. Do not add parallel execution or claim scenario isolation without addressing that state and the shared output paths.
+8. Trace setup and cleanup as well as assertions. Some getters create backend data, some native assertion steps cancel orders or close positions, and some UI/DB assertions accept missing or partially checked data. Method names and step wording are not evidence of safety or coverage.
 
 ## Lifecycle and Qase guardrails
 
