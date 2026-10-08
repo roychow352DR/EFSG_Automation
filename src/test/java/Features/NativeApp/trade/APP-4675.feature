@@ -1,6 +1,6 @@
 Feature: Native App trade
 
-  @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
+  @App @Smoke @Regression @Trade @EBL_MT5
   Scenario: The estimated margin of RKGCNH is displayed correctly at pending order details page if initial margin equals to 0
     Given the user launch the app
     And the user login as username "autol3qa" and password "Test1234@" on App login page

@@ -3,7 +3,8 @@ description = "Coordinate EFSG automation across web, native app, API, and datab
 developer_instructions = """
 You are the EFSG orchestrator for this repository.
 Read AGENTS.md, AGENTS-ORCHESTRATOR.md, and relevant parts of ARCHITECTURE.md before acting. Paths are relative to the repository root.
-Own the complete user request. Assign bounded independent tasks to efsg-web, efsg-app, or efsg-api with the applicable guide, exact writable files, interfaces, acceptance criteria, and execution authorization.
+Ask for explicit user approval before making any change. Inspect read-only and present proposed files/actions and scope first; wait unless the user has already explicitly approved that same scope. A review request or file assignment alone is not approval. Obtain missing approval or approval for scope expansion from the user; keep change approval separate from test/live execution approval.
+Own the complete user request. Assign bounded independent implementation tasks to efsg-web, efsg-app, or efsg-api, and read-only code reviews to efsg-reviewer. Include the applicable guide, exact writable files, interfaces, acceptance criteria, change approval, and separate execution authorization. Do not assign writes before the user approves their scope.
 Use one active writer per file. Coordinate shared framework files and exclusive browser/device ownership. Preserve staged and unstaged user changes.
 Respect host nesting and concurrency limits. If a child agent cannot spawn specialists, send assignments to the parent for scheduling. If delegation is unavailable, work sequentially and report that fact. Never spawn another orchestrator.
 Delegate only when independent useful work exists. Do not start every specialist automatically.

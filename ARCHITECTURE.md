@@ -1,6 +1,6 @@
 # EFSG_auto — Architecture
 
-Reviewed against the **local working tree on 2026-09-21**, including in-progress source changes. This document describes the implemented framework and separates active behavior from optional or incomplete paths. It is not a record of a successful full-suite run. Agent execution and change rules are in [AGENTS.md](AGENTS.md).
+Reviewed by static inspection against the **local working tree on 2026-10-08**, including in-progress source changes. This document describes the implemented framework and separates active behavior from optional or incomplete paths. It is not a record of a successful full-suite run. Agent execution and change rules are in [AGENTS.md](AGENTS.md).
 
 ## 1. System overview
 
@@ -32,9 +32,9 @@ Appium MCP is a separate interactive inspection path. Its managed sessions are n
 
 ### Agent coordination
 
-[AGENTS.md](AGENTS.md) supplies shared project policy and routes the primary agent to [AGENTS-ORCHESTRATOR.md](AGENTS-ORCHESTRATOR.md). The orchestrator owns planning, specialist assignments, shared-file changes, integration review, and execution authorization tracking. Named definitions in [.codex/agents](.codex/agents) provide `efsg-orchestrator` and three specialists: `efsg-web`, `efsg-app`, and `efsg-api`, each reading its existing domain guide.
+[AGENTS.md](AGENTS.md) supplies shared project policy and routes the primary agent to [AGENTS-ORCHESTRATOR.md](AGENTS-ORCHESTRATOR.md). The orchestrator owns planning, specialist assignments, shared-file changes, integration review, and separate change/execution approval tracking. Named definitions in [.codex/agents](.codex/agents) provide `efsg-orchestrator`, implementation specialists `efsg-web`, `efsg-app`, and `efsg-api`, plus the read-only `efsg-reviewer` governed by [AGENTS-REVIEW.md](AGENTS-REVIEW.md).
 
-Independent inspection or edits to separately owned files may be delegated concurrently. Framework files, Cucumber glue contracts, and each browser/device session require coordinated ownership. Test execution remains subject to explicit approval and the framework's static-state limitations. These agent definitions do not change Maven runners, configure MCP servers, or start agents by themselves; the active client must support delegation. The root guide also describes a sequential fallback.
+Independent inspection or approved edits to separately owned files may be delegated concurrently. Every agent must ask for approval before changes unless the user has already explicitly approved that scope; a review finding is not permission to fix it. Framework files, Cucumber glue contracts, and each browser/device session require coordinated ownership. Test execution remains subject to separate explicit approval and the framework's static-state limitations. These agent definitions do not change Maven runners, configure MCP servers, or start agents by themselves; the active client must support delegation. The root guide also describes a sequential fallback.
 
 ## 2. Repository map
 
@@ -42,7 +42,7 @@ Independent inspection or edits to separately owned files may be delegated concu
 EFSG_auto/
 ├── pom.xml                         Maven dependencies and five profiles
 ├── testng.xml                      Legacy non-Cucumber suite
-├── .codex/agents/                  Orchestrator and web/app/API agent definitions
+├── .codex/agents/                  Orchestrator, web/app/API, and reviewer definitions
 ├── AGENTS*.md                      Shared, orchestration, and domain-specific rules
 ├── ARCHITECTURE.md                  This implementation map
 ├── STANDARD_PROMPT_TEMPLATE.md      Web-oriented generation request template
@@ -85,7 +85,7 @@ The reviewed source tree contains **98 Java files and 307 feature files**: 151 A
 | MIO Admin | `mio` | `MIOPOManager` | `MIO` | login, depositManagement |
 | Native app | `app` | `AppPOManager` | `APP` | onboarding, aoApplication, trade |
 
-[AOPOManager](src/main/java/PageObject/AdminPortalPW/AOPOManager.java) constructs 19 page instances covering login/menu, individual/company account opening, customer-management forms, blacklist, users, and roles. [MIOPOManager](src/main/java/PageObject/MIOadmin/MIOPOManager.java) constructs login, dashboard, and deposit-management pages. [AppPOManager](src/main/java/PageObject/NativeApp/AppPOManager.java) constructs 17 page/helper instances covering onboarding/login, navigation, trading, order/position details, and settings.
+[AOPOManager](src/main/java/PageObject/AdminPortalPW/AOPOManager.java) constructs 19 page instances covering login/menu, individual/company account opening, customer-management forms, blacklist, users, and roles. [MIOPOManager](src/main/java/PageObject/MIOadmin/MIOPOManager.java) constructs login, dashboard, and deposit-management pages. [AppPOManager](src/main/java/PageObject/NativeApp/AppPOManager.java) constructs page/helper instances covering onboarding/login, navigation, trading, order/position details, settings, deposits, and withdrawals. Registration does not establish complete scenario coverage.
 
 Managers eagerly instantiate their pages and expose typed getters. Step definitions should use the relevant manager. Existing native page methods also construct some pages internally. `BiometricsPage` exists outside AppPOManager's getter set.
 
@@ -217,9 +217,9 @@ Legacy `BaseTest.initializeDriver()` can launch Selenium Chrome/Firefox/Edge, tr
 `BaseTest.initAppDriver()` delegates to `initializeDriver()` with `product=app`. [AppConfig](src/main/java/utils/app/AppConfig.java) chooses Android artifacts/packages for `EBL_MT5` and `EIEHK`, each under `bauuat` or `mt5uat`:
 
 - EBL: `com.emperorfs.ebltrading.android`; archive `com.emperorfs.ebltrading.android_uat-0.0.303-0909.apk.zip`.
-- EIEHK: `com.efsg.eiehktrading.android_uat`; mapped APK `com.efsg.eiehktrading.android_uat-0.0.214-0805.apk`, absent from the reviewed resources directory.
+- EIEHK: `com.efsg.eiehktrading.android`; archive `com.efsg.eietrading.android_0.0.220-20261007.apk.zip`.
 
-Both environments currently use the same artifact/package per entity. Other Android entities are unsupported by this mapping. Missing APKs can fall back to the installed package; a missing artifact and empty package cannot launch.
+Both mapped archives are present; both environments currently use the same artifact/package per entity. Other Android entities are unsupported by this mapping. Missing APKs can fall back to the installed package; a missing artifact and empty package cannot launch.
 
 [MobileDriver](src/main/java/utils/app/MobileDriver.java) reuses a successful status endpoint at `http://127.0.0.1:4723` or starts a local Appium service. It first tries the configured `/usr/local/lib/node_modules/appium/build/lib/main.js` path and otherwise relies on service-builder discovery. Teardown does not call `service.stop()`.
 
@@ -239,7 +239,9 @@ The helper uses Android `bounds` before unreliable React Native location coordin
 
 ### Trading data and extraction
 
-[TradeRecord](src/test/java/Data/TradeRecord.java) composes order/position setup through AppPOManager. It reads the default symbol, chooses direction and order type, enters prices/lot size, selects validity where requested, and confirms the action. [TradeSymbolConfig](src/test/java/Data/TradeSymbolConfig.java) supplies metadata for `XAUUSD`, `XAGUSD`, `RKGCNH`, and `HKGHKD`.
+[TradeRecord](src/test/java/Data/TradeRecord.java) composes order/position setup through AppPOManager. It reads the default symbol, chooses direction and order type, enters prices/lot size, selects validity where requested, and confirms the action. [TradeSymbolConfig](src/test/java/Data/TradeSymbolConfig.java) supplies metadata for `XAUUSD`, `XAGUSD`, `RKGCNH`, and `HKGHKD`, including entity-specific lot bounds, step sizes, and margin settings. The EIEHK/XAUUSD confirmation-margin path uses observed confirmation price/volume and configured contract size/rate; this is not a universal formula for all accounts.
+
+Native default/L2 login bindings read entity-scoped credentials from `AppCredential`. Their `AppLoginPage.loginAs(...)` path implements Android login and returns immediately for other drivers; it does not establish iOS login coverage.
 
 [GetPageElement](src/main/java/utils/GetPageElement.java) caches a page-source snapshot and resolves detail values using labels, rows, siblings, and hierarchy fallbacks. It maps labels and normalizes volumes/prices. Snapshots need invalidation after screen/data changes. `AppPendingOrderDetailsPage` refreshes its snapshot and includes product-name and validity handling; APP-1494/1495 exercise Today/GTC selection. `Data.PositionDetail` is an alternate Tess4J reader with English OCR configuration; it is not the default extraction path of current detail-page objects.
 
@@ -255,13 +257,13 @@ Trading pages retain static captured order values, counts, and selections. Sever
 
 [ApiClient](src/test/java/API/ApiClient.java) owns a Playwright request context and supports authenticated GET/POST, optional custom POST headers, and JSON content type. It normalizes a bearer token and closes its context/Playwright via `AutoCloseable`. Responses should be consumed before client disposal.
 
-[CoreService](src/test/java/API/CoreService.java) validates HTTP success, parses Gson `response`/`response.content[]` payloads, and implements AO/CM lookups and referral/trading-group calls. Paginated searches stop after at most 100 pages of 10 records. `clientType` and `status` are static filters. Missing JSON fields often yield empty values rather than schema errors.
+[CoreService](src/test/java/API/CoreService.java) validates HTTP success, parses Gson `response`/`response.content[]` payloads, and implements AO/CM lookups and referral/trading-group calls. Paginated searches stop after at most 100 pages of 10 records. Unconditional list helpers inspect only the first record on each page; conditional helpers stop at the first matching record per page even if its requested field is blank. `clientType` and `status` are static filters. Missing JSON fields often yield empty values rather than schema errors.
 
 Some methods only print data (`getAccountStatus`, `getAoAccountDetail`, `getCmList`). `getAccountId` performs a customer-initialization POST. These methods are not assertions or uniformly read-only getters. Current referral methods are `getDefaultTradeGroupInfo` and `getTradeGroupInfoBasedOnEntity`.
 
 [BackendSteps](src/test/java/StepDefinitions/Backend/BackendSteps.java) uses `retrieveLocalStorageVal()` for an authenticated web token and Admin Portal page-object email for CM SQL checks. [ApplicationSteps](src/test/java/StepDefinitions/AdminPortal/aoApplicationSteps/ApplicationSteps.java) also uses the service. Shared glue does not supply authentication to native-only scenarios. Service construction captures runtime configuration, so initialization order matters.
 
-[SQLDatabase](src/test/java/Data/SQLDatabase.java) performs parameterized CM reads using a fixed allowlist of table/selected-column/filter-column triples. It returns `Optional<String>` and closes JDBC resources per query. `getPersonIdCount` is a fixed count query; `BackgroundSteps` verifies that count rather than creating accounts. Missing values must be distinguished from expected empty fields in new assertions. See [AGENTS-API.md](AGENTS-API.md) for the complete query allowlist and extension rules.
+[SQLDatabase](src/test/java/Data/SQLDatabase.java) captures the environment at construction and performs parameterized CM reads using a fixed allowlist of table/selected-column/filter-column triples. It returns `Optional<String>` and closes JDBC resources per query. Empty optionals can represent a null filter, no row, SQL `NULL`, or an unsupported identity selector; the current contract cannot distinguish all of these. `getPersonIdCount` is a fixed count query; `BackgroundSteps` verifies that count rather than creating accounts. Missing values must be distinguished from expected empty fields in new assertions. See [AGENTS-API.md](AGENTS-API.md) for the complete query allowlist and extension rules.
 
 ## 9. Hooks, reporting, and Qase
 
@@ -279,7 +281,7 @@ Source: [Hooks.java](src/test/java/StepDefinitions/Hooks.java), [QASEConfig.java
 
 There is no boolean configuration switch that enables the commented hooks. Enabling Qase requires an explicitly requested, coordinated code/configuration change; do not simply uncomment one method and assume the lifecycle is complete.
 
-Active teardown saves native recording and quits/terminates the app for `product=app`; otherwise it resets the Admin Portal menu where applicable and closes Playwright page/context/browser. It then invokes media cleanup. `removeVideoFlag` and `removeScreenShotFlag` both default to true. Video cleanup depends on `globalConfig`, which is initialized by the currently disabled Qase setup; it can therefore log a cleanup failure and retain files. Native recording/setup errors can also interrupt teardown before later cleanup because the whole sequence is not protected by a final cleanup block.
+Active teardown first resets native captured state, then attempts recording save, app termination, and driver quit for `product=app`; otherwise it attempts the Admin Portal menu reset and Playwright page/context/browser cleanup. It then invokes media cleanup. `removeVideoFlag` and `removeScreenShotFlag` both default to true. Video cleanup depends on `globalConfig`, which is initialized by the currently disabled Qase setup; it can therefore log a cleanup failure and retain files. Native recording/setup errors can interrupt teardown before later cleanup, and an earlier Playwright close failure can skip later closes. These are sequential attempts, not unconditional resource-cleanup guarantees.
 
 ### Qase behavior when enabled
 
@@ -318,6 +320,7 @@ Keep these reviewed limitations visible when planning work:
 - Runner names do not isolate products; filters and paths must do so.
 - Static runtime state and shared artifacts prevent assuming parallel/scenario isolation.
 - Existing bindings include incomplete paths: the native Markets-button display assertion is empty, biometric skipping currently only waits, and the web blank-credential path still uses a legacy field. A matching annotation alone is not executable coverage.
+- MIO deposit-filter coverage includes unimplemented steps. Some web filter helpers skip single/final pages or verify any matching row rather than all rows, and a DB existence assertion uses a non-null fallback for missing data. See the domain guides before reusing these paths.
 - Android and iOS are not feature-equivalent; local WebdriverIO capability files do not change Java behavior.
 - Loading chrome can appear while backend content is still a placeholder. Assert the data needed by the scenario separately.
 - API helpers may print instead of return/assert, use hardcoded IDs, or return empty strings. SQL missing-record behavior also needs explicit checks.

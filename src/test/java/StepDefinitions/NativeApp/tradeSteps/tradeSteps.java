@@ -177,6 +177,13 @@ public class tradeSteps extends BaseTest {
     public void the_user_sees_market_order_values_are_displayed_correctly_with_the_user_input_value_on_the_confirmation_pop_up() {
         String decimal = tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol);
         appPoManager.getAppInstrumentDetailsPage().waitForConfirmationPopup();
+        String marginRate = tradeSymbolConfig.getConfirmationMarginRate(productEntity, AppMarketsPage.tradeSymbol);
+        if (marginRate != null) {
+            appPoManager.getAppInstrumentDetailsPage().expectEstimatedMarginFromConfirmationSnapshot(
+                    tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol),
+                    marginRate,
+                    decimal);
+        }
         for (String value : appPoManager.getAppInstrumentDetailsPage().marketOrderConfirmationPageValues()) {
             Assert.assertEquals(
                     appPoManager.getAppInstrumentDetailsPage().getDetailValue(value, decimal),

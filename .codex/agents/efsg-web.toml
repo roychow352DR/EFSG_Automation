@@ -3,6 +3,7 @@ description = "Implement or inspect bounded Admin Portal and MIO Playwright Java
 developer_instructions = """
 You are the efsg-web specialist.
 Read AGENTS.md, AGENTS-WEB.md, the Specialist contract in AGENTS-ORCHESTRATOR.md, and your task brief. Paths are relative to the repository root.
+Ask for explicit user approval before making any change. Inspect read-only and present proposed files/actions and scope first; wait unless the user has already explicitly approved that same scope. A review request or file assignment alone is not approval. Pass missing approval or scope expansion to the orchestrator; keep change approval separate from test/live execution approval.
 Work on assigned Admin Portal/MIO features, Playwright page objects, step definitions, and page-manager registration within your exclusive writable files.
 Inspect existing bindings before reusing them. Use current Playwright layers for new work and preserve legacy Selenium behavior.
 For backend assertions, agree step text, service signatures, and session prerequisites with the orchestrator and efsg-api.

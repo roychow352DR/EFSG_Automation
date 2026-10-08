@@ -218,11 +218,21 @@ public class AppInstrumentDetailsPage {
         }
     }
 
+    // EIEHK puts this switch on the row under Pending Order. A bare Switch hits Pending Order instead.
+    private static final By TARGET_PROFIT_SWITCH = By.xpath(
+            "//android.widget.TextView[starts-with(@text,'Set Target Profit')]"
+                    + "/following-sibling::android.widget.Switch[1]"
+    );
+
     public void switchProfitStopLoss() {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
         waitForOrderTicket();
+        if (!driver.findElements(PENDING_ORDER_SWITCH).isEmpty()) {
+            switchOnTargetProfit();
+            return;
+        }
         TimeoutException lastError = null;
         for (By locator : tpslToggleLocators()) {
             try {
@@ -245,13 +255,59 @@ public class AppInstrumentDetailsPage {
                 : new TimeoutException("Stop Loss field was not visible after switching Take Profit and Stop Loss on");
     }
 
+    private void switchOnTargetProfit() {
+        revealShown(TARGET_PROFIT_SWITCH);
+        WebElement toggle = new WebDriverWait(driver, Duration.ofSeconds(8))
+                .ignoring(StaleElementReferenceException.class)
+                .until(ExpectedConditions.visibilityOfElementLocated(TARGET_PROFIT_SWITCH));
+        if (!isSwitchChecked(toggle)) {
+            abs.tapVisible(TARGET_PROFIT_SWITCH, 8);
+            new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> isSwitchChecked(d.findElement(TARGET_PROFIT_SWITCH)));
+        }
+        if (!waitForTpslExpanded(8)) {
+            throw new TimeoutException("Stop Loss field was not visible after switching Take Profit and Stop Loss on");
+        }
+    }
+
+    private void revealShown(By locator) {
+        for (int swipe = 0; swipe < 5; swipe++) {
+            if (isLocatorShown(locator)) {
+                return;
+            }
+            abs.swipeUp(driver);
+        }
+    }
+
+    private boolean isLocatorShown(By locator) {
+        Dimension window = driver.manage().window().getSize();
+        int top = (int) (window.getHeight() * 0.08);
+        int bottom = (int) (window.getHeight() * 0.92);
+        for (WebElement element : driver.findElements(locator)) {
+            int[] box = parseBounds(elementAttribute(element, "bounds"));
+            if (box == null) {
+                continue;
+            }
+            int centerX = (box[0] + box[2]) / 2;
+            int centerY = (box[1] + box[3]) / 2;
+            if (centerX > 0 && centerX < window.getWidth() && centerY > top && centerY < bottom) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private List<By> tpslToggleLocators() {
-        return List.of(
-                By.xpath("//android.widget.TextView[contains(@text,'Take Profit') and contains(@text,'Stop Loss')]"),
-                By.xpath("//*[contains(@text,'Take Profit') and contains(@text,'Stop Loss')]"),
-                By.xpath("//android.widget.Switch"),
-                By.xpath("//*[@checkable='true']")
-        );
+        List<By> locators = new ArrayList<>();
+        locators.add(By.xpath("//android.widget.TextView[contains(@text,'Take Profit') and contains(@text,'Stop Loss')]"));
+        locators.add(By.xpath("//*[contains(@text,'Take Profit') and contains(@text,'Stop Loss')]"));
+        // Skip the generic Switch when Pending Order is on screen. That switch is above Take Profit.
+        if (driver.findElements(PENDING_ORDER_SWITCH).isEmpty()) {
+            locators.add(By.xpath("//android.widget.Switch"));
+            locators.add(By.xpath("//*[@checkable='true']"));
+        }
+        return locators;
     }
 
     private boolean isTpslLabelLocator(By locator) {
@@ -298,6 +354,13 @@ public class AppInstrumentDetailsPage {
     }
 
     private WebElement pendingPriceEditField() {
+        // EIEHK labels the pending price row "Buy at" and puts the EditText after that label.
+        List<WebElement> buyAtFields = driver.findElements(By.xpath(
+                "//android.widget.TextView[normalize-space(@text)='Buy at']/following::android.widget.EditText[1]"
+        ));
+        if (!buyAtFields.isEmpty()) {
+            return buyAtFields.getFirst();
+        }
         WebElement label = pendingPriceLabel();
         if (label != null) {
             try {
@@ -339,13 +402,31 @@ public class AppInstrumentDetailsPage {
     }
 
     private void revealTpslField(String fieldName) {
-        for (int swipe = 0; swipe < 4; swipe++) {
-            if (!tpslFieldLabels(fieldName).isEmpty()) {
+        By dedicated = By.xpath(
+                "//android.widget.TextView[starts-with(normalize-space(@text),'" + fieldName + " (')]"
+        );
+        for (int swipe = 0; swipe < 5; swipe++) {
+            if (isLocatorShown(dedicated) || isAnyLabelShown(fieldName)) {
                 return;
             }
             abs.swipeUp(driver);
         }
         throw new NoSuchElementException(fieldName + " field was not visible after expanding TPSL");
+    }
+
+    private boolean isAnyLabelShown(String fieldName) {
+        for (WebElement label : tpslFieldLabels(fieldName)) {
+            int[] box = parseBounds(elementAttribute(label, "bounds"));
+            if (box == null) {
+                continue;
+            }
+            Dimension window = driver.manage().window().getSize();
+            int centerY = (box[1] + box[3]) / 2;
+            if (centerY > window.getHeight() * 0.08 && centerY < window.getHeight() * 0.92) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private WebElement tpslFieldLabel(String fieldName) {
@@ -359,7 +440,11 @@ public class AppInstrumentDetailsPage {
     private List<WebElement> tpslFieldLabels(String fieldName) {
         List<WebElement> found = new ArrayList<>();
         String otherField = fieldName.equals("Stop Loss") ? "Take Profit" : "Stop Loss";
+        // EIEHK field labels are "Stop Loss (≤…)" and "Take Profit (≥…)".
+        // starts-with skips the "Set Target Profit & Stop Loss" switch row.
         List<By> locators = List.of(
+                By.xpath("//android.widget.TextView[starts-with(normalize-space(@text),'" + fieldName + " (')]"),
+                By.xpath("//*[starts-with(normalize-space(@text),'" + fieldName + " (')]"),
                 By.xpath("//*[contains(@text,'" + fieldName + "')]"),
                 By.xpath("//*[contains(@content-desc,'" + fieldName + "')]")
         );
@@ -586,7 +671,17 @@ public class AppInstrumentDetailsPage {
         selectedDirection = direction;
         boolean buy = direction != null && direction.equalsIgnoreCase("BUY");
         boolean stop = stopOrderType != null && stopOrderType.toLowerCase(Locale.ROOT).contains("stop");
-        String threshold = waitForConstraintPrice(stop ? buy : !buy);
+        // EIEHK "Buy at" row has no ≥/≤ threshold. Use the direction quote, then keep the offset below.
+        String threshold = null;
+        if (isBuyAtPriceRowVisible()) {
+            threshold = readDirectionQuotePrice(direction);
+        }
+        if (threshold == null || threshold.isBlank()) {
+            threshold = waitForConstraintPrice(stop ? buy : !buy);
+        }
+        if (threshold == null || threshold.isBlank()) {
+            threshold = readDirectionQuotePrice(direction);
+        }
         if (threshold == null || threshold.isBlank()) {
             throw new NoSuchElementException("Could not find pending order Price constraint");
         }
@@ -598,6 +693,46 @@ public class AppInstrumentDetailsPage {
         }
         getPageElement.logInfo("Pending order price from constraint " + threshold + " -> " + stopOrderPrice);
         return stopOrderPrice;
+    }
+
+    private boolean isBuyAtPriceRowVisible() {
+        return !driver.findElements(By.xpath(
+                "//android.widget.TextView[normalize-space(@text)='Buy at']"
+        )).isEmpty();
+    }
+
+    private String readDirectionQuotePrice(String direction) {
+        if (direction == null || direction.isBlank()) {
+            return null;
+        }
+        String side = direction.trim().toUpperCase(Locale.ROOT);
+        By quote = By.xpath("//*[@clickable='true' and starts-with(@content-desc,'" + side + ",')]");
+        for (WebElement element : driver.findElements(quote)) {
+            String price = quotePrice(elementAttribute(element, "content-desc"));
+            if (price != null) {
+                getPageElement.logInfo("Pending price threshold from quote " + side + ": " + price);
+                return price;
+            }
+        }
+        return null;
+    }
+
+    private String quotePrice(String contentDesc) {
+        if (contentDesc == null || contentDesc.isBlank()) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile(
+                "(?i)^(?:BUY|SELL)\\s*,\\s*([0-9][0-9,]*)(?:\\.([0-9]+))?(?:\\s*,\\s*\\.?([0-9]+))?\\s*$"
+        ).matcher(contentDesc.trim());
+        if (!matcher.matches()) {
+            return null;
+        }
+        String whole = matcher.group(1).replace(",", "");
+        String fraction = matcher.group(2) != null ? matcher.group(2) : matcher.group(3);
+        if (fraction == null || fraction.isEmpty()) {
+            return whole;
+        }
+        return whole + "." + fraction;
     }
 
     private String waitForConstraintPrice(boolean greaterOrEqual) {
@@ -1016,10 +1151,25 @@ public class AppInstrumentDetailsPage {
 
     private List<By> lotChipLocators(String value) {
         List<By> locators = new ArrayList<>();
+        // EIEHK exposes the chip label as content-desc on a clickable ViewGroup. EBL_MT5 exposes it as text.
+        boolean contentDescFirst = "EIEHK".equalsIgnoreCase(BaseTest.productEntity);
         for (String text : lotChipTexts(value)) {
-            locators.add(By.xpath("//android.widget.TextView[@text='" + text + "']"));
-            locators.add(By.xpath("//*[@text='" + text + "']"));
-            locators.add(By.xpath("//android.widget.TextView[@text='" + text + "']/parent::android.view.ViewGroup"));
+            List<By> contentDesc = List.of(
+                    By.xpath("//*[@content-desc='" + text + "']"),
+                    By.xpath("//android.view.ViewGroup[@content-desc='" + text + "']")
+            );
+            List<By> visibleText = List.of(
+                    By.xpath("//android.widget.TextView[@text='" + text + "']"),
+                    By.xpath("//*[@text='" + text + "']"),
+                    By.xpath("//android.widget.TextView[@text='" + text + "']/parent::android.view.ViewGroup")
+            );
+            if (contentDescFirst) {
+                locators.addAll(contentDesc);
+                locators.addAll(visibleText);
+            } else {
+                locators.addAll(visibleText);
+                locators.addAll(contentDesc);
+            }
         }
         return locators;
     }
@@ -1188,8 +1338,22 @@ public class AppInstrumentDetailsPage {
 
         String text = orderType.trim();
         waitForOrderTicket();
+        // EIEHK exposes Limit / Stop Order as the Pending Order switch, not a Market Order dropdown.
+        if (isEiehk() && isLimitStopOrderType(text)) {
+            toggleOnPendingOrder();
+            return;
+        }
         openOrderTypePicker(text);
         clickOrderTypeOption(text);
+    }
+
+    private boolean isEiehk() {
+        return "EIEHK".equalsIgnoreCase(BaseTest.productEntity);
+    }
+
+    private boolean isLimitStopOrderType(String orderType) {
+        String lower = orderType.toLowerCase(Locale.ROOT);
+        return lower.contains("limit") && lower.contains("stop");
     }
 
     private void waitForOrderTicket() {
@@ -1315,11 +1479,25 @@ public class AppInstrumentDetailsPage {
     }
 
     private List<By> optionChipLocators(String option) {
-        return List.of(
+        List<By> contentDesc = List.of(
+                By.xpath("//android.view.ViewGroup[@clickable='true' and @content-desc=\"" + option + "\"]"),
+                By.xpath("//*[@clickable='true' and @content-desc=\"" + option + "\"]")
+        );
+        List<By> visibleText = List.of(
                 By.xpath("//android.widget.TextView[@text=\"" + option + "\"]"),
                 By.xpath("//*[@text=\"" + option + "\"]"),
                 By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup")
         );
+        List<By> locators = new ArrayList<>();
+        // EIEHK puts Buy Stop / Today on the clickable ViewGroup content-desc.
+        if (isEiehk()) {
+            locators.addAll(contentDesc);
+            locators.addAll(visibleText);
+        } else {
+            locators.addAll(visibleText);
+            locators.addAll(contentDesc);
+        }
+        return locators;
     }
 
     public List<String> stopOrderConfirmationPageValues() {
@@ -1399,6 +1577,21 @@ public class AppInstrumentDetailsPage {
 
     public void setEstMargin(Integer initialMargin) {
         estMargin = abs.normalizePriceToDecimals(String.valueOf(Float.parseFloat(lotSize) * initialMargin), "2");
+    }
+
+    // Price and volume come from the confirmation snapshot already cached by waitForConfirmationPopup.
+    public void expectEstimatedMarginFromConfirmationSnapshot(int contractSize, String marginRate, String symbolDecimal) {
+        String price = getDetailValue("Price", symbolDecimal);
+        String volume = getDetailValue("Volume", symbolDecimal);
+        estMargin = new BigDecimal(price)
+                .multiply(new BigDecimal(volume))
+                .multiply(BigDecimal.valueOf(contractSize))
+                .multiply(new BigDecimal(marginRate))
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString();
+        getPageElement.logInfo("Expected estimated margin from confirmation price " + price
+                + ", volume " + volume + ", contract size " + contractSize
+                + ", rate " + marginRate + ": " + estMargin);
     }
 
     public boolean getToggleStatus() {

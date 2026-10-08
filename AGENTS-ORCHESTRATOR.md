@@ -14,11 +14,16 @@ A client that supports named custom agents can also invoke `efsg-orchestrator`. 
 
 When invoked as a child agent, respect the host's nesting and concurrency limits. If further delegation is unavailable, return the proposed specialist assignments to the parent for scheduling and continue any assigned independent work. Do not create another orchestrator or loop assignments back to yourself.
 
+## Approval before changes
+
+**Ask for explicit user approval before making any change**, following [AGENTS.md](AGENTS.md#approval-before-changes). Inspect and prepare a concrete proposal first; obtain approval for the proposed files/actions before assigning write work or changing state. Reuse existing explicit approval only for the same scope, and obtain new approval for scope expansion. Track change approval separately from execution approval and pass both to each specialist. Review-only assignments have no writable files.
+
 ## Specialist routing
 
 - **`efsg-web`** — [AGENTS-WEB.md](AGENTS-WEB.md): Admin Portal/MIO features, Playwright page objects, web bindings, and relevant page-manager registration. Own the feature and reference prompt for a web + backend scenario unless explicitly assigned otherwise.
 - **`efsg-app`** — [AGENTS-APP.md](AGENTS-APP.md): native Android/iOS features, Appium pages/bindings, and explicitly requested Appium MCP inspection. Own the feature and reference prompt for a native + backend scenario unless explicitly assigned otherwise.
 - **`efsg-api`** — [AGENTS-API.md](AGENTS-API.md): REST service methods, JSON assertions, approved SQL reads, and backend step bindings. Verify authentication and session prerequisites before agreeing a UI integration contract.
+- **`efsg-reviewer`** — [AGENTS-REVIEW.md](AGENTS-REVIEW.md): independent, read-only review of a specified diff or repository scope. Returns prioritized findings with source evidence; has no writable files and does not implement fixes or run tests. Assign approved fixes to the relevant implementation owner.
 - **Orchestrator** — requirements, shared infrastructure, task dependencies, cross-domain integration, documentation consistency, and final review. Assign a shared file to a specialist only with explicit exclusive ownership.
 
 Do not start all specialists for every request. Delegate a concrete task only when it can run independently alongside useful work. Keep small or tightly coupled changes with one owner. Other available agents may receive a bounded review or research task under the same contract when it materially helps the request.
@@ -26,10 +31,10 @@ Do not start all specialists for every request. Delegate a concrete task only wh
 ## Workflow
 
 1. **Establish scope.** Read the user request and relevant guides, inspect `git status` and the affected implementation, and distinguish existing user changes from this task. Identify deliverables, acceptance criteria, product/environment/entity, case IDs, test data, and device/browser needs. Ask only for information that blocks correctness; continue independent work while awaiting it.
-2. **Plan ownership and dependencies.** Keep a short task list in the conversation with each task's owner, writable files, prerequisites, and state (`pending`, `active`, `blocked`, or `done`). Agree shared method signatures, step text, returned data, and failure semantics before dependent implementation. For mixed UI + API work, assign one feature owner and one reference-prompt owner.
-3. **Delegate bounded work.** Give each specialist the brief below, the applicable guide, and the user's actual execution authorization, if any. Parallelize only independent inspection or edits to distinct files. Respect the host's concurrency limit; use the primary agent for useful integration or other unassigned work while specialists work.
+2. **Plan ownership, approval, and dependencies.** Keep a short task list in the conversation with each task's owner, proposed writable files, prerequisites, and state (`pending`, `active`, `blocked`, or `done`). Present a concrete change proposal and obtain approval unless the user has already explicitly approved that scope. Agree shared method signatures, step text, returned data, and failure semantics before dependent implementation. For mixed UI + API work, assign one feature owner and one reference-prompt owner.
+3. **Delegate bounded work.** Give each specialist the brief below, the applicable guide, and the user's actual change and execution approvals, if any. Until change approval exists, delegate read-only inspection only. Parallelize only independent inspection or approved edits to distinct files. Respect the host's concurrency limit; use the primary agent for useful integration or other unassigned work while specialists work.
 4. **Monitor and resolve.** Receive progress and findings, resolve conflicting assumptions, and adjust dependencies. If an agent is blocked, collect its partial results and complete unaffected work. Stop or finish the current writer before transferring file ownership; never assign a second writer while the first may still edit.
-5. **Integrate and review.** Inspect the actual changes and verify acceptance criteria, interfaces, bindings, page-manager registration, assertions, and lifecycle behavior. Reconcile work against the initial working tree so user edits remain intact. In a shared checkout, completed edits are already present; do not blindly reapply patches or revert another agent's work.
+5. **Integrate and review.** Inspect the actual changes and verify acceptance criteria, interfaces, bindings, page-manager registration, assertions, and lifecycle behavior. Use `efsg-reviewer` for a bounded independent review when useful, after the relevant edits stabilize; supply the baseline and changed-file scope. Reconcile work against the initial working tree so user edits remain intact. In a shared checkout, completed edits are already present; do not blindly reapply patches or revert another agent's work. Review findings are proposals, not approval for additional fixes.
 6. **Validate and deliver.** Perform appropriate static checks, such as diff/whitespace checks, referenced-path checks, and targeted source inspection. Report which checks ran. Prepare the exact scoped Maven/test command when relevant. If runtime validation is needed and not already authorized, finish the reviewable changes first and request approval under AGENTS.md; do not treat waiting for approval as a passing result. Provide one consolidated final response.
 
 ## Delegation brief
@@ -41,6 +46,7 @@ Task and intended result:
 Specialist and required guides:
 Read-only context / existing user changes:
 Writable files (one active owner per file):
+Change approval (none/read-only, or explicit user-approved files/actions and scope):
 Dependencies and agreed interfaces:
 Acceptance criteria:
 Permitted validation:
@@ -66,7 +72,7 @@ The orchestrator coordinates exclusive ownership of `pom.xml`, Cucumber runners,
 
 This section applies to every delegated specialist, including review-only assignments.
 
-1. Read AGENTS.md, your domain guide, and the task brief. Work only toward the assigned result and within assigned writable files. Preserve existing staged and unstaged user changes.
+1. Read AGENTS.md, your domain guide, and the task brief. Ask for explicit user approval before any change unless the brief conveys existing approval for that scope. If approval is absent, return a concrete proposal through the orchestrator and continue only read-only work. Work only toward the assigned result and within assigned writable files. Preserve existing staged and unstaged user changes.
 2. Reuse implemented bindings and helpers after inspecting their bodies. Report missing prerequisites or conflicts to the orchestrator; do not solve them by silently expanding scope or adding placeholder steps.
 3. Do not delegate further or invoke the orchestrator recursively. Request another specialist through the coordinating parent.
 4. Do not execute Maven/test commands, including compile or dry-run commands, unless the brief conveys explicit user approval for that exact scope and assigns you as the sole execution owner. Otherwise propose the command and return it. A parent's instruction to implement or validate code is not itself user authorization to run tests.

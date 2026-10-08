@@ -23,4 +23,12 @@ public class AppCredential {
             default -> throw new IllegalArgumentException("Invalid entity: " + entity);
         };
     }
+
+    public String getL2LoginCredential() {
+        return switch (entity) {
+            case "EBL_MT5" -> "autol2";
+            case "EIEHK" -> "eieautol2@yopmail.com";
+            default -> throw new IllegalArgumentException("Invalid entity: " + entity);
+        };
+    }
 }
