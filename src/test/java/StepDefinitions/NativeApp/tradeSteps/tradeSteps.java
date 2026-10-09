@@ -301,8 +301,27 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees the {string} value is displayed correctly on the instrument details page")
     public void the_user_sees_the_value_is_displayed_correctly_on_the_instrument_details_page(String label) {
-        Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getValue(label, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol)),
-                appPoManager.getAppInstrumentDetailsPage().getValidationValue(label));
+        String decimal = tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol);
+        String marginRate = ticketMarginRate(label);
+        try {
+            if (marginRate != null) {
+                appPoManager.getAppInstrumentDetailsPage().expectEstimatedMarginFromTicketContractValue(marginRate);
+            }
+            Assert.assertEquals(appPoManager.getAppInstrumentDetailsPage().getValue(label, decimal),
+                    appPoManager.getAppInstrumentDetailsPage().getValidationValue(label));
+        } finally {
+            if (marginRate != null) {
+                appPoManager.getAppInstrumentDetailsPage().releaseTicketSnapshot();
+            }
+        }
+    }
+
+    // EIEHK XAUUSD margin follows the live contract value. Other symbols keep lot size times initial margin.
+    private String ticketMarginRate(String label) {
+        if (!"Est. Margin".equals(label) && !"Estimated Margin".equals(label)) {
+            return null;
+        }
+        return tradeSymbolConfig.getConfirmationMarginRate(BaseTest.productEntity, AppMarketsPage.tradeSymbol);
     }
 
     @Then("the user sees that the Take Profit and Stop Loss toggles are turned {string} on the instrument details page")

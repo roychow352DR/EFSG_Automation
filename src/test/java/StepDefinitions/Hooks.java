@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.net.URI;
 
 public class Hooks extends BaseTest {
@@ -135,10 +136,15 @@ public class Hooks extends BaseTest {
             return;
         }
 
+        // Stop EIEHK only after the session is gone. Force-stop during an open
+        // session races with UiAutomator2 and breaks the next cold start.
+        boolean stopEiehkAfterQuit = !shouldForceStopBeforeQuit();
+        String androidPackage = resolveAndroidPackage();
+
         try {
-            if (driver instanceof InteractsWithApps appDriver) {
+            if (driver instanceof InteractsWithApps appDriver && !stopEiehkAfterQuit) {
                 try {
-                    appDriver.terminateApp(appConfig.getAndroidPackage());
+                    appDriver.terminateApp(androidPackage);
                 } catch (NoSuchSessionException e) {
                     System.err.println("Session already closed before terminateApp().");
                 } catch (Exception e) {
@@ -156,7 +162,61 @@ public class Hooks extends BaseTest {
 
         } finally {
             driver = null;
+            if (stopEiehkAfterQuit) {
+                forceStopAppAfterSessionQuit(androidPackage);
+            }
         }
+    }
+
+    private boolean shouldForceStopBeforeQuit() {
+        return BaseTest.productEntity == null || !BaseTest.productEntity.equalsIgnoreCase("EIEHK");
+    }
+
+    private String resolveAndroidPackage() {
+        try {
+            return appConfig == null ? null : appConfig.getAndroidPackage();
+        } catch (RuntimeException e) {
+            System.err.println("Could not resolve Android package for force-stop: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private void forceStopAppAfterSessionQuit(String androidPackage) {
+        if (androidPackage == null || androidPackage.isBlank()) {
+            System.err.println("Skipped force-stop because the Android package is empty.");
+            return;
+        }
+        try {
+            Process process = new ProcessBuilder(resolveAdbExecutable(), "shell", "am", "force-stop", androidPackage)
+                    .redirectErrorStream(true)
+                    .start();
+            if (!process.waitFor(10, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                System.err.println("Timed out force-stopping " + androidPackage + " after session quit.");
+                return;
+            }
+            if (process.exitValue() != 0) {
+                System.err.println("Force-stop exited with code " + process.exitValue() + " for " + androidPackage + ".");
+                return;
+            }
+            System.out.println("Force-stopped " + androidPackage + " after session quit.");
+        } catch (Exception e) {
+            System.err.println("Failed to force-stop app after session quit: " + e.getMessage());
+        }
+    }
+
+    private String resolveAdbExecutable() {
+        String sdkRoot = System.getenv("ANDROID_HOME");
+        if (sdkRoot == null || sdkRoot.isBlank()) {
+            sdkRoot = System.getenv("ANDROID_SDK_ROOT");
+        }
+        if (sdkRoot != null && !sdkRoot.isBlank()) {
+            File adb = new File(sdkRoot, "platform-tools/adb");
+            if (adb.isFile()) {
+                return adb.getAbsolutePath();
+            }
+        }
+        return "adb";
     }
 
     /**
@@ -282,8 +342,13 @@ public class Hooks extends BaseTest {
     public void tearDown(Scenario scenario) throws IOException, InterruptedException {
         resetNativeAppCapturedState();
         if (productType.equalsIgnoreCase("app")) {
-            handleVideoRecording(scenario);
-            cleanupDriver();
+            try {
+                handleVideoRecording(scenario);
+            } catch (Exception e) {
+                System.err.println("Failed to save screen recording: " + e.getMessage());
+            } finally {
+                cleanupDriver();
+            }
             waitForVideoProcessing();
         }
         else {
@@ -291,7 +356,7 @@ public class Hooks extends BaseTest {
             cleanupPWSession();
         }
         syncCaseStepsWithFeatureFile(scenario);
-        reportTestResult(scenario, videoPath);
+           reportTestResult(scenario, videoPath);
         cleanupMediaFiles();
     }
 

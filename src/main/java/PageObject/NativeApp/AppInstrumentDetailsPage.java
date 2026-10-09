@@ -1568,15 +1568,55 @@ public class AppInstrumentDetailsPage {
             if (label.equalsIgnoreCase("Lots")) {
                 return editTextFieldAos.getFirst().getText();
             }
-            String uiLabel = getPageElement.mapUiLabel(label);
-            String rawValue = getPageElement.readLabelValueFast(uiLabel);
+            String rawValue = readTicketLabel(label);
             return rawValue == null ? null : getPageElement.normalizeByLabel(label, rawValue, symbol);
         }
         return "label not found";
     }
 
+    // EIEHK prints "Estimated Margin". EBL_MT5 prints "Est. Margin". Keep the requested label first.
+    private String readTicketLabel(String label) {
+        String uiLabel = getPageElement.mapUiLabel(label);
+        String rawValue = getPageElement.readLabelValueFast(uiLabel);
+        if (isBlank(rawValue) && isEstimatedMarginLabel(label)) {
+            String alias = "Est. Margin".equals(uiLabel) ? "Estimated Margin" : "Est. Margin";
+            rawValue = getPageElement.readLabelValueFast(alias);
+        }
+        return rawValue;
+    }
+
+    private boolean isEstimatedMarginLabel(String label) {
+        return "Est. Margin".equals(label) || "Estimated Margin".equals(label);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
     public void setEstMargin(Integer initialMargin) {
         estMargin = abs.normalizePriceToDecimals(String.valueOf(Float.parseFloat(lotSize) * initialMargin), "2");
+    }
+
+    // Contract value and the margin amount are read from one ticket snapshot so a live quote cannot split them.
+    public void expectEstimatedMarginFromTicketContractValue(String marginRate) {
+        getPageElement.clearPageSourceCache();
+        getPageElement.capturePageSource();
+        String rawContract = getPageElement.readLabelValueFast("Contract Value");
+        if (isBlank(rawContract)) {
+            getPageElement.clearPageSourceCache();
+            throw new NoSuchElementException("Could not find value in hierarchy for label: Contract Value");
+        }
+        String contractValue = abs.normalizeDialogueValue("Contract Value", rawContract.trim());
+        estMargin = new BigDecimal(contractValue)
+                .multiply(new BigDecimal(marginRate))
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString();
+        getPageElement.logInfo("Expected estimated margin from ticket contract value " + contractValue
+                + ", rate " + marginRate + ": " + estMargin);
+    }
+
+    public void releaseTicketSnapshot() {
+        getPageElement.clearPageSourceCache();
     }
 
     // Price and volume come from the confirmation snapshot already cached by waitForConfirmationPopup.
