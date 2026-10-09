@@ -127,17 +127,22 @@ public class MobileDriver {
         new MobileAbstractComponents(driver).waitUntilLaunchComplete(APP_READY_WAIT);
     }
 
-    private boolean isRecoverableSessionError(Throwable error) {
+    private boolean isRecoverableSessionError(Throwable error, String androidPackage) {
         String message = String.valueOf(error.getMessage()).toLowerCase(Locale.ROOT);
+        // Keep this package aligned with AppConfig's EIEHK mapping.
+        boolean eiehkLaunchFailure = "com.efsg.eiehktrading.android".equals(androidPackage)
+                && (message.contains("instrumentation process cannot be initialized")
+                || message.contains("cannot start the"));
         if (message.contains("socket hang up")
                 || message.contains("could not proxy")
                 || message.contains("cannot be proxied")
                 || message.contains("instrumentation process is not running")
-                || (message.contains("cannot start the") && message.contains("uiautomator2"))) {
+                || (message.contains("cannot start the") && message.contains("uiautomator2"))
+                || eiehkLaunchFailure) {
             return true;
         }
         Throwable cause = error.getCause();
-        return cause != null && cause != error && isRecoverableSessionError(cause);
+        return cause != null && cause != error && isRecoverableSessionError(cause, androidPackage);
     }
 
     private void quitQuietly() {
@@ -254,7 +259,7 @@ public class MobileDriver {
             } catch (Exception e) {
                 lastError = e;
                 System.err.println("Error initializing Android driver (attempt " + attempt + "): " + e.getMessage());
-                if (!isRecoverableSessionError(e) || attempt == 3) {
+                if (!isRecoverableSessionError(e, androidPackage) || attempt == 3) {
                     e.printStackTrace();
                     throw new RuntimeException("Failed to initialize Android driver", e);
                 }
