@@ -2,6 +2,10 @@ package Data;
 
 import utils.BaseTest;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Locale;
+
 public class TradeSymbolConfig {
 
     public static boolean isInitialMarginZero = false;
@@ -74,11 +78,41 @@ public class TradeSymbolConfig {
     }
 
     public String getConfirmationMarginRate(String entity, String symbol) {
-        // EIEHK XAUUSD confirmation margin is 2.7% of price * volume * contract size.
-        if (entity != null && entity.equalsIgnoreCase("EIEHK") && "XAUUSD".equalsIgnoreCase(symbol)) {
-            return "0.027";
+        // EIEHK estimated and confirmation margin use the contract-value rate. XAUUSD is 2.7%. XAGUSD is 8%.
+        if (entity != null && entity.equalsIgnoreCase("EIEHK")) {
+            return eiehkInitialMarginRate(symbol);
         }
         return null;
+    }
+
+    // EIEHK initial margin is a percentage of contract value. XAUUSD is 2.7%. XAGUSD is 8%.
+    // A zero-margin scenario returns 0.00. Symbols without a rate return null.
+    public String calculateEiehkInitialMargin(String symbol, String contractValue) {
+        if (isInitialMarginZero) {
+            return "0.00";
+        }
+        String rate = eiehkInitialMarginRate(symbol);
+        if (rate == null) {
+            return null;
+        }
+        if (contractValue == null || contractValue.isBlank()) {
+            throw new IllegalArgumentException("Contract value is required to calculate EIEHK initial margin for " + symbol);
+        }
+        return new BigDecimal(contractValue.trim().replace(",", ""))
+                .multiply(new BigDecimal(rate))
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString();
+    }
+
+    private String eiehkInitialMarginRate(String symbol) {
+        if (symbol == null || symbol.isBlank()) {
+            return null;
+        }
+        return switch (symbol.trim().toUpperCase(Locale.ROOT)) {
+            case "XAUUSD" -> "0.027";
+            case "XAGUSD" -> "0.08";
+            default -> null;
+        };
     }
 
     public Integer getContractSize(String symbol){

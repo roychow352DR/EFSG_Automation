@@ -1635,11 +1635,14 @@ public class AppInstrumentDetailsPage {
     }
 
     public boolean getToggleStatus() {
-        List<WebElement> switches = driver.findElements(By.xpath("//android.widget.Switch"));
-        for (WebElement toggle : switches) {
+        // EIEHK keeps a Pending Order switch above Set Target Profit. A bare Switch reads that closed switch.
+        By locator = driver.findElements(PENDING_ORDER_SWITCH).isEmpty()
+                ? By.xpath("//android.widget.Switch")
+                : TARGET_PROFIT_SWITCH;
+        for (WebElement toggle : driver.findElements(locator)) {
             String checked = toggle.getAttribute("checked");
             if (checked != null && !"null".equalsIgnoreCase(checked)) {
-                return Boolean.parseBoolean(checked);
+                return isSwitchChecked(toggle);
             }
         }
         return !driver.findElements(By.xpath(
@@ -1757,40 +1760,164 @@ public class AppInstrumentDetailsPage {
         if (isLotSizeField(fieldName) && ("minus".equals(action) || "plus".equals(action))) {
             return lotsStepperPoint(fieldBounds, fieldCenterY, action);
         }
-        List<int[]> left = new ArrayList<>();
-        List<int[]> right = new ArrayList<>();
-        for (int[] bounds : compactControlsOnRow(fieldCenterY)) {
-            int centerX = (bounds[0] + bounds[2]) / 2;
-            if (centerX < fieldLeft) {
-                left.add(bounds);
-            } else if (centerX > fieldRight) {
-                right.add(bounds);
-            }
-        }
-        left.sort(Comparator.comparingInt(bounds -> bounds[0]));
-        right.sort(Comparator.comparingInt(bounds -> bounds[0]));
-
-        // Stop Loss / Take Profit / Price: filled row is [minus] [field] [clear] [plus]; empty row has no clear.
+        // EIEHK is [minus] [field] [plus] [clear]. EBL_MT5 is [minus] [field] [clear] [plus].
+        List<TpslStepperIcon> icons = tpslStepperIcons(fieldCenterY);
+        TpslStepperIcon minus = tpslMinusIcon(icons, fieldLeft);
+        TpslStepperIcon plus = tpslPlusIcon(icons, fieldRight);
+        TpslStepperIcon clear = tpslClearIcon(icons, fieldRight, plus);
         if ("plus".equals(action)) {
-            if (!right.isEmpty()) {
-                return controlCenter(right.getLast());
+            if (plus != null) {
+                return controlCenter(plus.bounds);
             }
             Dimension window = driver.manage().window().getSize();
             return new Point(Math.min(window.getWidth() - 24, fieldRight + 98), fieldCenterY);
         }
         if ("minus".equals(action)) {
-            if (!left.isEmpty()) {
-                return controlCenter(left.getLast());
+            if (minus != null) {
+                return controlCenter(minus.bounds);
             }
             return new Point(Math.max(8, fieldLeft - 48), fieldCenterY);
         }
         if ("clear".equals(action)) {
-            if (right.size() >= 2) {
-                return controlCenter(right.getFirst());
+            if (clear != null) {
+                return controlCenter(clear.bounds);
             }
             return new Point(fieldRight + 28, fieldCenterY);
         }
         throw new IllegalArgumentException("Unsupported stepper button: " + ctaBtn);
+    }
+
+    private List<TpslStepperIcon> tpslStepperIcons(int rowCenterY) {
+        List<TpslStepperIcon> found = new ArrayList<>();
+        List<By> locators = List.of(
+                By.xpath("//android.widget.ScrollView//android.view.ViewGroup[@clickable='true']"),
+                By.xpath("//*[@text='+' or @text='-' or @text='\u2212' or @text='✕' or @text='×' or @text='x' or @text='X']"),
+                By.className("android.widget.ImageView")
+        );
+        for (By locator : locators) {
+            for (WebElement el : driver.findElements(locator)) {
+                try {
+                    int[] bounds = parseBounds(elementAttribute(el, "bounds"));
+                    if (bounds == null) {
+                        continue;
+                    }
+                    int width = bounds[2] - bounds[0];
+                    int height = bounds[3] - bounds[1];
+                    if (width < 18 || width > 120 || height < 18 || height > 120) {
+                        continue;
+                    }
+                    int centerY = (bounds[1] + bounds[3]) / 2;
+                    if (Math.abs(centerY - rowCenterY) > 64) {
+                        continue;
+                    }
+                    if (tpslIconAlreadyFound(found, bounds)) {
+                        continue;
+                    }
+                    found.add(new TpslStepperIcon(bounds, el));
+                } catch (StaleElementReferenceException ignored) {
+                }
+            }
+        }
+        found.sort(Comparator.comparingInt(icon -> icon.bounds[0]));
+        return found;
+    }
+
+    private boolean tpslIconAlreadyFound(List<TpslStepperIcon> found, int[] bounds) {
+        int centerX = (bounds[0] + bounds[2]) / 2;
+        int centerY = (bounds[1] + bounds[3]) / 2;
+        for (TpslStepperIcon existing : found) {
+            if (Math.abs(existing.centerX() - centerX) <= 12 && Math.abs(existing.centerY() - centerY) <= 12) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private TpslStepperIcon tpslMinusIcon(List<TpslStepperIcon> icons, int fieldLeft) {
+        TpslStepperIcon glyph = null;
+        TpslStepperIcon closest = null;
+        for (TpslStepperIcon icon : icons) {
+            if (icon.centerX() >= fieldLeft) {
+                continue;
+            }
+            if ("minus".equals(icon.glyphKind())) {
+                glyph = icon;
+            }
+            if (closest == null || icon.centerX() > closest.centerX()) {
+                closest = icon;
+            }
+        }
+        return glyph != null ? glyph : closest;
+    }
+
+    private TpslStepperIcon tpslPlusIcon(List<TpslStepperIcon> icons, int fieldRight) {
+        List<TpslStepperIcon> right = tpslIconsRightOf(icons, fieldRight);
+        for (TpslStepperIcon icon : right) {
+            if ("plus".equals(icon.glyphKind())) {
+                return icon;
+            }
+        }
+        if (right.size() >= 2) {
+            TpslStepperIcon larger = tpslLargerIcon(right);
+            TpslStepperIcon smaller = tpslSmallerIcon(right);
+            if (larger.area() > smaller.area()) {
+                return larger;
+            }
+            return right.getLast();
+        }
+        return right.isEmpty() ? null : right.getFirst();
+    }
+
+    private TpslStepperIcon tpslClearIcon(List<TpslStepperIcon> icons, int fieldRight, TpslStepperIcon plus) {
+        List<TpslStepperIcon> right = tpslIconsRightOf(icons, fieldRight);
+        for (TpslStepperIcon icon : right) {
+            if ("clear".equals(icon.glyphKind())) {
+                return icon;
+            }
+        }
+        if (right.size() >= 2) {
+            TpslStepperIcon smaller = tpslSmallerIcon(right);
+            TpslStepperIcon larger = tpslLargerIcon(right);
+            if (smaller.area() < larger.area() && (plus == null || smaller.centerX() != plus.centerX())) {
+                return smaller;
+            }
+            for (TpslStepperIcon icon : right) {
+                if (plus == null || icon.centerX() != plus.centerX()) {
+                    return icon;
+                }
+            }
+        }
+        return null;
+    }
+
+    private List<TpslStepperIcon> tpslIconsRightOf(List<TpslStepperIcon> icons, int fieldRight) {
+        List<TpslStepperIcon> right = new ArrayList<>();
+        for (TpslStepperIcon icon : icons) {
+            if (icon.centerX() > fieldRight) {
+                right.add(icon);
+            }
+        }
+        return right;
+    }
+
+    private TpslStepperIcon tpslLargerIcon(List<TpslStepperIcon> icons) {
+        TpslStepperIcon best = icons.getFirst();
+        for (TpslStepperIcon icon : icons) {
+            if (icon.area() > best.area()) {
+                best = icon;
+            }
+        }
+        return best;
+    }
+
+    private TpslStepperIcon tpslSmallerIcon(List<TpslStepperIcon> icons) {
+        TpslStepperIcon best = icons.getFirst();
+        for (TpslStepperIcon icon : icons) {
+            if (icon.area() < best.area()) {
+                best = icon;
+            }
+        }
+        return best;
     }
 
     private Point lotsStepperPoint(int[] fieldBounds, int fieldCenterY, String action) {
@@ -1946,5 +2073,98 @@ public class AppInstrumentDetailsPage {
 
     public boolean getTpslToggleStatus() {
         return stopLossSwitchAos.isDisplayed();
+    }
+
+    private static final class TpslStepperIcon {
+        private final int[] bounds;
+        private final WebElement element;
+
+        private TpslStepperIcon(int[] bounds, WebElement element) {
+            this.bounds = bounds;
+            this.element = element;
+        }
+
+        private int centerX() {
+            return (bounds[0] + bounds[2]) / 2;
+        }
+
+        private int centerY() {
+            return (bounds[1] + bounds[3]) / 2;
+        }
+
+        private int area() {
+            return Math.max(0, bounds[2] - bounds[0]) * Math.max(0, bounds[3] - bounds[1]);
+        }
+
+        private String glyphKind() {
+            int[] inner = smallestInnerPath(element, bounds);
+            if (inner == null) {
+                return null;
+            }
+            int width = inner[2] - inner[0];
+            int height = inner[3] - inner[1];
+            if (height <= 12 && width >= 20) {
+                return "minus";
+            }
+            if (width <= 28 && height <= 28) {
+                return "clear";
+            }
+            if (Math.abs(width - height) <= 12 && width >= 30) {
+                return "plus";
+            }
+            return null;
+        }
+
+        private static int[] smallestInnerPath(WebElement icon, int[] iconBounds) {
+            int[] best = null;
+            int bestArea = Integer.MAX_VALUE;
+            int iconArea = Math.max(1, (iconBounds[2] - iconBounds[0]) * (iconBounds[3] - iconBounds[1]));
+            try {
+                for (WebElement path : icon.findElements(By.className("com.horcrux.svg.PathView"))) {
+                    int[] box = parseIconBounds(elementBounds(path));
+                    if (box == null) {
+                        continue;
+                    }
+                    int area = Math.max(0, box[2] - box[0]) * Math.max(0, box[3] - box[1]);
+                    if (area < 16 || area >= iconArea * 0.92) {
+                        continue;
+                    }
+                    if (area < bestArea) {
+                        bestArea = area;
+                        best = box;
+                    }
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+            return best;
+        }
+
+        private static String elementBounds(WebElement element) {
+            try {
+                String value = element.getAttribute("bounds");
+                if (value == null || value.isBlank() || "null".equalsIgnoreCase(value)) {
+                    return null;
+                }
+                return value;
+            } catch (RuntimeException e) {
+                return null;
+            }
+        }
+
+        private static int[] parseIconBounds(String bounds) {
+            if (bounds == null || bounds.isBlank()) {
+                return null;
+            }
+            Matcher matcher = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]").matcher(bounds);
+            if (!matcher.find()) {
+                return null;
+            }
+            return new int[]{
+                    Integer.parseInt(matcher.group(1)),
+                    Integer.parseInt(matcher.group(2)),
+                    Integer.parseInt(matcher.group(3)),
+                    Integer.parseInt(matcher.group(4))
+            };
+        }
     }
 }

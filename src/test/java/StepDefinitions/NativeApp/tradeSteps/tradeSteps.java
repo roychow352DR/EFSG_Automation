@@ -43,6 +43,7 @@ public class tradeSteps extends BaseTest {
                 expectedContent,
                 "Registration gate content was not shown"
         );
+        appPoManager.getAppTradeView().dismissVisibleGate(expectedContent);
     }
 
     @And("the user switches on take profit and stop loss on the instrument details page")
@@ -316,7 +317,7 @@ public class tradeSteps extends BaseTest {
         }
     }
 
-    // EIEHK XAUUSD margin follows the live contract value. Other symbols keep lot size times initial margin.
+    // EIEHK XAUUSD and XAGUSD margin follow the live contract value. Other symbols keep lot size times initial margin.
     private String ticketMarginRate(String label) {
         if (!"Est. Margin".equals(label) && !"Estimated Margin".equals(label)) {
             return null;
@@ -674,13 +675,58 @@ public class tradeSteps extends BaseTest {
             Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDetailValue(valueName),
                     appPoManager.getAppPositionDetailsPage().getContractValue(tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)));
         } else if (valueName.equalsIgnoreCase("Initial Margin")) {
-            Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDefaultInitialMargin(),
-                    String.format("%.2f", Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
+            assertPositionDetailsInitialMargin();
         } else {
             Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDetailValue(valueName),
                     appPoManager.getAppPositionDetailsPage().getValidationValue(valueName));
         }
         appPoManager.getAppTradeView().closePositionInDetails();
+    }
+
+    // EIEHK XAUUSD and XAGUSD initial margin is a percentage of contract value.
+    // Other entities, and EIEHK symbols without a rate, keep lot size times the configured initial margin.
+    private void assertPositionDetailsInitialMargin() {
+        String symbol = AppMarketsPage.tradeSymbol;
+        if (productEntity != null && productEntity.equalsIgnoreCase("EIEHK")) {
+            String contractValue = appPoManager.getAppPositionDetailsPage()
+                    .getContractValue(tradeSymbolConfig.getContractSize(symbol));
+            String expectedMargin = tradeSymbolConfig.calculateEiehkInitialMargin(symbol, contractValue);
+            if (expectedMargin != null) {
+                String displayedMargin = appPoManager.getAppPositionDetailsPage().getDetailValue("Initial Margin");
+                System.out.println("EIEHK initial margin from contract value " + contractValue + ": " + expectedMargin);
+                Assert.assertEquals(scaleAmount(displayedMargin), expectedMargin);
+                return;
+            }
+        }
+        Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDefaultInitialMargin(),
+                String.format("%.2f", Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(symbol)))));
+    }
+
+    // EIEHK XAUUSD and XAGUSD estimated margin is a percentage of the pending-order contract value.
+    // Other entities, and EIEHK symbols without a rate, keep lot size times the configured initial margin.
+    private void assertPendingOrderEstimatedMargin() {
+        String symbol = AppMarketsPage.tradeSymbol;
+        if (productEntity != null && productEntity.equalsIgnoreCase("EIEHK")) {
+            String contractValue = appPoManager.getAppPendingOrderDetailsPage()
+                    .getContractValue(tradeSymbolConfig.getContractSize(symbol));
+            String expectedMargin = tradeSymbolConfig.calculateEiehkInitialMargin(symbol, contractValue);
+            if (expectedMargin != null) {
+                String displayedMargin = appPoManager.getAppPendingOrderDetailsPage().getDetailValue("Estimated Margin");
+                System.out.println("EIEHK estimated margin from contract value " + contractValue + ": " + expectedMargin);
+                Assert.assertEquals(scaleAmount(displayedMargin), expectedMargin);
+                return;
+            }
+        }
+        Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue("Estimated Margin"),
+                String.format("%.2f", Float.parseFloat(appPoManager.getAppPendingOrderDetailsPage().getEstimatedMarin(
+                        tradeSymbolConfig.getInitialMargin(symbol),
+                        tradeSymbolConfig.getContractSize(symbol)))));
+    }
+
+    private String scaleAmount(String amount) {
+        return new BigDecimal(amount.trim().replace(",", ""))
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString();
     }
 
     @And("the user places a pending order with direction {string} and order type {string} symbol {string} on the instrument details page")
@@ -697,9 +743,7 @@ public class tradeSteps extends BaseTest {
             Assert.assertEquals(appPoManager.getAppPositionDetailsPage().getDefaultInitialMargin(),
                     String.format("%.2f", Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
         } else if (valueName.equalsIgnoreCase("Estimated Margin")) {
-            Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue(valueName),
-                    String.format("%.2f", Float.parseFloat(appPoManager.getAppPendingOrderDetailsPage().getEstimatedMarin(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol),
-                            tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol)))));
+            assertPendingOrderEstimatedMargin();
         } else {
             Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue(valueName),
                     appPoManager.getAppPendingOrderDetailsPage().getValidationValue(valueName));

@@ -356,7 +356,7 @@ public class Hooks extends BaseTest {
             cleanupPWSession();
         }
         syncCaseStepsWithFeatureFile(scenario);
-           reportTestResult(scenario, videoPath);
+        reportTestResult(scenario, videoPath);
         cleanupMediaFiles();
     }
 
