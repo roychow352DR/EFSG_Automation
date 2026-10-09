@@ -11,7 +11,7 @@ public class AppCredential {
     public String getLoginCredential() {
         return switch (entity) {
             case "EBL_MT5" -> "autol3";
-            case "EIEHK" -> "eieuat004@yopmail.com";
+            case "EIEHK" -> "eieuat005@yopmail.com";
             default -> throw new IllegalArgumentException("Invalid entity: " + entity);
         };
     }
