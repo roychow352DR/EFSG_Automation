@@ -208,6 +208,21 @@ public class AppTradeView {
                 .until(d -> observedExactContent(expectedContent));
     }
 
+    public void dismissVisibleGate(String expectedContent) {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new UnsupportedOperationException("Dismissing a registration gate is supported on Android only");
+        }
+        // Close the gate before teardown so the next cold start does not reopen this overlay.
+        pressAndroidBack();
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> observedExactContent(expectedContent) == null);
+        } catch (TimeoutException e) {
+            throw new TimeoutException("Registration gate was still visible after back: " + expectedContent, e);
+        }
+    }
+
     private String observedExactContent(String expectedContent) {
         String literal = xpathLiteral(expectedContent);
         By locator = By.xpath("//*[@text=" + literal + " or @content-desc=" + literal + "]");
