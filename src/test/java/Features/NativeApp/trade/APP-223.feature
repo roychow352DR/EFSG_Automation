@@ -11,7 +11,7 @@ Feature: Native App trade
       And the user taps back button on the app trade view
       And the user taps symbol on the app markets page
       And the user selects direction "BUY" on the app trade view
-      And the user fills in the text field "Lot Size" with value "0.01" on the instrument details page
+      And the user fills in the text field "Lot Size" with value "0.5" on the instrument details page
       And the user taps button "BUY" on the instrument details page
       And the user taps button "BUY" on the confirmation pop up
       Then the user sees a new open position is displayed at the position tab of app trade view

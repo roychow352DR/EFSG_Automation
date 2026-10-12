@@ -3,6 +3,8 @@ package PageObject.NativeApp;
 import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.android.nativekey.AndroidKey;
+import io.appium.java_client.android.nativekey.KeyEvent;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
@@ -13,6 +15,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.GetPageElement;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,9 +41,35 @@ public class AppWithdrawPage {
         if (!HEADER.equals(waitForHeader())) {
             throw new TimeoutException("Withdraw header was not visible before tapping back");
         }
+        tapHeaderBack("Tapping Withdraw header back at ");
+        if (!leftWithdraw(3)) {
+            getPageElement.logInfo("Still on Withdraw after back; tapping header back again");
+            tapHeaderBack("Tapping Withdraw header back again at ");
+        }
+        if (!leftWithdraw(3)) {
+            getPageElement.logInfo("Still on Withdraw after header taps; pressing Android back");
+            ((AndroidDriver) driver).pressKey(new KeyEvent(AndroidKey.BACK));
+        }
+        if (!leftWithdraw(8)) {
+            throw new TimeoutException("Withdraw header was still visible after tapping back");
+        }
+    }
+
+    private void tapHeaderBack(String logPrefix) {
         Point point = headerBackPoint();
-        getPageElement.logInfo("Tapping Withdraw header back at " + point.getX() + "," + point.getY());
+        getPageElement.logInfo(logPrefix + point.getX() + "," + point.getY());
         abs.tapAt(point.getX(), point.getY());
+    }
+
+    private boolean leftWithdraw(int seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(Math.max(1, seconds)))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> portfolioMarkersVisible() || !withdrawTitleVisible());
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
     }
 
     private String waitForHeader() {
@@ -100,11 +129,117 @@ public class AppWithdrawPage {
         if (labeled != null) {
             return labeled;
         }
+        Point icon = topLeftHeaderIcon(maxHeaderY);
+        if (icon != null) {
+            return icon;
+        }
         Point chevron = topLeftHeaderControl(maxHeaderY);
         if (chevron != null) {
             return chevron;
         }
-        return new Point(Math.max(40, window.getWidth() / 14), Math.max(80, (int) (window.getHeight() * 0.08)));
+        int x = Math.max(48, (int) (window.getWidth() * 0.066));
+        int y = Math.max(200, (int) (window.getHeight() * 0.084));
+        y = Math.min(y, (int) (window.getHeight() * 0.12));
+        return new Point(x, y);
+    }
+
+    private Point topLeftHeaderIcon(int maxHeaderY) {
+        for (By locator : List.of(
+                By.className("com.horcrux.svg.SvgView"),
+                By.className("android.widget.ImageView"))) {
+            Point icon = topLeftMatch(locator, maxHeaderY);
+            if (icon != null) {
+                return icon;
+            }
+        }
+        return null;
+    }
+
+    private Point topLeftMatch(By locator, int maxHeaderY) {
+        Point best = null;
+        int bestScore = Integer.MAX_VALUE;
+        for (WebElement el : driver.findElements(locator)) {
+            try {
+                int[] box = parseBounds(el.getAttribute("bounds"));
+                if (!isHeaderControl(box, maxHeaderY)) {
+                    continue;
+                }
+                int score = box[0] * 10 + box[1];
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = center(box);
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return best;
+    }
+
+    private boolean withdrawTitleVisible() {
+        if (stillOnPortfolio()) {
+            return false;
+        }
+        Dimension window = driver.manage().window().getSize();
+        // Title row only. A Portfolio Withdraw action sits lower than this band.
+        int maxHeaderY = (int) (window.getHeight() * 0.20);
+        for (WebElement el : driver.findElements(By.xpath(
+                "//*[@text='Withdraw' or @content-desc='Withdraw']"))) {
+            try {
+                String text = firstNonBlank(el.getText(), el.getAttribute("text"), el.getAttribute("content-desc"));
+                if (!HEADER.equals(text)) {
+                    continue;
+                }
+                int[] box = parseBounds(el.getAttribute("bounds"));
+                if (box == null) {
+                    continue;
+                }
+                int width = box[2] - box[0];
+                int height = box[3] - box[1];
+                if (width <= 0 || height <= 0 || height > 160 || box[1] > maxHeaderY) {
+                    continue;
+                }
+                return true;
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return false;
+    }
+
+    private boolean portfolioMarkersVisible() {
+        Dimension window = driver.manage().window().getSize();
+        int maxY = (int) (window.getHeight() * 0.70);
+        if (compactLabelVisible(
+                "//*[@text='Show all' or @text='Show All' or @content-desc='Show all'"
+                        + " or contains(@text,'Show last') or contains(@content-desc,'Show last')"
+                        + " or @text='History' or @content-desc='History'"
+                        + " or @text='Newest to Oldest' or @content-desc='Newest to Oldest']",
+                maxY,
+                false)) {
+            return true;
+        }
+        return compactLabelVisible(
+                "//*[@text='Open Positions' or @content-desc='Open Positions'"
+                        + " or @text='Open\nPositions' or @content-desc='Open\nPositions']",
+                maxY,
+                true);
+    }
+
+    private boolean compactLabelVisible(String xpath, int maxY, boolean requireHeight) {
+        for (WebElement el : driver.findElements(By.xpath(xpath))) {
+            try {
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (location.getY() >= maxY || size.getHeight() > 140) {
+                    continue;
+                }
+                if (requireHeight && size.getHeight() <= 0) {
+                    continue;
+                }
+                return true;
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return false;
     }
 
     private Point labeledHeaderBack(int maxHeaderY) {
@@ -162,6 +297,7 @@ public class AppWithdrawPage {
     private boolean stillOnPortfolio() {
         return !driver.findElements(By.xpath(
                 "//*[@text='Open Positions' or @content-desc='Open Positions'"
+                        + " or @text='Open\nPositions' or @content-desc='Open\nPositions'"
                         + " or @text='Newest to Oldest' or @content-desc='Newest to Oldest']"
         )).isEmpty();
     }

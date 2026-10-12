@@ -98,8 +98,12 @@ public class TradeSymbolConfig {
         if (contractValue == null || contractValue.isBlank()) {
             throw new IllegalArgumentException("Contract value is required to calculate EIEHK initial margin for " + symbol);
         }
-        return new BigDecimal(contractValue.trim().replace(",", ""))
-                .multiply(new BigDecimal(rate))
+        // Same displayed rounding as AppInstrumentDetailsPage.roundDisplayedAmount.
+        // Decimal HALF_UP turns 2099045.00 * 0.027 = 56674.215 into 56674.22.
+        // The double product is just under that half-cent and displays 56674.21.
+        double product = Double.parseDouble(contractValue.trim().replace(",", ""))
+                * Double.parseDouble(rate);
+        return new BigDecimal(product)
                 .setScale(2, RoundingMode.HALF_UP)
                 .toPlainString();
     }

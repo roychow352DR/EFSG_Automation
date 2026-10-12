@@ -271,6 +271,34 @@ public class AppInstrumentDetailsPage {
         }
     }
 
+    // A tap flips the current state. switchOnTargetProfit only turns the switch on.
+    public void tapProfitStopLossToggle() {
+        if (!(driver instanceof AndroidDriver)) {
+            return;
+        }
+        waitForOrderTicket();
+        if (!driver.findElements(PENDING_ORDER_SWITCH).isEmpty()) {
+            toggleTargetProfit();
+            return;
+        }
+        switchProfitStopLoss();
+    }
+
+    private void toggleTargetProfit() {
+        revealShown(TARGET_PROFIT_SWITCH);
+        WebElement toggle = new WebDriverWait(driver, Duration.ofSeconds(8))
+                .ignoring(StaleElementReferenceException.class)
+                .until(ExpectedConditions.visibilityOfElementLocated(TARGET_PROFIT_SWITCH));
+        boolean turningOn = !isSwitchChecked(toggle);
+        abs.tapVisible(TARGET_PROFIT_SWITCH, 8);
+        new WebDriverWait(driver, Duration.ofSeconds(8))
+                .ignoring(StaleElementReferenceException.class)
+                .until(d -> isSwitchChecked(d.findElement(TARGET_PROFIT_SWITCH)) == turningOn);
+        if (turningOn && !waitForTpslExpanded(8)) {
+            throw new TimeoutException("Stop Loss field was not visible after switching Take Profit and Stop Loss on");
+        }
+    }
+
     private void revealShown(By locator) {
         for (int swipe = 0; swipe < 5; swipe++) {
             if (isLocatorShown(locator)) {
@@ -1924,10 +1952,7 @@ public class AppInstrumentDetailsPage {
             throw new NoSuchElementException("Could not find value in hierarchy for label: Contract Value");
         }
         String contractValue = abs.normalizeDialogueValue("Contract Value", rawContract.trim());
-        estMargin = new BigDecimal(contractValue)
-                .multiply(new BigDecimal(marginRate))
-                .setScale(2, RoundingMode.HALF_UP)
-                .toPlainString();
+        estMargin = roundDisplayedAmount(Double.parseDouble(contractValue) * Double.parseDouble(marginRate));
         getPageElement.logInfo("Expected estimated margin from ticket contract value " + contractValue
                 + ", rate " + marginRate + ": " + estMargin);
     }
@@ -1947,14 +1972,18 @@ public class AppInstrumentDetailsPage {
     }
 
     // The app multiplies in IEEE-754 double and then rounds half up, matching JavaScript toFixed(2).
-    // Decimal HALF_UP turns 4211.50 * 0.50 * 100 * 0.027 = 5685.525 into 5685.53.
-    // That double is 5685.5249999999996, so the same half-up rule displays 5685.52.
-    // BigDecimal.valueOf(double) and String.format both restore 5685.53, so keep the binary value.
+    // Decimal HALF_UP turns 2099045.00 * 0.027 = 56674.215 into 56674.22.
+    // That double is 56674.214999999996, so the same half-up rule displays 56674.21.
+    // BigDecimal.valueOf(double) and String.format both restore the decimal half-up result, so keep the binary value.
     private String marginFromDisplayedQuote(String price, String volume, int contractSize, String marginRate) {
         double product = Double.parseDouble(price)
                 * Double.parseDouble(volume)
                 * contractSize
                 * Double.parseDouble(marginRate);
+        return roundDisplayedAmount(product);
+    }
+
+    private String roundDisplayedAmount(double product) {
         return new BigDecimal(product)
                 .setScale(2, RoundingMode.HALF_UP)
                 .toPlainString();
