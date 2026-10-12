@@ -353,25 +353,148 @@ public class AppInstrumentDetailsPage {
         return editFieldNear(tpslFieldLabel(fieldName), fieldName);
     }
 
+    private static final By DIRECTION_AT_PRICE_LABEL = By.xpath(
+            "//*[normalize-space(@text)='Buy at' or normalize-space(@text)='Sell at'"
+                    + " or normalize-space(@content-desc)='Buy at' or normalize-space(@content-desc)='Sell at']"
+    );
+
     private WebElement pendingPriceEditField() {
-        // EIEHK labels the pending price row "Buy at" and puts the EditText after that label.
-        List<WebElement> buyAtFields = driver.findElements(By.xpath(
-                "//android.widget.TextView[normalize-space(@text)='Buy at']/following::android.widget.EditText[1]"
-        ));
-        if (!buyAtFields.isEmpty()) {
-            return buyAtFields.getFirst();
+        WebElement field = locatePendingPriceEditField();
+        if (field != null) {
+            return field;
+        }
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> locatePendingPriceEditField());
+        } catch (TimeoutException e) {
+            throw new NoSuchElementException("Could not find Price EditText");
+        }
+    }
+
+    private WebElement locatePendingPriceEditField() {
+        // EIEHK labels the pending price row "Buy at" or "Sell at". The EditText can sit above that label.
+        WebElement atLabel = directionAtPriceLabel();
+        if (atLabel != null) {
+            WebElement field = priceEditNearLabel(atLabel);
+            if (field != null) {
+                getPageElement.logInfo("Pending price EditText resolved from direction-at label");
+                return field;
+            }
         }
         WebElement label = pendingPriceLabel();
         if (label != null) {
-            try {
-                return editFieldNear(label, "Price");
-            } catch (NoSuchElementException ignored) {
+            WebElement field = priceEditNearLabel(label);
+            if (field != null) {
+                getPageElement.logInfo("Pending price EditText resolved from Price label");
+                return field;
             }
         }
-        if (editTextFieldAos != null && editTextFieldAos.size() > 1) {
-            return editTextFieldAos.get(1);
+        WebElement fallback = nonLotsEditField();
+        if (fallback != null) {
+            getPageElement.logInfo("Pending price EditText resolved from the non-lots input");
         }
-        throw new NoSuchElementException("Could not find Price EditText");
+        return fallback;
+    }
+
+    private WebElement directionAtPriceLabel() {
+        List<WebElement> labels = driver.findElements(DIRECTION_AT_PRICE_LABEL);
+        return labels.isEmpty() ? null : labels.getFirst();
+    }
+
+    private WebElement priceEditNearLabel(WebElement label) {
+        WebElement following = firstFollowingEditText(label);
+        if (isUsablePriceField(label, following)) {
+            return following;
+        }
+        return nearestNonLotsEditField(label);
+    }
+
+    private WebElement firstFollowingEditText(WebElement label) {
+        try {
+            List<WebElement> fields = label.findElements(By.xpath("./following::android.widget.EditText[1]"));
+            return fields.isEmpty() ? null : fields.getFirst();
+        } catch (StaleElementReferenceException e) {
+            return null;
+        }
+    }
+
+    private boolean isUsablePriceField(WebElement label, WebElement field) {
+        if (field == null || isLotsEditField(field)) {
+            return false;
+        }
+        int[] labelBounds = parseBounds(elementAttribute(label, "bounds"));
+        int[] fieldBounds = parseBounds(elementAttribute(field, "bounds"));
+        if (labelBounds == null || fieldBounds == null) {
+            return true;
+        }
+        int labelCenterY = (labelBounds[1] + labelBounds[3]) / 2;
+        int fieldCenterY = (fieldBounds[1] + fieldBounds[3]) / 2;
+        return Math.abs(fieldCenterY - labelCenterY) <= 320;
+    }
+
+    private WebElement nearestNonLotsEditField(WebElement label) {
+        int[] labelBounds = parseBounds(elementAttribute(label, "bounds"));
+        if (labelBounds == null) {
+            return null;
+        }
+        int labelCenterY = (labelBounds[1] + labelBounds[3]) / 2;
+        WebElement closest = null;
+        int bestGap = Integer.MAX_VALUE;
+        for (WebElement field : driver.findElements(By.className("android.widget.EditText"))) {
+            if (isLotsEditField(field)) {
+                continue;
+            }
+            int[] fieldBounds = parseBounds(elementAttribute(field, "bounds"));
+            if (fieldBounds == null) {
+                continue;
+            }
+            int gap = Math.abs(((fieldBounds[1] + fieldBounds[3]) / 2) - labelCenterY);
+            if (gap > 320 || gap >= bestGap) {
+                continue;
+            }
+            bestGap = gap;
+            closest = field;
+        }
+        return closest;
+    }
+
+    private WebElement nonLotsEditField() {
+        List<WebElement> fields = driver.findElements(By.className("android.widget.EditText"));
+        WebElement candidate = null;
+        for (WebElement field : fields) {
+            if (isLotsEditField(field)) {
+                continue;
+            }
+            if (candidate != null) {
+                return null;
+            }
+            candidate = field;
+        }
+        return candidate;
+    }
+
+    private boolean isLotsEditField(WebElement field) {
+        WebElement lotsLabel = lotsFieldLabel();
+        if (lotsLabel == null || field == null) {
+            return false;
+        }
+        return sameBounds(field, nearestEditField(lotsLabel));
+    }
+
+    private boolean sameBounds(WebElement left, WebElement right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        int[] leftBounds = parseBounds(elementAttribute(left, "bounds"));
+        int[] rightBounds = parseBounds(elementAttribute(right, "bounds"));
+        if (leftBounds == null || rightBounds == null) {
+            return false;
+        }
+        return leftBounds[0] == rightBounds[0]
+                && leftBounds[1] == rightBounds[1]
+                && leftBounds[2] == rightBounds[2]
+                && leftBounds[3] == rightBounds[3];
     }
 
     private WebElement editFieldNear(WebElement label, String fieldName) {
@@ -671,12 +794,11 @@ public class AppInstrumentDetailsPage {
         selectedDirection = direction;
         boolean buy = direction != null && direction.equalsIgnoreCase("BUY");
         boolean stop = stopOrderType != null && stopOrderType.toLowerCase(Locale.ROOT).contains("stop");
-        // EIEHK "Buy at" row has no ≥/≤ threshold. Use the direction quote, then keep the offset below.
+        // EIEHK "Buy at" / "Sell at" rows have no ≥/≤ threshold. Read the direction quote and do not swipe the ticket.
         String threshold = null;
-        if (isBuyAtPriceRowVisible()) {
+        if (isDirectionAtPriceRowVisible()) {
             threshold = readDirectionQuotePrice(direction);
-        }
-        if (threshold == null || threshold.isBlank()) {
+        } else {
             threshold = waitForConstraintPrice(stop ? buy : !buy);
         }
         if (threshold == null || threshold.isBlank()) {
@@ -695,10 +817,8 @@ public class AppInstrumentDetailsPage {
         return stopOrderPrice;
     }
 
-    private boolean isBuyAtPriceRowVisible() {
-        return !driver.findElements(By.xpath(
-                "//android.widget.TextView[normalize-space(@text)='Buy at']"
-        )).isEmpty();
+    private boolean isDirectionAtPriceRowVisible() {
+        return directionAtPriceLabel() != null;
     }
 
     private String readDirectionQuotePrice(String direction) {
@@ -808,11 +928,11 @@ public class AppInstrumentDetailsPage {
     }
 
     private String readConstraintFromPriceField(String sign, String altSign) {
-        try {
-            return extractConstraintNumber(constraintNodeText(pendingPriceEditField()), sign, altSign);
-        } catch (NoSuchElementException e) {
+        WebElement field = locatePendingPriceEditField();
+        if (field == null) {
             return null;
         }
+        return extractConstraintNumber(constraintNodeText(field), sign, altSign);
     }
 
     private WebElement pendingPriceLabel() {

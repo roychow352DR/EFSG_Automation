@@ -127,6 +127,18 @@ public class MobileDriver {
         new MobileAbstractComponents(driver).waitUntilLaunchComplete(APP_READY_WAIT);
     }
 
+    private void activateEiehkApp(AppiumDriver sessionDriver, String androidPackage) {
+        // Keep this package aligned with AppConfig's EIEHK mapping.
+        if (!"com.efsg.eiehktrading.android".equals(androidPackage)) {
+            return;
+        }
+        if (!(sessionDriver instanceof InteractsWithApps apps)) {
+            return;
+        }
+        System.out.println("Activating Android app: " + androidPackage);
+        apps.activateApp(androidPackage);
+    }
+
     private boolean isRecoverableSessionError(Throwable error, String androidPackage) {
         String message = String.valueOf(error.getMessage()).toLowerCase(Locale.ROOT);
         // Keep this package aligned with AppConfig's EIEHK mapping.
@@ -252,6 +264,7 @@ public class MobileDriver {
                 driver = new AndroidDriver(new URL(APPIUM_SERVER_URL), aosOptions);
                 driver.manage().timeouts().implicitlyWait(IMPLICIT_WAIT);
                 System.out.println("Android driver initialized successfully. Session ID: " + driver.getSessionId());
+                activateEiehkApp(driver, androidPackage);
                 waitForAppReady(driver, androidPackage);
                 return (AndroidDriver) driver;
             } catch (TimeoutException e) {
@@ -375,8 +388,14 @@ public class MobileDriver {
         aosOptions.setNoReset(true);
         aosOptions.setFullReset(false);
 
-        // Additional capabilities to ensure app launches properly
-        aosOptions.setCapability("autoLaunch", true);
+        // EIEHK is force-stopped after the previous session. Starting it during
+        // session creation fails while the package is stopped, so activate it
+        // only after the session exists. Other entities still auto-launch.
+        boolean deferEiehkLaunch = "com.efsg.eiehktrading.android".equals(androidPackage);
+        aosOptions.setCapability("autoLaunch", !deferEiehkLaunch);
+        if (deferEiehkLaunch) {
+            aosOptions.setCapability("appWaitForLaunch", false);
+        }
         aosOptions.setCapability("skipUnlock", true);
         aosOptions.setCapability("skipServerInstallation", false);
         aosOptions.setNewCommandTimeout(Duration.ofSeconds(300));
