@@ -1573,8 +1573,204 @@ public class AppInstrumentDetailsPage {
     }
 
     public void selectValidity(String option) {
+        if (!(driver instanceof AndroidDriver)) {
+            validity = option;
+            return;
+        }
+        tapValidityChip(option);
+        if (isEiehk()) {
+            confirmEiehkValidity(option);
+        }
         validity = option;
-        tapOptionChip(option, "Validity");
+    }
+
+    private void tapValidityChip(String option) {
+        TimeoutException lastError = null;
+        List<By> locators = validityChipLocators(option);
+        for (int pass = 0; pass < 2; pass++) {
+            try {
+                WebElement chip = new WebDriverWait(driver, Duration.ofSeconds(pass == 0 ? 8 : 5))
+                        .ignoring(StaleElementReferenceException.class)
+                        .until(d -> smallestVisibleChip(locators));
+                tapChipCenter(chip);
+                getPageElement.logInfo("Tapped validity chip " + option);
+                return;
+            } catch (TimeoutException e) {
+                lastError = e;
+            } catch (StaleElementReferenceException e) {
+                lastError = new TimeoutException("Validity chip went stale: " + option, e);
+            }
+            abs.swipeUp(driver);
+        }
+        throw lastError != null
+                ? lastError
+                : new TimeoutException("Validity was not visible: " + option);
+    }
+
+    private List<By> validityChipLocators(String option) {
+        String literal = option.replace("\"", "");
+        List<By> contentDesc = List.of(
+                By.xpath("//android.view.ViewGroup[@clickable='true' and @content-desc=\"" + literal + "\"]"),
+                By.xpath("//*[@clickable='true' and @content-desc=\"" + literal + "\"]")
+        );
+        if (isEiehk()) {
+            // EIEHK puts Today / GTC on the clickable ViewGroup content-desc.
+            // The label's parent row is wide enough that its center lands on the default Today chip.
+            return contentDesc;
+        }
+        List<By> locators = new ArrayList<>();
+        locators.add(By.xpath("//android.widget.TextView[@text=\"" + literal + "\"]"));
+        locators.add(By.xpath("//*[@text=\"" + literal + "\"]"));
+        locators.addAll(contentDesc);
+        return locators;
+    }
+
+    private WebElement smallestVisibleChip(List<By> locators) {
+        WebElement best = null;
+        long bestArea = Long.MAX_VALUE;
+        for (By locator : locators) {
+            for (WebElement element : driver.findElements(locator)) {
+                int[] bounds = parseBounds(elementAttribute(element, "bounds"));
+                if (bounds == null || !boundsCenterInWindow(bounds)) {
+                    continue;
+                }
+                long area = (long) (bounds[2] - bounds[0]) * (bounds[3] - bounds[1]);
+                if (area <= 0 || area >= bestArea) {
+                    continue;
+                }
+                best = element;
+                bestArea = area;
+            }
+        }
+        return best;
+    }
+
+    private boolean boundsCenterInWindow(int[] bounds) {
+        int centerX = (bounds[0] + bounds[2]) / 2;
+        int centerY = (bounds[1] + bounds[3]) / 2;
+        Dimension window = driver.manage().window().getSize();
+        return centerX >= 0 && centerY >= 0
+                && centerX < window.getWidth()
+                && centerY < window.getHeight();
+    }
+
+    private void tapChipCenter(WebElement chip) {
+        int[] bounds = parseBounds(elementAttribute(chip, "bounds"));
+        if (bounds != null) {
+            abs.tapAt((bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2);
+            return;
+        }
+        Point location = chip.getLocation();
+        Dimension size = chip.getSize();
+        abs.tapAt(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+    }
+
+    private void confirmEiehkValidity(String option) {
+        String chosen;
+        try {
+            chosen = new WebDriverWait(driver, Duration.ofSeconds(3))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> chosenValidityFromSource());
+        } catch (TimeoutException e) {
+            // This ticket exposes Today / GTC as content-desc only. selected and checked stay unset.
+            getPageElement.logInfo(
+                    "Validity chip " + option + " was tapped. Ticket exposed no selected state. Tags: "
+                            + validityTagSnippet());
+            return;
+        }
+        if (!option.equalsIgnoreCase(chosen)) {
+            throw new TimeoutException("Validity chip was not selected: " + option + ", selected " + chosen);
+        }
+        getPageElement.logInfo("Validity chip reports selected: " + option);
+    }
+
+    private String chosenValidityFromSource() {
+        String xml = currentPageSource();
+        if (xml == null) {
+            return null;
+        }
+        List<String> chosen = new ArrayList<>();
+        for (String label : List.of("Today", "GTC")) {
+            if (sourceShowsChosen(xml, label)) {
+                chosen.add(label);
+            }
+        }
+        if (chosen.isEmpty()) {
+            return null;
+        }
+        return String.join(", ", chosen);
+    }
+
+    private boolean sourceShowsChosen(String xml, String label) {
+        Matcher attributes = Pattern.compile("(content-desc|text|checked|selected)=\"([^\"]*)\"").matcher("");
+        for (String tag : xml.split("<")) {
+            if (!tag.contains(label)) {
+                continue;
+            }
+            String contentDesc = null;
+            String text = null;
+            String checked = null;
+            String selected = null;
+            attributes.reset(tag);
+            while (attributes.find()) {
+                switch (attributes.group(1)) {
+                    case "content-desc" -> contentDesc = attributes.group(2);
+                    case "text" -> text = attributes.group(2);
+                    case "checked" -> checked = attributes.group(2);
+                    case "selected" -> selected = attributes.group(2);
+                    default -> {
+                    }
+                }
+            }
+            boolean named = label.equals(contentDesc) || label.equals(text)
+                    || (contentDesc != null && (contentDesc.startsWith(label + " ")
+                    || contentDesc.startsWith(label + ",")));
+            if (!named) {
+                continue;
+            }
+            if ("true".equalsIgnoreCase(checked) || "true".equalsIgnoreCase(selected)) {
+                return true;
+            }
+            if (contentDesc != null && !label.equals(contentDesc)
+                    && contentDesc.toLowerCase(Locale.ROOT).contains("selected")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String validityTagSnippet() {
+        String xml = currentPageSource();
+        if (xml == null) {
+            return "unavailable";
+        }
+        StringBuilder out = new StringBuilder();
+        for (String tag : xml.split("<")) {
+            if (!tag.contains("Today") && !tag.contains("GTC")) {
+                continue;
+            }
+            if (!out.isEmpty()) {
+                out.append(" | ");
+            }
+            String compact = tag.replace('\n', ' ').trim();
+            if (compact.length() > 180) {
+                compact = compact.substring(0, 180);
+            }
+            out.append(compact);
+            if (out.length() > 500) {
+                break;
+            }
+        }
+        return out.isEmpty() ? "none" : out.toString();
+    }
+
+    private String currentPageSource() {
+        try {
+            return driver.getPageSource();
+        } catch (RuntimeException e) {
+            getPageElement.logInfo("Could not read validity page source: " + e.getMessage());
+            return null;
+        }
     }
 
     private void tapOptionChip(String option, String name) {
@@ -1609,7 +1805,8 @@ public class AppInstrumentDetailsPage {
                 By.xpath("//android.widget.TextView[@text=\"" + option + "\"]/parent::android.view.ViewGroup")
         );
         List<By> locators = new ArrayList<>();
-        // EIEHK puts Buy Stop / Today on the clickable ViewGroup content-desc.
+        // EIEHK puts Buy Stop / Buy Limit on the clickable ViewGroup content-desc.
+        // Validity chips use validityChipLocators and do not tap the label parent.
         if (isEiehk()) {
             locators.addAll(contentDesc);
             locators.addAll(visibleText);
@@ -1743,15 +1940,24 @@ public class AppInstrumentDetailsPage {
     public void expectEstimatedMarginFromConfirmationSnapshot(int contractSize, String marginRate, String symbolDecimal) {
         String price = getDetailValue("Price", symbolDecimal);
         String volume = getDetailValue("Volume", symbolDecimal);
-        estMargin = new BigDecimal(price)
-                .multiply(new BigDecimal(volume))
-                .multiply(BigDecimal.valueOf(contractSize))
-                .multiply(new BigDecimal(marginRate))
-                .setScale(2, RoundingMode.HALF_UP)
-                .toPlainString();
+        estMargin = marginFromDisplayedQuote(price, volume, contractSize, marginRate);
         getPageElement.logInfo("Expected estimated margin from confirmation price " + price
                 + ", volume " + volume + ", contract size " + contractSize
                 + ", rate " + marginRate + ": " + estMargin);
+    }
+
+    // The app multiplies in IEEE-754 double and then rounds half up, matching JavaScript toFixed(2).
+    // Decimal HALF_UP turns 4211.50 * 0.50 * 100 * 0.027 = 5685.525 into 5685.53.
+    // That double is 5685.5249999999996, so the same half-up rule displays 5685.52.
+    // BigDecimal.valueOf(double) and String.format both restore 5685.53, so keep the binary value.
+    private String marginFromDisplayedQuote(String price, String volume, int contractSize, String marginRate) {
+        double product = Double.parseDouble(price)
+                * Double.parseDouble(volume)
+                * contractSize
+                * Double.parseDouble(marginRate);
+        return new BigDecimal(product)
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString();
     }
 
     public boolean getToggleStatus() {
