@@ -136,13 +136,15 @@ public class Hooks extends BaseTest {
             return;
         }
 
-        // Stop EIEHK only after the session is gone. Force-stop during an open
-        // session races with UiAutomator2 and breaks the next cold start.
-        boolean stopEiehkAfterQuit = !shouldForceStopBeforeQuit();
+        // terminateApp during a live EIEHK session races with UiAutomator2.
+        // Quit the session first, then force-stop so the app does not stay open.
+        // The next session calls activateApp to bring that package forward again.
+        boolean terminateBeforeQuit = shouldTerminateAppBeforeQuit();
+        boolean stopEiehkAfterQuit = !terminateBeforeQuit;
         String androidPackage = resolveAndroidPackage();
 
         try {
-            if (driver instanceof InteractsWithApps appDriver && !stopEiehkAfterQuit) {
+            if (terminateBeforeQuit && driver instanceof InteractsWithApps appDriver) {
                 try {
                     appDriver.terminateApp(androidPackage);
                 } catch (NoSuchSessionException e) {
@@ -168,7 +170,7 @@ public class Hooks extends BaseTest {
         }
     }
 
-    private boolean shouldForceStopBeforeQuit() {
+    private boolean shouldTerminateAppBeforeQuit() {
         return BaseTest.productEntity == null || !BaseTest.productEntity.equalsIgnoreCase("EIEHK");
     }
 
@@ -176,7 +178,7 @@ public class Hooks extends BaseTest {
         try {
             return appConfig == null ? null : appConfig.getAndroidPackage();
         } catch (RuntimeException e) {
-            System.err.println("Could not resolve Android package for force-stop: " + e.getMessage());
+            System.err.println("Could not resolve Android package before app quit: " + e.getMessage());
             return null;
         }
     }
