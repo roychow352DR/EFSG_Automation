@@ -336,7 +336,7 @@ public class tradeSteps extends BaseTest {
 
     @And("the user taps take profit and stop loss toggle on the instrument details page")
     public void the_user_taps_take_profit_and_stop_loss_toggle_on_the_instrument_details_page() throws InterruptedException {
-        appPoManager.getAppInstrumentDetailsPage().switchProfitStopLoss();
+        appPoManager.getAppInstrumentDetailsPage().tapProfitStopLossToggle();
     }
 
     @Then("the user sees the input field {string} is empty on the instrument details page")

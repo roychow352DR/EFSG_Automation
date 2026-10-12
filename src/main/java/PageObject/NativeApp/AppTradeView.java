@@ -1560,27 +1560,146 @@ public class AppTradeView {
 
     private void leaveEditPositionIfOpen() {
         hideAndroidKeyboard();
-        if (!isEditPositionUiVisible()) {
+        if (hasLeftEditPosition()) {
             return;
         }
-        tapHeaderBack();
-        waitForLeaveEditPromptOrEditGone();
-        dismissLeaveEditPromptIfShown();
-        if (!isEditPositionUiVisible() || isTradeListVisible()) {
-            return;
-        }
-        tapHeaderBack();
-        waitForLeaveEditPromptOrEditGone();
-        dismissLeaveEditPromptIfShown();
-        if (isTradeListVisible() || !isEditPositionUiVisible()) {
-            return;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            attemptLeaveEditPosition();
+            if (hasLeftEditPosition()) {
+                return;
+            }
         }
         try {
             new WebDriverWait(driver, Duration.ofSeconds(8))
                     .ignoring(StaleElementReferenceException.class)
-                    .until(d -> !isEditPositionUiVisible() || isTradeListVisible());
+                    .until(d -> {
+                        if (hasLeftEditPosition()) {
+                            return true;
+                        }
+                        if (isLeaveEditPromptVisible()) {
+                            dismissLeaveEditPromptIfShown();
+                        }
+                        return hasLeftEditPosition();
+                    });
         } catch (TimeoutException e) {
+            logLeavePromptLabels();
             throw new TimeoutException("Edit Position was still visible after tapping Back");
+        }
+    }
+
+    private void attemptLeaveEditPosition() {
+        if (isBlockingOverlayVisible()) {
+            dismissLeaveEditPromptIfShown();
+            waitUntilEditPositionCloses();
+            return;
+        }
+        tapEditPositionHeaderBack();
+        waitForLeaveEditPromptOrEditGone();
+        dismissLeaveEditPromptIfShown();
+        if (isLeaveEditPromptVisible() || isBlockingOverlayVisible()) {
+            dismissLeaveEditPromptIfShown();
+            waitUntilEditPositionCloses();
+            return;
+        }
+        if (hasLeftEditPosition()) {
+            return;
+        }
+        getPageElement.logInfo("Edit Position still open after header back; pressing Android back");
+        pressAndroidBack();
+        hideAndroidKeyboard();
+        waitForLeaveEditPromptOrEditGone();
+        dismissLeaveEditPromptIfShown();
+        waitUntilEditPositionCloses();
+    }
+
+    private void waitUntilEditPositionCloses() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(3))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> hasLeftEditPosition());
+        } catch (TimeoutException ignored) {
+        }
+    }
+
+    private boolean hasLeftEditPosition() {
+        return !isEditPositionUiVisible() || isTradeListVisible();
+    }
+
+    private void tapEditPositionHeaderBack() {
+        hideAndroidKeyboard();
+        if (tapClickableHeaderBack()) {
+            return;
+        }
+        tapHeaderBack();
+    }
+
+    private boolean tapClickableHeaderBack() {
+        if (tapHeaderControl(headerBackElement(), "Tapping edit position clickable header back")) {
+            return true;
+        }
+        WebElement svg = topLeftHeaderSvgElement();
+        if (svg == null) {
+            return false;
+        }
+        return tapHeaderControl(clickableHeaderAncestor(svg), "Tapping edit position header back parent");
+    }
+
+    private boolean tapHeaderControl(WebElement element, String message) {
+        if (element == null) {
+            return false;
+        }
+        try {
+            int[] box = visibleBox(element);
+            if (box == null) {
+                return false;
+            }
+            Point point = editPositionBackTapPoint(box);
+            getPageElement.logInfo(message + " at " + point.getX() + "," + point.getY());
+            abs.tapAt(point.getX(), point.getY());
+            return true;
+        } catch (StaleElementReferenceException e) {
+            return false;
+        }
+    }
+
+    private Point editPositionBackTapPoint(int[] box) {
+        int width = box[2] - box[0];
+        int height = box[3] - box[1];
+        if (width <= 160) {
+            return headerIconTapPoint(box);
+        }
+        int x = Math.min(box[0] + 56, box[2] - 24);
+        int y = box[1] + Math.min(height, 48) / 2;
+        return new Point(x, y);
+    }
+
+    private WebElement clickableHeaderAncestor(WebElement icon) {
+        try {
+            Dimension window = driver.manage().window().getSize();
+            int maxWidth = (int) (window.getWidth() * 0.45);
+            int maxHeight = (int) (window.getHeight() * 0.16);
+            int maxTop = (int) (window.getHeight() * 0.22);
+            WebElement best = null;
+            int bestArea = Integer.MAX_VALUE;
+            for (WebElement ancestor : icon.findElements(By.xpath("./ancestor::*[@clickable='true']"))) {
+                int[] box = visibleBox(ancestor);
+                if (box == null || box[1] > maxTop) {
+                    continue;
+                }
+                int width = box[2] - box[0];
+                int height = box[3] - box[1];
+                if (width < 40 || height < 40 || width > maxWidth || height > maxHeight) {
+                    continue;
+                }
+                int area = width * height;
+                if (area < bestArea) {
+                    bestArea = area;
+                    best = ancestor;
+                }
+            }
+            return best;
+        } catch (RuntimeException e) {
+            return null;
         }
     }
 
@@ -1594,42 +1713,165 @@ public class AppTradeView {
     }
 
     private boolean isLeaveEditPromptVisible() {
-        for (String label : leaveEditPromptLabels()) {
-            if (!safeFindElements(By.xpath("//*[@text=\"" + label + "\"]")).isEmpty()) {
-                return true;
-            }
-        }
-        return false;
+        return findLeaveEditAction() != null;
     }
 
-    private List<String> leaveEditPromptLabels() {
-        return List.of("Discard", "Discard Changes", "Don't Save", "Don't save", "Leave", "Yes");
+    private boolean isBlockingOverlayVisible() {
+        return !safeFindElements(By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]")).isEmpty();
     }
 
     private void dismissLeaveEditPromptIfShown() {
-        By overlay = By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]");
-        if (safeFindElements(overlay).isEmpty() && !isLeaveEditPromptVisible()) {
+        WebElement action = findLeaveEditAction();
+        if (action == null) {
             return;
         }
-        if (!safeFindElements(By.xpath(
-                "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]"
-                        + "//*[@text='Close Position' or @text='Cancel Order']")).isEmpty()) {
+        getPageElement.logInfo("Dismissing edit-position leave prompt with [" + promptLabel(action) + "]");
+        try {
+            abs.tapElement(action);
+        } catch (StaleElementReferenceException e) {
             return;
         }
-        for (String label : leaveEditPromptLabels()) {
-            try {
-                abs.tapBottomMost(By.xpath(
-                        "//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]//*[@text=\"" + label + "\"]"), 2);
-                waitUntilOverlayGone();
-                return;
-            } catch (TimeoutException ignored) {
+        waitUntilOverlayGone();
+    }
+
+    private WebElement findLeaveEditAction() {
+        try {
+            List<WebElement> overlays = safeFindElements(
+                    By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]"));
+            if (!overlays.isEmpty()) {
+                WebElement overlay = overlays.get(0);
+                if (overlayHasProtectedTitle(overlay)) {
+                    return null;
+                }
+                String overlayText = overlayText(overlay);
+                return bestLeaveAction(overlay.findElements(By.xpath(".//*")), true, overlayText);
             }
+            return bestLeaveAction(safeFindElements(By.xpath("//*[@text or @content-desc]")), false, "");
+        } catch (StaleElementReferenceException e) {
+            return null;
+        }
+    }
+
+    private boolean overlayHasProtectedTitle(WebElement overlay) {
+        String text = normalizePromptLabel(overlayText(overlay));
+        return text.contains("close position")
+                || text.contains("cancel order")
+                || text.contains("order confirmation")
+                || text.contains("confirm order");
+    }
+
+    private boolean overlaySuggestsUnsavedLeave(String overlayText) {
+        String text = normalizePromptLabel(overlayText);
+        return text.contains("discard")
+                || text.contains("unsaved")
+                || text.contains("don't save")
+                || text.contains("dont save")
+                || text.contains("save change")
+                || text.contains("leave");
+    }
+
+    private WebElement bestLeaveAction(List<WebElement> elements, boolean insideOverlay, String overlayText) {
+        WebElement matched = null;
+        int bestScore = Integer.MIN_VALUE;
+        for (WebElement element : elements) {
             try {
-                abs.tapBottomMost(By.xpath("//*[@text=\"" + label + "\"]"), 1);
-                waitUntilOverlayGone();
-                return;
-            } catch (TimeoutException ignored) {
+                if (!isLeaveEditAction(element, insideOverlay, overlayText)) {
+                    continue;
+                }
+                int[] box = visibleBox(element);
+                if (box == null) {
+                    continue;
+                }
+                int score = box[1];
+                String label = normalizePromptLabel(promptLabel(element));
+                if (label.contains("discard") || label.contains("don't save") || label.contains("dont save")) {
+                    score += 100000;
+                }
+                if (score > bestScore) {
+                    bestScore = score;
+                    matched = element;
+                }
+            } catch (StaleElementReferenceException ignored) {
             }
+        }
+        return matched;
+    }
+
+    private boolean isLeaveEditAction(WebElement element, boolean insideOverlay, String overlayText) {
+        String label = normalizePromptLabel(promptLabel(element));
+        if (label.isEmpty() || label.length() > 40) {
+            return false;
+        }
+        if (label.contains("discard")
+                || label.contains("don't save")
+                || label.contains("dont save")
+                || label.contains("do not save")) {
+            return !label.contains("?");
+        }
+        if (!insideOverlay) {
+            return false;
+        }
+        if (label.equals("leave") || label.equals("yes")) {
+            return true;
+        }
+        return label.equals("confirm") && overlaySuggestsUnsavedLeave(overlayText);
+    }
+
+    private String overlayText(WebElement overlay) {
+        StringBuilder text = new StringBuilder();
+        try {
+            for (WebElement element : overlay.findElements(By.xpath(".//*"))) {
+                String label = promptLabel(element);
+                if (!label.isEmpty()) {
+                    text.append(' ').append(label);
+                }
+            }
+        } catch (StaleElementReferenceException ignored) {
+        }
+        return text.toString();
+    }
+
+    private String promptLabel(WebElement element) {
+        String text = elementAttribute(element, "text");
+        if (text != null && !text.isBlank()) {
+            return text.trim();
+        }
+        String description = elementAttribute(element, "content-desc");
+        return description == null ? "" : description.trim();
+    }
+
+    private String normalizePromptLabel(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        return raw.trim().toLowerCase(Locale.ROOT)
+                .replace('\u2019', '\'')
+                .replace('\u2018', '\'');
+    }
+
+    private void logLeavePromptLabels() {
+        List<String> labels = new ArrayList<>();
+        try {
+            List<WebElement> overlays = safeFindElements(
+                    By.xpath("//android.view.ViewGroup[@resource-id=\"RNE__Overlay\"]"));
+            if (overlays.isEmpty()) {
+                return;
+            }
+            for (WebElement element : overlays.get(0).findElements(By.xpath(".//*"))) {
+                String label = promptLabel(element);
+                if (label.isEmpty() || labels.contains(label)) {
+                    continue;
+                }
+                labels.add(label);
+                if (labels.size() == 8) {
+                    break;
+                }
+            }
+        } catch (StaleElementReferenceException ignored) {
+            return;
+        }
+        if (!labels.isEmpty()) {
+            getPageElement.logInfo("Edit Position leave prompt still visible. Labels: " + String.join(" | ", labels));
         }
     }
 
@@ -2432,6 +2674,18 @@ public class AppTradeView {
     }
 
     private Point topLeftHeaderSvg() {
+        WebElement svg = topLeftHeaderSvgElement();
+        if (svg == null) {
+            return null;
+        }
+        int[] box = visibleBox(svg);
+        if (box == null) {
+            return null;
+        }
+        return new Point((box[0] + box[2]) / 2, (box[1] + box[3]) / 2);
+    }
+
+    private WebElement topLeftHeaderSvgElement() {
         Dimension window = driver.manage().window().getSize();
         int maxLeft = (int) (window.getWidth() * 0.15);
         int maxTop = (int) (window.getHeight() * 0.14);
@@ -2454,7 +2708,7 @@ public class AppTradeView {
             if (width < 24 || width > 160 || height < 24 || height > 160) {
                 continue;
             }
-            return new Point((box[0] + box[2]) / 2, (box[1] + box[3]) / 2);
+            return matches.get(0);
         }
         return null;
     }

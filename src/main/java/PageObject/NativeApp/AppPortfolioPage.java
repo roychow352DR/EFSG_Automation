@@ -118,7 +118,7 @@ public class AppPortfolioPage {
         }
         new WebDriverWait(driver, Duration.ofSeconds(20))
                 .ignoring(StaleElementReferenceException.class)
-                .withMessage("Portfolio page was not visible after leaving Deposit")
+                .withMessage("Portfolio page was not visible")
                 .until(d -> portfolioListChromeVisible() || openPositionsTabVisible());
     }
 
@@ -126,7 +126,8 @@ public class AppPortfolioPage {
         Dimension window = driver.manage().window().getSize();
         int maxY = (int) (window.getHeight() * 0.70);
         for (WebElement el : driver.findElements(By.xpath(
-                "//*[@text='Open Positions' or @content-desc='Open Positions']"
+                "//*[@text='Open Positions' or @content-desc='Open Positions'"
+                        + " or @text='Open\nPositions' or @content-desc='Open\nPositions']"
         ))) {
             try {
                 Point location = el.getLocation();

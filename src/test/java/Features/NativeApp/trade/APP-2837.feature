@@ -1,6 +1,6 @@
 Feature: Native App trade
 
-    @App @Smoke @Regression @Trade @EBL_MT5
+    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK
     Scenario: It prompted error message when the inputted lot size of the market order is less than minimum lot
       Given the user launch the app
       And the user logs in on the App login page
