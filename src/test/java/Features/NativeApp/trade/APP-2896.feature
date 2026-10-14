@@ -1,7 +1,7 @@
 Feature: Native App trade
 
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro @AppTest
-    Scenario: User sees an error message when the take profit price of sell order is greater than current price plus BS point
+    Scenario: User sees an error message when the take profit price of sell market order is greater than current price plus BS point
       Given the user launch the app
       And the user logs in on the App login page
       And the user taps button "Markets" on the app footer

@@ -1,7 +1,7 @@
 Feature: Native App trade
 
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
-    Scenario: The volume input value is reduced by step size when the minus button is tapped
+    Scenario: The lot value of market order is reduced by step size when the minus button is tapped
       Given the user launch the app
       And the user logs in on the App login page
       And the user taps button "Markets" on the app footer

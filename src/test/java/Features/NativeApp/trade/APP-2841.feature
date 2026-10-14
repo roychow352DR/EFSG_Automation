@@ -1,0 +1,14 @@
+Feature: Native App trade
+
+    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
+    Scenario: The trading volume and estimated margin are displayed correctly after the 0.5 lot button is tapped
+      Given the user launch the app
+      And the user logs in on the App login page
+      And the user taps button "Markets" on the app footer
+      When the user taps symbol on the app markets page
+      And the user selects direction "BUY" on the app trade view
+      And the user fills in the text field "Lot Size" with value "0.5" on the instrument details page
+      Then the user sees the "Est. Margin" value is displayed correctly on the instrument details page
+      And the user sees the "Lots" value is displayed correctly on the instrument details page
+
+
