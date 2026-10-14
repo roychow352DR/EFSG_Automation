@@ -1124,6 +1124,42 @@ public class AppInstrumentDetailsPage {
         abs.typeWithAndroidKeys((AndroidDriver) driver, priceField, price);
     }
 
+    private void typePendingOrderPrice(String direction, String decimal, int priceDifVal) {
+        boolean buy = direction != null && direction.equalsIgnoreCase("BUY");
+        String threshold = readInvalidPendingPriceBoundary(direction, buy);
+        if (threshold == null || threshold.isBlank()) {
+            throw new NoSuchElementException("Could not read current price for invalid pending order");
+        }
+        // Buy Stop is invalid below its floor. Buy Limit is invalid above its ceiling.
+        int delta = invalidPendingPriceDelta(buy, priceDifVal);
+        stopOrderPrice = offsetPrice(abs.normalizePriceToDecimals(threshold, decimal), delta, decimal);
+        WebElement priceField = pendingPriceEditField();
+        priceField.clear();
+        abs.typeWithAndroidKeys((AndroidDriver) driver, priceField, stopOrderPrice);
+        getPageElement.logInfo("Invalid pending order price from boundary " + threshold
+                + " offset " + delta + " -> " + stopOrderPrice);
+    }
+
+    private int invalidPendingPriceDelta(boolean buy, int priceDifVal) {
+        boolean validPriceIsAbove = isStopOrderType() == buy;
+        int distance = Math.abs(priceDifVal);
+        return validPriceIsAbove ? -distance : distance;
+    }
+
+    private boolean isStopOrderType() {
+        return stopOrderType != null && stopOrderType.toLowerCase(Locale.ROOT).contains("stop");
+    }
+
+    private String readInvalidPendingPriceBoundary(String direction, boolean buy) {
+        if (!isDirectionAtPriceRowVisible()) {
+            String constraint = waitForConstraintPrice(isStopOrderType() ? buy : !buy);
+            if (constraint != null && !constraint.isBlank()) {
+                return constraint;
+            }
+        }
+        return readDirectionQuotePrice(direction);
+    }
+
     public void fillInTextField(String textFieldName, String direction, String decimal) {
         if (driver instanceof AndroidDriver) {
             switch (textFieldName) {
@@ -1171,6 +1207,12 @@ public class AppInstrumentDetailsPage {
                 case "Lot Size" -> typeCapturedLotSize();
                 case "Price" -> typePendingOrderPrice(direction, decimal);
             }
+        }
+    }
+
+    public void fillInvalidPendingOrderPrice(String direction, String decimal, int priceDifVal) {
+        if (driver instanceof AndroidDriver) {
+            typePendingOrderPrice(direction, decimal, priceDifVal);
         }
     }
 

@@ -1,7 +1,7 @@
 Feature: Native App trade
 
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
-    Scenario: The lot value can be adjust by tapping plus button on the instrument details page
+    Scenario: The lot value of pending order can be adjust by tapping plus button on the instrument details page
       Given the user launch the app
       And the user logs in on the App login page
       And the user taps button "Markets" on the app footer

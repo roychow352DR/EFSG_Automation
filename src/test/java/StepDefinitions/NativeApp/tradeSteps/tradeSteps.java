@@ -367,7 +367,12 @@ public class tradeSteps extends BaseTest {
 
     @And("the user fills in the text field {string} with direction {string} and the price is greater than current price minus BS point on the instrument details page")
     public void the_user_fills_in_the_text_field_and_the_price_is_greater_than_current_price_minus_BS_point_on_the_app_trade_view(String textFieldName, String direction) throws InterruptedException {
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), -10);
+        fillInstrumentBoundaryPrice(textFieldName, direction, -10);
+    }
+
+    @And("the user fills in the text field {string} with direction {string} and the price is greater than current price plus BS point on the instrument details page")
+    public void the_user_fills_in_the_text_field_and_the_price_is_greater_than_current_price_plus_BS_point_on_the_app_trade_view(String textFieldName, String direction) throws InterruptedException {
+        fillInstrumentBoundaryPrice(textFieldName, direction, 10);
     }
 
     @Then("the user sees the {string} price is populate to the input field on the instrument details page")
@@ -377,7 +382,21 @@ public class tradeSteps extends BaseTest {
 
     @And("the user fills in the text field {string} with direction {string} and the price is smaller than current price plus BS point on the instrument details page")
     public void the_user_fills_in_the_text_field_and_the_price_is_smaller_than_current_price_plus_BS_point_on_the_app_trade_view(String textFieldName, String direction) throws InterruptedException {
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), -10);
+        fillInstrumentBoundaryPrice(textFieldName, direction, -10);
+    }
+
+    @And("the user fills in the text field {string} with direction {string} and the price is smaller than current price minus BS point on the instrument details page")
+    public void the_user_fills_in_the_text_field_and_the_price_is_smaller_than_current_price_minus_BS_point_on_the_app_trade_view(String textFieldName, String direction) throws InterruptedException {
+        fillInstrumentBoundaryPrice(textFieldName, direction, 10);
+    }
+
+    private void fillInstrumentBoundaryPrice(String textFieldName, String direction, int priceDifVal) {
+        String decimal = tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol);
+        if ("Price".equals(textFieldName)) {
+            appPoManager.getAppInstrumentDetailsPage().fillInvalidPendingOrderPrice(direction, decimal, priceDifVal);
+            return;
+        }
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, decimal, priceDifVal);
     }
 
     @Then("the user sees the value {string} is displayed correctly on the edit position page")
