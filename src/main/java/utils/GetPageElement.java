@@ -205,6 +205,7 @@ public class GetPageElement {
         Set<String> priceLabels = new HashSet<>(Arrays.asList(
                 "Price",
                 "Open Price",
+                "Close Price",
                 "Current Price",
                 "Order Price",
                 "Execution Price",
@@ -227,11 +228,13 @@ public class GetPageElement {
                 "Product Name",
                 "Account",
                 "Status",
+                "Action",
                 "Direction",
                 "Volume",
                 "Price",
                 "Contract Value",
                 "Open Price",
+                "Close Price",
                 "Current Price",
                 "Initial Margin",
                 "Margin",
@@ -1173,11 +1176,13 @@ public class GetPageElement {
                 "Product Name",
                 "Account",
                 "Status",
+                "Action",
                 "Direction",
                 "Volume",
                 "Price",
                 "Contract Value",
                 "Open Price",
+                "Close Price",
                 "Current Price",
                 "Initial Margin",
                 "Estimated Margin",
@@ -1411,8 +1416,8 @@ public class GetPageElement {
         }
         remaining = remaining.replace(uiLabel, " ");
         for (String label : Arrays.asList(
-                "Product", "Product Name", "Account", "Status", "Direction", "Volume", "Price",
-                "Contract Value", "Open Price", "Current Price", "Initial Margin",
+                "Product", "Product Name", "Account", "Status", "Action", "Direction", "Volume", "Price",
+                "Contract Value", "Open Price", "Close Price", "Current Price", "Initial Margin",
                 "Floating P/L", "Take Profit Price", "Stop Loss Price", "Interest",
                 "Open Position Time", "Order Time", "Position ID"
         )) {

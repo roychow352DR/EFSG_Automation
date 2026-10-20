@@ -6,7 +6,7 @@ When delegated as `efsg-web`, follow the [specialist contract](AGENTS-ORCHESTRAT
 
 ## Approval before changes
 
-**Ask for explicit user approval before making any change**, following [AGENTS.md](AGENTS.md#approval-before-changes). Inspect and propose the exact feature, binding, page-object, manager, configuration, or application-state changes first. Apply only the explicitly approved scope; existing approval for that scope need not be requested again. If delegated without approval, return the proposal to the orchestrator and continue read-only inspection. Browser/test execution requires its own authorization.
+**Remain read-only until the user explicitly authorizes the presented scope with the exact lowercase standalone word `approve` or `approved`**, following [AGENTS.md](AGENTS.md#approval-before-changes). Inspect and propose the exact feature, binding, page-object, manager, configuration, or application-state changes first. Requests to implement, "yes", "go ahead", mere mentions of the words, and agent assignments do not qualify. Before every mutation, verify the actual user approval and its scope; delegated briefs must include the exact quote, message reference when available, and approved files/actions. Reuse valid approval for the same unfinished scope; obtain fresh approval for new files/actions and stop further mutations if approval is withdrawn. If approval evidence is missing or unclear, return the proposal to the orchestrator, or directly to the user when invoked without a parent, and continue only read-only inspection. Browser/test execution requires its own authorization.
 
 ## Product and source mapping
 

@@ -15,18 +15,30 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.BaseTest;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AppPortfolioPage {
 
+    private static final DateTimeFormatter HISTORY_TIMESTAMP =
+            DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss");
+
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
+    private String lastHistoryTransactionDetail;
 
     public AppPortfolioPage(AppiumDriver driver) {
         this.driver = driver;
@@ -645,9 +657,15 @@ public class AppPortfolioPage {
         if ("cancel".equalsIgnoreCase(buttonName) && !confirmationDialogueVisible(2)) {
             Point retry = estimatedCtaPoint(buttonName);
             abs.tapAt(retry.getX(), retry.getY());
-        } else if ("close".equalsIgnoreCase(buttonName) && !closePositionPageVisible(5)) {
-            Point retry = estimatedCtaPoint("close");
-            abs.tapAt(retry.getX(), retry.getY());
+        } else if ("close".equalsIgnoreCase(buttonName)) {
+            if (closeOrEditPositionVisible(5)) {
+                if (editPositionLabelPresent() && !closePositionLabelPresent()) {
+                    System.out.println("Portfolio close CTA opened Edit Position; skipping estimated close retry");
+                }
+            } else {
+                Point retry = estimatedCtaPoint("close");
+                abs.tapAt(retry.getX(), retry.getY());
+            }
         } else if ("edit".equalsIgnoreCase(buttonName) && !editPositionPageVisible(5)) {
             Point retry = estimatedCtaPoint("edit");
             abs.tapAt(retry.getX(), retry.getY());
@@ -916,15 +934,33 @@ public class AppPortfolioPage {
         return centerY >= listTop - px(8) && centerY <= footerTop + px(8);
     }
 
-    private boolean closePositionPageVisible(int seconds) {
+    private boolean closeOrEditPositionVisible(int seconds) {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(Math.max(1, seconds)))
                     .ignoring(StaleElementReferenceException.class)
-                    .until(d -> !d.findElements(By.xpath(
-                            "//*[@text='Close Position' or @content-desc='Close Position']"
-                    )).isEmpty());
+                    .until(d -> closePositionLabelPresent() || editPositionLabelPresent());
             return true;
         } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private boolean closePositionLabelPresent() {
+        try {
+            return !driver.findElements(By.xpath(
+                    "//*[@text='Close Position' or @content-desc='Close Position']"
+            )).isEmpty();
+        } catch (StaleElementReferenceException e) {
+            return false;
+        }
+    }
+
+    private boolean editPositionLabelPresent() {
+        try {
+            return !driver.findElements(By.xpath(
+                    "//*[@text='Edit Position' or @content-desc='Edit Position']"
+            )).isEmpty();
+        } catch (StaleElementReferenceException e) {
             return false;
         }
     }
@@ -1148,5 +1184,1659 @@ public class AppPortfolioPage {
             case "Order Type" -> AppInstrumentDetailsPage.stopOrderType.split(" ")[1];
             default -> null;
         };
+    }
+
+    // EBL history is one row per deal: Open keeps the traded side, Close uses the opposite side.
+    // EIEHK history is one card per position: Open: and Close: share the original side and volume.
+    public boolean historyPositionRecordVisible(String action) {
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
+        }
+        String expectedAction = "Close".equalsIgnoreCase(action) ? "Close" : "Open";
+        String symbol = AppMarketsPage.tradeSymbol;
+        String direction = expectedHistoryDirection(expectedAction);
+        String volume = expectedHistoryVolume();
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(25))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> historyRowMatches(expectedAction, symbol, direction, volume));
+        } catch (TimeoutException e) {
+            System.out.println("Portfolio history " + expectedAction
+                    + " record was not visible for symbol=" + symbol
+                    + ", direction=" + direction
+                    + ", volume=" + volume);
+            String actionLabel = isEiehkHistory() ? expectedAction + ":" : expectedAction;
+            for (HistoryText text : visibleHistoryTexts()) {
+                if (text.text.equals(actionLabel) || text.text.equals(expectedAction) || text.text.equals(symbol)
+                        || text.text.equalsIgnoreCase(direction) || text.text.startsWith("20")) {
+                    System.out.println("Visible history text '" + text.text
+                            + "' at " + text.left + "," + text.top);
+                }
+            }
+            return false;
+        }
+    }
+
+    public String lastHistoryTransactionDetail() {
+        return lastHistoryTransactionDetail;
+    }
+
+    // Product Code, Product Name, Direction, and Open Price each use their own expected value.
+    public boolean historyTransactionItemDisplayed(String item) {
+        lastHistoryTransactionDetail = null;
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
+        }
+        if (item != null && "Product Name".equalsIgnoreCase(item.trim())) {
+            String name = expectedHistoryProductName();
+            if (name == null) {
+                return false;
+            }
+            return waitForHistoryResult(() -> latestHistoryShowsProductName(name));
+        }
+        if (item != null && "Direction".equalsIgnoreCase(item.trim())) {
+            return waitForHistoryResult(this::latestHistoryShowsDirection);
+        }
+        if (item != null && "Open Price".equalsIgnoreCase(item.trim())) {
+            return waitForHistoryResult(() -> latestHistoryShowsPrice("Open"));
+        }
+        String expectedCode = expectedHistoryProductCode(item);
+        if (expectedCode == null) {
+            return false;
+        }
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(25))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> latestHistoryShowsProductCode(expectedCode).shown());
+        } catch (TimeoutException e) {
+            HistoryCodeResult result = latestHistoryShowsProductCode(expectedCode);
+            lastHistoryTransactionDetail = result.detail();
+            if (result.detail() != null) {
+                System.out.println(result.detail());
+            }
+            logProductNameShownInsteadOfCode(expectedCode);
+            return false;
+        }
+    }
+
+    public boolean historyTransactionItemEquals(String item, String expected) {
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
+        }
+        if (item == null || !"Action".equalsIgnoreCase(item.trim())) {
+            System.out.println("Unsupported portfolio history transaction item: " + item);
+            return false;
+        }
+        String action = normalizeHistoryAction(expected);
+        if (action == null) {
+            System.out.println("Unsupported portfolio history action: " + expected);
+            return false;
+        }
+        return waitForHistoryResult(() -> latestHistoryActionIs(action));
+    }
+
+    // Open and Close must both be today's local date. The full trimmed node text has to pass dateValidator
+    // (strict uuuu-MM-dd HH:mm:ss). historyTimestamp substring(0, 19) is not a pass.
+    // EBL: nearest date-like text under the action. EIEHK: date-like text to the right of Open: and Close:.
+    public boolean historyTransactionTimeFormatValid() {
+        lastHistoryTransactionDetail = null;
+        if (!(driver instanceof AndroidDriver)) {
+            lastHistoryTransactionDetail = "Transaction time format is implemented for Android only";
+            return false;
+        }
+        return waitForHistoryResult(this::latestHistoryTransactionTimeFormat);
+    }
+
+    private boolean waitForHistoryResult(Supplier<HistoryCodeResult> check) {
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(25))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> check.get().shown());
+        } catch (TimeoutException e) {
+            HistoryCodeResult result = check.get();
+            lastHistoryTransactionDetail = result.detail();
+            if (result.detail() != null) {
+                System.out.println(result.detail());
+            }
+            return false;
+        }
+    }
+
+    // History prices are read from text and content-desc via visibleHistoryLabels.
+    // EBL: a plain decimal on the Price line to the right counts, and a plain decimal under Price still counts.
+    // Signed P/L (plus, minus, parentheses, or percent) is ignored. The nearest plain decimal wins.
+    // EIEHK: Open: stays about 8dp to 40dp below the symbol. Close: uses about 16dp to 140dp.
+    // The close price is the plain decimal on the Close: line left of the timestamp, or inside "Close: 4144.50".
+    // An open-only card may have no Close: line. EBL close uses the opposite side; EIEHK keeps the original side.
+    private HistoryCodeResult latestHistoryShowsPrice(String action) {
+        String symbol = trimmedHistorySymbol();
+        String volume = expectedHistoryVolume();
+        if (symbol == null || volume == null || volume.isBlank()) {
+            return new HistoryCodeResult(false, "Portfolio history symbol or volume is missing");
+        }
+        String expected = AppInstrumentDetailsPage.executedPrice;
+        List<HistoryText> texts = visibleHistoryTexts();
+        if (isEiehkHistory()) {
+            return latestEiehkHistoryPrice(texts, symbol, volume, action, expected);
+        }
+        return latestEblHistoryPrice(texts, symbol, volume, action, expected);
+    }
+
+    private HistoryCodeResult latestEblHistoryPrice(List<HistoryText> texts, String symbol, String volume,
+                                                     String action, String expectedPrice) {
+        List<HistoryFact> facts = eblSymbolFacts(texts, symbol, volume);
+        HistoryFact target = latestDirectedFact(facts, action);
+        String direction = expectedHistoryDirection(action);
+        if (target == null) {
+            return historyPriceMissing(action, symbol, volume, direction, expectedPrice);
+        }
+        if ("Close".equals(action)) {
+            HistoryFact open = latestDirectedFact(facts, "Open");
+            if (open == null) {
+                return new HistoryCodeResult(false,
+                        "Latest history Close record for " + symbol
+                                + " has no Open row; expected price '" + expectedPrice + "'");
+            }
+            if (target.timestamp.isBefore(open.timestamp)) {
+                return new HistoryCodeResult(false,
+                        "Latest history Close " + target.timestamp + " is before Open " + open.timestamp
+                                + "; expected price '" + expectedPrice + "'");
+            }
+        }
+        String displayed = eblPriceOnRow(texts, visibleHistoryLabels(), target);
+        return historyPriceResult(action, symbol, target.timestamp, expectedPrice, displayed);
+    }
+
+    private HistoryCodeResult latestEiehkHistoryPrice(List<HistoryText> texts, String symbol, String volume,
+                                                       String action, String expectedPrice) {
+        List<EiehkCard> cards = directedEiehkCards(eiehkSymbolCards(texts, symbol, volume), action);
+        List<HistoryText> labels = visibleHistoryLabels();
+        String direction = expectedHistoryDirection(action);
+        if ("Close".equals(action)) {
+            EiehkCard latest = latestEiehkCloseCard(cards);
+            if (latest == null) {
+                return historyPriceMissing(action, symbol, volume, direction, expectedPrice);
+            }
+            String displayed = eiehkLinePrice(texts, labels, latest, "Close:");
+            return historyPriceResult(action, symbol, latest.closeTime, expectedPrice, displayed);
+        }
+        EiehkCard latest = latestEiehkCard(cards);
+        if (latest == null) {
+            return historyPriceMissing(action, symbol, volume, direction, expectedPrice);
+        }
+        String displayed = eiehkLinePrice(texts, labels, latest, "Open:");
+        return historyPriceResult(action, symbol, latest.openTime, expectedPrice, displayed);
+    }
+
+    private HistoryFact latestDirectedFact(List<HistoryFact> facts, String action) {
+        String direction = expectedHistoryDirection(action);
+        if (direction == null || direction.isBlank()) {
+            return null;
+        }
+        List<HistoryFact> matching = new ArrayList<>();
+        for (HistoryFact fact : facts) {
+            if (direction.equalsIgnoreCase(fact.direction)) {
+                matching.add(fact);
+            }
+        }
+        return latestFact(matching, action);
+    }
+
+    private List<EiehkCard> directedEiehkCards(List<EiehkCard> cards, String action) {
+        String direction = expectedHistoryDirection(action);
+        List<EiehkCard> matching = new ArrayList<>();
+        if (direction == null || direction.isBlank()) {
+            return matching;
+        }
+        for (EiehkCard card : cards) {
+            if (direction.equalsIgnoreCase(card.direction)) {
+                matching.add(card);
+            }
+        }
+        return matching;
+    }
+
+    private EiehkCard latestEiehkCloseCard(List<EiehkCard> cards) {
+        return cards.stream()
+                .filter(card -> card.closeTime != null && !card.closeTime.isBefore(card.openTime))
+                .max(Comparator.comparing(EiehkCard::closeTime)
+                        .thenComparing(Comparator.comparingInt(EiehkCard::top).reversed()))
+                .orElse(null);
+    }
+
+    private String eblPriceOnRow(List<HistoryText> texts, List<HistoryText> labels, HistoryFact row) {
+        HistoryText action = historyTextAt(texts, row.action, row.top);
+        if (action == null) {
+            return null;
+        }
+        int actionCenter = (action.top + action.bottom) / 2;
+        int bandTop = action.top - px(56);
+        int bandBottom = action.top + px(72);
+        HistoryText priceLabel = null;
+        int bestGap = Integer.MAX_VALUE;
+        for (HistoryText text : labels) {
+            if (!"Price".equals(text.text) || text.left < action.right - px(8)) {
+                continue;
+            }
+            int center = (text.top + text.bottom) / 2;
+            if (center < bandTop || center > bandBottom) {
+                continue;
+            }
+            int gap = Math.abs(center - actionCenter);
+            if (gap < bestGap) {
+                bestGap = gap;
+                priceLabel = text;
+            }
+        }
+        if (priceLabel == null) {
+            return null;
+        }
+        return plainPriceUnderLabel(labels, priceLabel);
+    }
+
+    // Same-line prices sit to the right of Price (vertical gap can be 0). Prices below stay within 64dp.
+    private String plainPriceUnderLabel(List<HistoryText> texts, HistoryText label) {
+        int labelCenterY = (label.top + label.bottom) / 2;
+        HistoryText best = null;
+        int bestDistance = Integer.MAX_VALUE;
+        for (HistoryText text : texts) {
+            if (!isPlainHistoryPrice(text.text)) {
+                continue;
+            }
+            int centerY = (text.top + text.bottom) / 2;
+            int verticalGap = centerY - labelCenterY;
+            boolean sameLineRight = Math.abs(verticalGap) <= px(12)
+                    && text.left >= label.right - px(4);
+            boolean under = verticalGap > 0 && verticalGap <= px(64)
+                    && horizontallyAligned(label, text);
+            if (!sameLineRight && !under) {
+                continue;
+            }
+            int distance = sameLineRight
+                    ? Math.abs(verticalGap) + Math.max(0, text.left - label.right)
+                    : verticalGap;
+            if (best == null || distance < bestDistance
+                    || (distance == bestDistance && text.left < best.left)) {
+                bestDistance = distance;
+                best = text;
+            }
+        }
+        return best == null ? null : best.text;
+    }
+
+    private boolean horizontallyAligned(HistoryText label, HistoryText value) {
+        int slack = px(48);
+        return value.left <= label.right + slack && value.right >= label.left - slack;
+    }
+
+    private String eiehkLinePrice(List<HistoryText> texts, List<HistoryText> labels, EiehkCard card, String label) {
+        HistoryText symbol = historyTextAt(texts, card.identifier, card.top);
+        if (symbol == null) {
+            return null;
+        }
+        String embedded = embeddedCaptionPrice(labels, symbol, label);
+        if (embedded != null) {
+            return embedded;
+        }
+        HistoryText actionLabel = eiehkActionLabel(labels, symbol, label);
+        if (actionLabel == null) {
+            return null;
+        }
+        return plainPriceOnLabelLine(labels, actionLabel);
+    }
+
+    // Open: stays about 8dp to 40dp below the symbol. Close: is about 16dp to 140dp for a taller card.
+    private int eiehkCaptionMinDelta(String label) {
+        return "Close:".equals(label) ? px(16) : px(8);
+    }
+
+    private int eiehkCaptionMaxDelta(String label) {
+        return "Close:".equals(label) ? px(140) : px(40);
+    }
+
+    private boolean historyActionCaption(String text, String caption) {
+        if (text == null || caption == null) {
+            return false;
+        }
+        String value = text.trim();
+        return value.equals(caption) || value.startsWith(caption);
+    }
+
+    private String embeddedCaptionPrice(List<HistoryText> labels, HistoryText identifier, String label) {
+        int identifierCenter = (identifier.top + identifier.bottom) / 2;
+        int minDelta = eiehkCaptionMinDelta(label);
+        int maxDelta = eiehkCaptionMaxDelta(label);
+        for (HistoryText other : labels) {
+            int delta = (other.top + other.bottom) / 2 - identifierCenter;
+            if (other.left > identifier.right || delta < minDelta || delta > maxDelta) {
+                continue;
+            }
+            String price = plainDecimalAfterCaption(other.text, label);
+            if (price != null) {
+                return price;
+            }
+        }
+        return null;
+    }
+
+    private String plainDecimalAfterCaption(String text, String caption) {
+        if (text == null || caption == null || !text.startsWith(caption) || text.length() == caption.length()) {
+            return null;
+        }
+        String rest = text.substring(caption.length()).trim();
+        if (rest.contains("+") || rest.contains("-") || rest.contains("(") || rest.contains(")")
+                || rest.contains("%")) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("\\d+(?:,\\d{3})*(?:\\.\\d+)?").matcher(rest);
+        if (!matcher.find()) {
+            return null;
+        }
+        String number = matcher.group().replace(",", "");
+        return isPlainHistoryPrice(number) ? number : null;
+    }
+
+    // Same vertical window as eiehkActionTimestamp. Open does not require a Close: line.
+    private HistoryText eiehkActionLabel(List<HistoryText> texts, HistoryText identifier, String label) {
+        int identifierCenter = (identifier.top + identifier.bottom) / 2;
+        int minDelta = eiehkCaptionMinDelta(label);
+        int maxDelta = eiehkCaptionMaxDelta(label);
+        HistoryText prefix = null;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            int delta = otherCenter - identifierCenter;
+            if (!historyActionCaption(other.text, label) || other.left > identifier.right
+                    || delta < minDelta || delta > maxDelta) {
+                continue;
+            }
+            if (label.equals(other.text)) {
+                return other;
+            }
+            if (prefix == null) {
+                prefix = other;
+            }
+        }
+        return prefix;
+    }
+
+    private String plainPriceOnLabelLine(List<HistoryText> texts, HistoryText label) {
+        int labelCenter = (label.top + label.bottom) / 2;
+        Integer timestampLeft = null;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (other.left > label.left
+                    && Math.abs(otherCenter - labelCenter) <= px(12)
+                    && historyTimestamp(other.text) != null) {
+                timestampLeft = other.left;
+                break;
+            }
+        }
+        HistoryText best = null;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (Math.abs(otherCenter - labelCenter) > px(12) || other.left <= label.right - px(4)) {
+                continue;
+            }
+            if (timestampLeft != null && other.left >= timestampLeft) {
+                continue;
+            }
+            if (!isPlainHistoryPrice(other.text)) {
+                continue;
+            }
+            if (best == null || other.left < best.left) {
+                best = other;
+            }
+        }
+        return best == null ? null : best.text;
+    }
+
+    private HistoryText historyTextAt(List<HistoryText> texts, String text, int top) {
+        for (HistoryText candidate : texts) {
+            if (text.equals(candidate.text) && candidate.top == top) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private boolean isPlainHistoryPrice(String text) {
+        if (text == null) {
+            return false;
+        }
+        String value = text.trim();
+        if (value.contains("+") || value.contains("-") || value.contains("(") || value.contains(")")
+                || value.contains("%")) {
+            return false;
+        }
+        return value.replace(",", "").matches("\\d+(\\.\\d+)?");
+    }
+
+    private HistoryCodeResult historyPriceMissing(String action, String symbol, String volume,
+                                                   String direction, String expectedPrice) {
+        return new HistoryCodeResult(false,
+                "Latest history " + action + " record for " + symbol
+                        + " volume " + volume + " direction " + direction
+                        + " was not visible; expected price '" + expectedPrice
+                        + "', displayed price was not read");
+    }
+
+    private HistoryCodeResult historyPriceResult(String action, String symbol, LocalDateTime timestamp,
+                                                  String expectedRaw, String displayedRaw) {
+        BigDecimal expected = historyPriceNumber(expectedRaw);
+        BigDecimal displayed = historyPriceNumber(displayedRaw);
+        if (expected != null && displayed != null && expected.compareTo(displayed) == 0) {
+            return new HistoryCodeResult(true, null);
+        }
+        return new HistoryCodeResult(false,
+                "Latest history " + action + " record for " + symbol + " at " + timestamp
+                        + " displayed price '" + displayedRaw + "' instead of expected price '"
+                        + expectedRaw + "'");
+    }
+
+    private BigDecimal historyPriceNumber(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String text = value.replace(",", "").trim();
+        if (text.startsWith("+")) {
+            text = text.substring(1).trim();
+        }
+        if (!text.matches("\\d+(\\.\\d+)?")) {
+            return null;
+        }
+        try {
+            return new BigDecimal(text);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private String normalizeHistoryAction(String expected) {
+        if (expected == null) {
+            return null;
+        }
+        String text = expected.trim();
+        if (text.endsWith(":")) {
+            text = text.substring(0, text.length() - 1).trim();
+        }
+        if ("Open".equalsIgnoreCase(text)) {
+            return "Open";
+        }
+        if ("Close".equalsIgnoreCase(text)) {
+            return "Close";
+        }
+        return null;
+    }
+
+    private String expectedHistoryProductCode(String item) {
+        if (item == null || !"Product Code".equalsIgnoreCase(item.trim())) {
+            System.out.println("Unsupported portfolio history transaction item: " + item);
+            return null;
+        }
+        String symbol = AppMarketsPage.tradeSymbol;
+        if (symbol == null || symbol.isBlank()) {
+            System.out.println("Portfolio history product code is missing");
+            return null;
+        }
+        return symbol.trim();
+    }
+
+    private void logProductNameShownInsteadOfCode(String symbol) {
+        String productName = abs.getProductName(symbol);
+        if (productName == null || productName.isBlank()
+                || "symbol not found".equalsIgnoreCase(productName)
+                || productName.equalsIgnoreCase(symbol)) {
+            return;
+        }
+        int listTop = listAreaTopY();
+        boolean codeVisible = false;
+        boolean nameVisible = false;
+        for (HistoryText text : visibleHistoryTexts()) {
+            if (text.top < listTop) {
+                continue;
+            }
+            if (symbol.equals(text.text)) {
+                codeVisible = true;
+            }
+            if (productName.equalsIgnoreCase(text.text)) {
+                nameVisible = true;
+            }
+        }
+        if (!codeVisible && nameVisible) {
+            System.out.println("Portfolio history shows product name '" + productName
+                    + "' instead of product code '" + symbol + "'");
+        }
+    }
+
+    private HistoryCodeResult latestHistoryShowsProductCode(String symbol) {
+        String volume = expectedHistoryVolume();
+        String openDirection = expectedHistoryDirection("Open");
+        String closeDirection = expectedHistoryDirection("Close");
+        if (volume == null || volume.isBlank() || openDirection.isBlank() || closeDirection.isBlank()) {
+            return new HistoryCodeResult(false, "Portfolio history direction or volume is missing");
+        }
+        List<HistoryText> texts = visibleHistoryTexts();
+        if (isEiehkHistory()) {
+            return latestEiehkCardShowsCode(texts, symbol, openDirection, volume);
+        }
+        return latestEblRowsShowCode(texts, symbol, openDirection, closeDirection, volume);
+    }
+
+    private HistoryCodeResult latestEblRowsShowCode(List<HistoryText> texts, String symbol,
+                                                     String openDirection, String closeDirection, String volume) {
+        int listTop = listAreaTopY();
+        String today = LocalDate.now().toString();
+        List<HistoryCandidate> opens = new ArrayList<>();
+        List<HistoryCandidate> closes = new ArrayList<>();
+        for (HistoryText actionText : texts) {
+            if (actionText.top < listTop) {
+                continue;
+            }
+            if ("Open".equals(actionText.text)) {
+                addCandidate(opens, eblActionCandidate(texts, actionText, openDirection, volume, today));
+            } else if ("Close".equals(actionText.text)) {
+                addCandidate(closes, eblActionCandidate(texts, actionText, closeDirection, volume, today));
+            }
+        }
+        HistoryCandidate open = latestCandidate(opens);
+        HistoryCandidate close = latestCandidate(closes);
+        if (open == null || close == null) {
+            return new HistoryCodeResult(false,
+                    "Latest portfolio history Open/Close rows were not visible for volume " + volume);
+        }
+        if (close.timestamp.isBefore(open.timestamp)) {
+            return new HistoryCodeResult(false,
+                    "Latest history Close " + close.timestamp + " is before Open " + open.timestamp);
+        }
+        if (symbol.equals(open.identifier) && symbol.equals(close.identifier)) {
+            return new HistoryCodeResult(true, null);
+        }
+        return new HistoryCodeResult(false,
+                "Latest history Open shows '" + open.identifier
+                        + "' and Close shows '" + close.identifier
+                        + "' instead of product code '" + symbol + "'");
+    }
+
+    private HistoryCodeResult latestEiehkCardShowsCode(List<HistoryText> texts, String symbol,
+                                                        String openDirection, String volume) {
+        int listTop = listAreaTopY();
+        String today = LocalDate.now().toString();
+        List<HistoryCandidate> cards = new ArrayList<>();
+        for (HistoryText directionText : texts) {
+            if (directionText.top < listTop || !openDirection.equalsIgnoreCase(directionText.text)) {
+                continue;
+            }
+            HistoryText identifier = eiehkIdentifierLeftOf(texts, directionText);
+            if (identifier == null || !eiehkVolumeOnIdentifierLine(texts, identifier, volume)) {
+                continue;
+            }
+            LocalDateTime openTime = eiehkActionTimestamp(texts, identifier, "Open:", today);
+            LocalDateTime closeTime = eiehkActionTimestamp(texts, identifier, "Close:", today);
+            if (openTime == null || closeTime == null || closeTime.isBefore(openTime)) {
+                continue;
+            }
+            cards.add(new HistoryCandidate(identifier.text, closeTime, identifier.top));
+        }
+        HistoryCandidate latest = latestCandidate(cards);
+        if (latest == null) {
+            return new HistoryCodeResult(false,
+                    "Latest EIEHK history card with Open and Close was not visible for volume " + volume);
+        }
+        if (symbol.equals(latest.identifier)) {
+            return new HistoryCodeResult(true, null);
+        }
+        return new HistoryCodeResult(false,
+                "Latest history card shows '" + latest.identifier
+                        + "' instead of product code '" + symbol + "'");
+    }
+
+    private void addCandidate(List<HistoryCandidate> candidates, HistoryCandidate candidate) {
+        if (candidate != null) {
+            candidates.add(candidate);
+        }
+    }
+
+    private HistoryCandidate latestCandidate(List<HistoryCandidate> candidates) {
+        return candidates.stream()
+                .max(Comparator.comparing(HistoryCandidate::timestamp)
+                        .thenComparing(Comparator.comparingInt(HistoryCandidate::top).reversed()))
+                .orElse(null);
+    }
+
+    private HistoryCandidate eblActionCandidate(List<HistoryText> texts, HistoryText actionText,
+                                                 String direction, String volume, String today) {
+        int centerY = (actionText.top + actionText.bottom) / 2;
+        boolean directionFound = false;
+        boolean volumeFound = false;
+        LocalDateTime timestamp = null;
+        int dateGap = Integer.MAX_VALUE;
+        HistoryText identifier = null;
+        int identifierGap = Integer.MAX_VALUE;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            int delta = otherCenter - centerY;
+            if (direction.equalsIgnoreCase(other.text)
+                    && other.left >= actionText.right - px(8)
+                    && Math.abs(delta) <= px(16)) {
+                directionFound = true;
+            }
+            if (volume.equals(normalizeHistoryVolume(other.text))
+                    && other.left >= actionText.right - px(8)
+                    && Math.abs(delta) <= px(16)) {
+                volumeFound = true;
+            }
+            if (delta > 0 && delta <= px(56) && delta < dateGap) {
+                LocalDateTime parsed = historyTimestamp(other.text);
+                if (parsed != null && today.equals(parsed.toLocalDate().toString())) {
+                    dateGap = delta;
+                    timestamp = parsed;
+                }
+            }
+            if (other.left < actionText.left && delta < 0 && -delta <= px(56) && -delta < identifierGap) {
+                identifierGap = -delta;
+                identifier = other;
+            }
+        }
+        if (!directionFound || !volumeFound || timestamp == null
+                || identifier == null || identifier.text.isBlank()) {
+            return null;
+        }
+        return new HistoryCandidate(identifier.text, timestamp, actionText.top);
+    }
+
+    private HistoryText eiehkIdentifierLeftOf(List<HistoryText> texts, HistoryText directionText) {
+        int directionCenter = (directionText.top + directionText.bottom) / 2;
+        HistoryText best = null;
+        int bestRight = Integer.MIN_VALUE;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (other.left < directionText.left
+                    && directionText.left >= other.right - px(8)
+                    && Math.abs(otherCenter - directionCenter) <= px(16)
+                    && other.right > bestRight) {
+                bestRight = other.right;
+                best = other;
+            }
+        }
+        return best;
+    }
+
+    private boolean eiehkVolumeOnIdentifierLine(List<HistoryText> texts, HistoryText identifier, String volume) {
+        int identifierCenter = (identifier.top + identifier.bottom) / 2;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (volume.equals(normalizeHistoryVolume(other.text))
+                    && other.left > identifier.right
+                    && Math.abs(otherCenter - identifierCenter) <= px(16)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private LocalDateTime eiehkActionTimestamp(List<HistoryText> texts, HistoryText identifier,
+                                                String label, String today) {
+        LocalDateTime timestamp = eiehkCaptionTimestamp(texts, identifier, label, today);
+        if (timestamp != null) {
+            return timestamp;
+        }
+        return eiehkCaptionTimestamp(visibleHistoryLabels(), identifier, label, today);
+    }
+
+    private LocalDateTime eiehkCaptionTimestamp(List<HistoryText> texts, HistoryText identifier,
+                                                 String label, String today) {
+        int identifierCenter = (identifier.top + identifier.bottom) / 2;
+        int minDelta = eiehkCaptionMinDelta(label);
+        int maxDelta = eiehkCaptionMaxDelta(label);
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            int delta = otherCenter - identifierCenter;
+            if (!historyActionCaption(other.text, label) || other.left > identifier.right
+                    || delta < minDelta || delta > maxDelta) {
+                continue;
+            }
+            LocalDateTime parsed = historyTimestamp(historyDateTextOnSameLine(texts, other, today));
+            if (parsed != null && today.equals(parsed.toLocalDate().toString())) {
+                return parsed;
+            }
+        }
+        return null;
+    }
+
+    private String historyDateTextOnSameLine(List<HistoryText> texts, HistoryText label, String today) {
+        int labelCenter = (label.top + label.bottom) / 2;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (other.left > label.left
+                    && Math.abs(otherCenter - labelCenter) <= px(12)
+                    && other.text.startsWith(today)) {
+                return other.text;
+            }
+        }
+        return null;
+    }
+
+    private LocalDateTime historyTimestamp(String text) {
+        if (text == null || text.length() < 19) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(text.substring(0, 19), HISTORY_TIMESTAMP);
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
+    }
+
+    private String expectedHistoryProductName() {
+        String symbol = AppMarketsPage.tradeSymbol;
+        if (symbol == null || symbol.isBlank()) {
+            System.out.println("Portfolio history product code is missing");
+            return null;
+        }
+        String name = abs.getProductName(symbol.trim());
+        if (name == null || name.isBlank()
+                || "symbol not found".equalsIgnoreCase(name)
+                || name.equalsIgnoreCase(symbol.trim())) {
+            System.out.println("Portfolio history product name is missing for " + symbol);
+            return null;
+        }
+        return name;
+    }
+
+    private HistoryCodeResult latestHistoryShowsProductName(String name) {
+        String volume = expectedHistoryVolume();
+        if (volume == null || volume.isBlank()) {
+            return new HistoryCodeResult(false, "Portfolio history volume is missing");
+        }
+        String symbol = trimmedHistorySymbol();
+        if (symbol == null) {
+            return new HistoryCodeResult(false, "Portfolio history product code is missing");
+        }
+        List<HistoryText> texts = visibleHistoryTexts();
+        if (isEiehkHistory()) {
+            return latestEiehkCardShowsName(texts, symbol, name, volume);
+        }
+        return latestEblRowsShowName(texts, symbol, name, volume);
+    }
+
+    private HistoryCodeResult latestEblRowsShowName(List<HistoryText> texts, String symbol,
+                                                     String name, String volume) {
+        List<HistoryFact> facts = eblSymbolFacts(texts, symbol, volume);
+        HistoryFact open = latestFact(facts, "Open");
+        HistoryFact close = latestFact(facts, "Close");
+        if (open == null || close == null) {
+            return new HistoryCodeResult(false,
+                    "Latest portfolio history Open/Close rows were not visible for product name " + name);
+        }
+        if (close.timestamp.isBefore(open.timestamp)) {
+            return new HistoryCodeResult(false,
+                    "Latest history Close " + close.timestamp + " is before Open " + open.timestamp);
+        }
+        List<HistoryText> labels = visibleHistoryLabels();
+        boolean openShowsName = rowShowsProductName(labels, open, name);
+        boolean closeShowsName = rowShowsProductName(labels, close, name);
+        if (openShowsName && closeShowsName) {
+            return new HistoryCodeResult(true, null);
+        }
+        return new HistoryCodeResult(false,
+                "Latest history rows did not show product name '" + name
+                        + "' from getProductName. Open identifier '" + open.identifier
+                        + "', Close identifier '" + close.identifier + "'");
+    }
+
+    private HistoryCodeResult latestEiehkCardShowsName(List<HistoryText> texts, String symbol,
+                                                        String name, String volume) {
+        EiehkCard latest = latestEiehkCard(eiehkSymbolCards(texts, symbol, volume));
+        if (latest == null) {
+            return new HistoryCodeResult(false,
+                    "Latest EIEHK history card was not visible for product name " + name);
+        }
+        if (latest.closeTime == null) {
+            return new HistoryCodeResult(false,
+                    "Latest EIEHK history card has no Close for product name " + name);
+        }
+        if (latest.closeTime.isBefore(latest.openTime)) {
+            return new HistoryCodeResult(false,
+                    "Latest history Close " + latest.closeTime + " is before Open " + latest.openTime);
+        }
+        if (cardShowsProductName(visibleHistoryLabels(), latest, name)) {
+            return new HistoryCodeResult(true, null);
+        }
+        return new HistoryCodeResult(false,
+                "Latest history card did not show product name '" + name
+                        + "' from getProductName. Identifier '" + latest.identifier + "'");
+    }
+
+    private HistoryCodeResult latestHistoryShowsDirection() {
+        String symbol = trimmedHistorySymbol();
+        String volume = expectedHistoryVolume();
+        String openDirection = expectedHistoryDirection("Open");
+        String closeDirection = expectedHistoryDirection("Close");
+        if (symbol == null || volume == null || volume.isBlank()
+                || openDirection.isBlank() || closeDirection.isBlank()) {
+            return new HistoryCodeResult(false, "Portfolio history symbol, direction, or volume is missing");
+        }
+        List<HistoryText> texts = visibleHistoryTexts();
+        if (isEiehkHistory()) {
+            return latestEiehkDirection(texts, symbol, openDirection, closeDirection, volume);
+        }
+        return latestEblDirection(texts, symbol, openDirection, closeDirection, volume);
+    }
+
+    private HistoryCodeResult latestHistoryActionIs(String expectedAction) {
+        String symbol = trimmedHistorySymbol();
+        String volume = expectedHistoryVolume();
+        if (symbol == null || volume == null || volume.isBlank()) {
+            return new HistoryCodeResult(false, "Portfolio history symbol or volume is missing");
+        }
+        List<HistoryText> texts = visibleHistoryTexts();
+        if (isEiehkHistory()) {
+            return latestEiehkAction(texts, symbol, volume, expectedAction);
+        }
+        return latestEblAction(texts, symbol, volume, expectedAction);
+    }
+
+    private String trimmedHistorySymbol() {
+        String symbol = AppMarketsPage.tradeSymbol;
+        if (symbol == null || symbol.isBlank()) {
+            return null;
+        }
+        return symbol.trim();
+    }
+
+    private HistoryCodeResult latestEblDirection(List<HistoryText> texts, String symbol,
+                                                  String openDirection, String closeDirection, String volume) {
+        List<HistoryFact> facts = eblSymbolFacts(texts, symbol, volume);
+        HistoryFact open = latestFact(facts, "Open");
+        HistoryFact close = latestFact(facts, "Close");
+        if (open == null) {
+            return new HistoryCodeResult(false,
+                    "Latest portfolio history Open row was not visible for " + symbol);
+        }
+        boolean closed = close != null && !close.timestamp.isBefore(open.timestamp);
+        HistoryFact target = closed ? close : open;
+        String expected = closed ? closeDirection : openDirection;
+        if (target.direction == null) {
+            return new HistoryCodeResult(false,
+                    "Latest history " + target.action + " direction was not readable for " + symbol);
+        }
+        if (expected.equalsIgnoreCase(target.direction)) {
+            return new HistoryCodeResult(true, null);
+        }
+        return new HistoryCodeResult(false,
+                "Latest history " + target.action + " direction is '" + target.direction
+                        + "' instead of '" + expected + "'");
+    }
+
+    private HistoryCodeResult latestEblAction(List<HistoryText> texts, String symbol,
+                                               String volume, String expectedAction) {
+        List<HistoryFact> facts = eblSymbolFacts(texts, symbol, volume);
+        HistoryFact latest = latestFact(facts, null);
+        if (latest == null) {
+            return new HistoryCodeResult(false,
+                    "Latest portfolio history row was not visible for " + symbol);
+        }
+        if ("Close".equals(expectedAction)) {
+            HistoryFact open = latestFact(facts, "Open");
+            if (!"Close".equals(latest.action)) {
+                return new HistoryCodeResult(false,
+                        "Latest history action is '" + latest.action + "' instead of Close");
+            }
+            if (open == null) {
+                return new HistoryCodeResult(false,
+                        "Latest history Close has no Open row for " + symbol);
+            }
+            if (latest.timestamp.isBefore(open.timestamp)) {
+                return new HistoryCodeResult(false,
+                        "Latest history Close " + latest.timestamp + " is before Open " + open.timestamp);
+            }
+            return new HistoryCodeResult(true, null);
+        }
+        if ("Open".equals(latest.action)) {
+            return new HistoryCodeResult(true, null);
+        }
+        return new HistoryCodeResult(false,
+                "Latest history action is '" + latest.action + "' instead of Open");
+    }
+
+    private List<HistoryFact> eblSymbolFacts(List<HistoryText> texts, String symbol, String volume) {
+        int listTop = listAreaTopY();
+        String today = LocalDate.now().toString();
+        List<HistoryFact> facts = new ArrayList<>();
+        for (HistoryText actionText : texts) {
+            if (actionText.top < listTop
+                    || (!"Open".equals(actionText.text) && !"Close".equals(actionText.text))) {
+                continue;
+            }
+            HistoryFact fact = eblSymbolFact(texts, actionText, symbol, volume, today);
+            if (fact != null) {
+                facts.add(fact);
+            }
+        }
+        return facts;
+    }
+
+    private HistoryFact eblSymbolFact(List<HistoryText> texts, HistoryText actionText,
+                                       String symbol, String volume, String today) {
+        int centerY = (actionText.top + actionText.bottom) / 2;
+        boolean volumeFound = false;
+        LocalDateTime timestamp = null;
+        int dateGap = Integer.MAX_VALUE;
+        HistoryText identifier = null;
+        int identifierGap = Integer.MAX_VALUE;
+        String direction = null;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            int delta = otherCenter - centerY;
+            if (("BUY".equalsIgnoreCase(other.text) || "SELL".equalsIgnoreCase(other.text))
+                    && other.left >= actionText.right - px(8)
+                    && Math.abs(delta) <= px(16)) {
+                direction = other.text.trim().toUpperCase();
+            }
+            if (volume.equals(normalizeHistoryVolume(other.text))
+                    && other.left >= actionText.right - px(8)
+                    && Math.abs(delta) <= px(16)) {
+                volumeFound = true;
+            }
+            if (delta > 0 && delta <= px(56) && delta < dateGap) {
+                LocalDateTime parsed = historyTimestamp(other.text);
+                if (parsed != null && today.equals(parsed.toLocalDate().toString())) {
+                    dateGap = delta;
+                    timestamp = parsed;
+                }
+            }
+            if (other.left < actionText.left && delta < 0 && -delta <= px(56) && -delta < identifierGap) {
+                identifierGap = -delta;
+                identifier = other;
+            }
+        }
+        if (!volumeFound || timestamp == null || identifier == null || !symbol.equals(identifier.text)) {
+            return null;
+        }
+        return new HistoryFact(actionText.text, identifier.text, direction, timestamp, actionText.top);
+    }
+
+    private HistoryFact latestFact(List<HistoryFact> facts, String action) {
+        return facts.stream()
+                .filter(fact -> action == null || action.equals(fact.action))
+                .max(Comparator.comparing(HistoryFact::timestamp)
+                        .thenComparing(Comparator.comparingInt(HistoryFact::top).reversed()))
+                .orElse(null);
+    }
+
+    private HistoryCodeResult latestEiehkDirection(List<HistoryText> texts, String symbol,
+                                                    String openDirection, String closeDirection, String volume) {
+        EiehkCard latest = latestEiehkCard(eiehkSymbolCards(texts, symbol, volume));
+        if (latest == null) {
+            return new HistoryCodeResult(false,
+                    "Latest EIEHK history card was not visible for " + symbol);
+        }
+        boolean closed = latest.closeTime != null && !latest.closeTime.isBefore(latest.openTime);
+        String expected = closed ? closeDirection : openDirection;
+        if (latest.direction == null) {
+            return new HistoryCodeResult(false,
+                    "Latest history card direction was not readable for " + symbol);
+        }
+        if (expected.equalsIgnoreCase(latest.direction)) {
+            return new HistoryCodeResult(true, null);
+        }
+        return new HistoryCodeResult(false,
+                "Latest history card direction is '" + latest.direction + "' instead of '" + expected + "'");
+    }
+
+    private HistoryCodeResult latestEiehkAction(List<HistoryText> texts, String symbol,
+                                                 String volume, String expectedAction) {
+        EiehkCard latest = latestEiehkCard(eiehkSymbolCards(texts, symbol, volume));
+        if (latest == null) {
+            return new HistoryCodeResult(false,
+                    "Latest EIEHK history card was not visible for " + symbol);
+        }
+        boolean closed = latest.closeTime != null && !latest.closeTime.isBefore(latest.openTime);
+        String actual = closed ? "Close" : "Open";
+        if (expectedAction.equals(actual)) {
+            return new HistoryCodeResult(true, null);
+        }
+        return new HistoryCodeResult(false,
+                "Latest history action is '" + actual + "' instead of " + expectedAction);
+    }
+
+    private EiehkCard latestEiehkCard(List<EiehkCard> cards) {
+        return cards.stream()
+                .max(Comparator.comparing(EiehkCard::openTime)
+                        .thenComparing(Comparator.comparingInt(EiehkCard::top).reversed()))
+                .orElse(null);
+    }
+
+    private List<EiehkCard> eiehkSymbolCards(List<HistoryText> texts, String symbol, String volume) {
+        int listTop = listAreaTopY();
+        String today = LocalDate.now().toString();
+        List<HistoryText> labels = visibleHistoryLabels();
+        List<EiehkCard> cards = new ArrayList<>();
+        for (HistoryText symbolText : texts) {
+            if (symbolText.top < listTop || !symbol.equals(symbolText.text)) {
+                continue;
+            }
+            LocalDateTime openTime = eiehkActionTimestamp(texts, symbolText, "Open:", today);
+            if (openTime == null) {
+                continue;
+            }
+            if (!eiehkVolumeOnIdentifierLine(texts, symbolText, volume)
+                    && !eiehkValueInCard(labels, symbolText, volume)) {
+                continue;
+            }
+            String direction = eiehkDirectionOnIdentifierLine(texts, symbolText);
+            if (direction == null) {
+                direction = eiehkDirectionInCard(labels, symbolText);
+            }
+            LocalDateTime closeTime = eiehkActionTimestamp(texts, symbolText, "Close:", today);
+            cards.add(new EiehkCard(symbolText.text, direction, openTime, closeTime, symbolText.top));
+        }
+        return cards;
+    }
+
+    private String eiehkDirectionInCard(List<HistoryText> labels, HistoryText symbolText) {
+        int bandTop = symbolText.top - px(8);
+        int bandBottom = symbolText.bottom + px(56);
+        for (HistoryText label : labels) {
+            int center = (label.top + label.bottom) / 2;
+            if (center < bandTop || center > bandBottom || label.left < symbolText.left) {
+                continue;
+            }
+            String side = historySide(label.text);
+            if (side != null) {
+                return side;
+            }
+        }
+        return null;
+    }
+
+    private boolean eiehkValueInCard(List<HistoryText> labels, HistoryText symbolText, String volume) {
+        int bandTop = symbolText.top - px(8);
+        int bandBottom = symbolText.bottom + px(56);
+        for (HistoryText label : labels) {
+            int center = (label.top + label.bottom) / 2;
+            if (center < bandTop || center > bandBottom || label.left <= symbolText.left) {
+                continue;
+            }
+            if (volume.equals(normalizeHistoryVolume(label.text))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String historySide(String text) {
+        if (text == null) {
+            return null;
+        }
+        String value = text.trim();
+        if ("BUY".equalsIgnoreCase(value)) {
+            return "BUY";
+        }
+        if ("SELL".equalsIgnoreCase(value)) {
+            return "SELL";
+        }
+        return null;
+    }
+
+    private String eiehkDirectionOnIdentifierLine(List<HistoryText> texts, HistoryText identifier) {
+        int identifierCenter = (identifier.top + identifier.bottom) / 2;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (("BUY".equalsIgnoreCase(other.text) || "SELL".equalsIgnoreCase(other.text))
+                    && other.left >= identifier.right - px(8)
+                    && Math.abs(otherCenter - identifierCenter) <= px(16)) {
+                return other.text.trim().toUpperCase();
+            }
+        }
+        return null;
+    }
+
+    private String expectedHistoryDirection(String action) {
+        String openDirection = AppTradeView.selectedDirection == null
+                ? ""
+                : AppTradeView.selectedDirection.trim().toUpperCase();
+        if ("Close".equals(action) && !isEiehkHistory()) {
+            return switch (openDirection) {
+                case "BUY" -> "SELL";
+                case "SELL" -> "BUY";
+                default -> openDirection;
+            };
+        }
+        return openDirection;
+    }
+
+    private boolean isEiehkHistory() {
+        return "EIEHK".equalsIgnoreCase(BaseTest.productEntity);
+    }
+
+    private String expectedHistoryVolume() {
+        return normalizeHistoryVolume(AppInstrumentDetailsPage.lotSize);
+    }
+
+    private boolean historyRowMatches(String action, String symbol, String direction, String volume) {
+        if (symbol == null || symbol.isBlank() || direction == null || direction.isBlank()
+                || volume == null || volume.isBlank()) {
+            return false;
+        }
+        if (isEiehkHistory()) {
+            return eiehkHistoryRowMatches(action, symbol, direction, volume);
+        }
+        return eblHistoryRowMatches(action, symbol, direction, volume);
+    }
+
+    private boolean eblHistoryRowMatches(String action, String symbol, String direction, String volume) {
+        int listTop = listAreaTopY();
+        String today = LocalDate.now().toString();
+        List<HistoryText> texts = visibleHistoryTexts();
+        for (HistoryText actionText : texts) {
+            if (!action.equals(actionText.text) || actionText.top < listTop) {
+                continue;
+            }
+            int centerY = (actionText.top + actionText.bottom) / 2;
+            boolean symbolFound = false;
+            boolean directionFound = false;
+            boolean volumeFound = false;
+            boolean datedToday = false;
+            for (HistoryText other : texts) {
+                int otherCenter = (other.top + other.bottom) / 2;
+                int delta = otherCenter - centerY;
+                if (symbol.equals(other.text)
+                        && other.left < actionText.left
+                        && delta < 0
+                        && -delta <= px(56)) {
+                    symbolFound = true;
+                }
+                if (direction.equalsIgnoreCase(other.text)
+                        && other.left >= actionText.right - px(8)
+                        && Math.abs(delta) <= px(16)) {
+                    directionFound = true;
+                }
+                if (volume.equals(normalizeHistoryVolume(other.text))
+                        && other.left >= actionText.right - px(8)
+                        && Math.abs(delta) <= px(16)) {
+                    volumeFound = true;
+                }
+                if (other.text.startsWith(today)
+                        && delta > 0
+                        && delta <= px(56)) {
+                    datedToday = true;
+                }
+            }
+            if (symbolFound && directionFound && volumeFound && datedToday) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean eiehkHistoryRowMatches(String action, String symbol, String direction, String volume) {
+        String label = "Close".equals(action) ? "Close:" : "Open:";
+        int listTop = listAreaTopY();
+        String today = LocalDate.now().toString();
+        int minDelta = eiehkCaptionMinDelta(label);
+        int maxDelta = eiehkCaptionMaxDelta(label);
+        List<HistoryText> texts = visibleHistoryTexts();
+        List<HistoryText> labels = visibleHistoryLabels();
+        for (HistoryText symbolText : texts) {
+            if (!symbol.equals(symbolText.text) || symbolText.top < listTop) {
+                continue;
+            }
+            int symbolCenter = (symbolText.top + symbolText.bottom) / 2;
+            boolean directionFound = false;
+            boolean volumeFound = false;
+            boolean actionDatedToday = false;
+            for (HistoryText other : texts) {
+                int otherCenter = (other.top + other.bottom) / 2;
+                int delta = otherCenter - symbolCenter;
+                if (direction.equalsIgnoreCase(other.text)
+                        && other.left >= symbolText.right - px(8)
+                        && Math.abs(delta) <= px(16)) {
+                    directionFound = true;
+                }
+                if (volume.equals(normalizeHistoryVolume(other.text))
+                        && other.left > symbolText.right
+                        && Math.abs(delta) <= px(16)) {
+                    volumeFound = true;
+                }
+                if (historyActionCaption(other.text, label)
+                        && other.left <= symbolText.right
+                        && delta >= minDelta
+                        && delta <= maxDelta
+                        && historyDateOnSameLine(texts, other, today)) {
+                    actionDatedToday = true;
+                }
+            }
+            if (!actionDatedToday) {
+                actionDatedToday = eiehkCaptionDatedToday(labels, symbolText, label, today);
+            }
+            if (directionFound && volumeFound && actionDatedToday) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean eiehkCaptionDatedToday(List<HistoryText> nodes, HistoryText symbolText, String label,
+                                            String today) {
+        int symbolCenter = (symbolText.top + symbolText.bottom) / 2;
+        int minDelta = eiehkCaptionMinDelta(label);
+        int maxDelta = eiehkCaptionMaxDelta(label);
+        for (HistoryText other : nodes) {
+            int delta = (other.top + other.bottom) / 2 - symbolCenter;
+            if (historyActionCaption(other.text, label)
+                    && other.left <= symbolText.right
+                    && delta >= minDelta
+                    && delta <= maxDelta
+                    && historyDateOnSameLine(nodes, other, today)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean historyDateOnSameLine(List<HistoryText> texts, HistoryText label, String today) {
+        int labelCenter = (label.top + label.bottom) / 2;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (other.left > label.left
+                    && Math.abs(otherCenter - labelCenter) <= px(12)
+                    && other.text.startsWith(today)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<HistoryText> visibleHistoryTexts() {
+        List<HistoryText> texts = new ArrayList<>();
+        for (WebElement element : driver.findElements(By.className("android.widget.TextView"))) {
+            try {
+                int[] box = visibleBox(element);
+                if (box == null) {
+                    continue;
+                }
+                String text = elementAttribute(element, "text");
+                if (text == null) {
+                    continue;
+                }
+                texts.add(new HistoryText(text.trim(), box[0], box[1], box[2], box[3]));
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return texts;
+    }
+
+    private List<HistoryText> visibleHistoryLabels() {
+        List<HistoryText> labels = new ArrayList<>();
+        for (WebElement element : driver.findElements(By.className("android.widget.TextView"))) {
+            try {
+                int[] box = visibleBox(element);
+                if (box == null) {
+                    continue;
+                }
+                addHistoryLabel(labels, elementAttribute(element, "text"), box);
+                String description = elementAttribute(element, "content-desc");
+                String text = elementAttribute(element, "text");
+                if (description != null && (text == null || !description.trim().equalsIgnoreCase(text.trim()))) {
+                    addHistoryLabel(labels, description, box);
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return labels;
+    }
+
+    private void addHistoryLabel(List<HistoryText> labels, String value, int[] box) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        labels.add(new HistoryText(value.trim(), box[0], box[1], box[2], box[3]));
+    }
+
+    private boolean rowShowsProductName(List<HistoryText> labels, HistoryFact row, String name) {
+        int bandTop = row.top - px(56);
+        int bandBottom = row.top + px(72);
+        return productNameInBand(labels, name, bandTop, bandBottom);
+    }
+
+    private boolean cardShowsProductName(List<HistoryText> labels, EiehkCard card, String name) {
+        int bandTop = card.top - px(56);
+        int bandBottom = card.top + px(80);
+        return productNameInBand(labels, name, bandTop, bandBottom);
+    }
+
+    private boolean productNameInBand(List<HistoryText> labels, String name, int bandTop, int bandBottom) {
+        for (HistoryText label : labels) {
+            int center = (label.top + label.bottom) / 2;
+            if (center >= bandTop && center <= bandBottom && name.equalsIgnoreCase(label.text)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String normalizeHistoryVolume(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String text = value.replaceAll("(?i)\\s*lots?", "").trim().replace(",", "");
+        if (!text.matches("\\d+(\\.\\d+)?")) {
+            return null;
+        }
+        return new BigDecimal(text).setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private HistoryCodeResult latestHistoryTransactionTimeFormat() {
+        String symbol = trimmedHistorySymbol();
+        String volume = expectedHistoryVolume();
+        String openDirection = expectedHistoryDirection("Open");
+        String closeDirection = expectedHistoryDirection("Close");
+        if (symbol == null || volume == null || volume.isBlank()
+                || openDirection == null || openDirection.isBlank()
+                || closeDirection == null || closeDirection.isBlank()) {
+            return new HistoryCodeResult(false, "Portfolio history symbol, direction, or volume is missing");
+        }
+        List<HistoryText> texts = visibleHistoryTexts();
+        LocalDate today = LocalDate.now();
+        if (isEiehkHistory()) {
+            return latestEiehkHistoryTimeFormat(texts, symbol, volume, openDirection, today);
+        }
+        return latestEblHistoryTimeFormat(texts, symbol, volume, openDirection, closeDirection, today);
+    }
+
+    private HistoryCodeResult latestEblHistoryTimeFormat(List<HistoryText> texts, String symbol, String volume,
+                                                          String openDirection, String closeDirection,
+                                                          LocalDate today) {
+        int listTop = listAreaTopY();
+        List<HistoryTimeSample> samples = new ArrayList<>();
+        for (HistoryText actionText : texts) {
+            if (actionText.top < listTop) {
+                continue;
+            }
+            String action;
+            String direction;
+            if ("Open".equals(actionText.text)) {
+                action = "Open";
+                direction = openDirection;
+            } else if ("Close".equals(actionText.text)) {
+                action = "Close";
+                direction = closeDirection;
+            } else {
+                continue;
+            }
+            if (!eblHistoryTimeRowMatches(texts, actionText, symbol, volume, direction)) {
+                continue;
+            }
+            String displayed = eblDateLikeTimeBelow(texts, actionText);
+            samples.add(new HistoryTimeSample(
+                    action, displayed, strictTodayHistoryTimestamp(displayed, today), actionText.top));
+        }
+        return historyTimeFormatResult(samples, symbol, volume);
+    }
+
+    // Same symbol, volume, and direction windows as eblSymbolFact. Direction comes from expectedHistoryDirection.
+    private boolean eblHistoryTimeRowMatches(List<HistoryText> texts, HistoryText actionText, String symbol,
+                                              String volume, String direction) {
+        int centerY = (actionText.top + actionText.bottom) / 2;
+        boolean volumeFound = false;
+        boolean directionFound = false;
+        HistoryText identifier = null;
+        int identifierGap = Integer.MAX_VALUE;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            int delta = otherCenter - centerY;
+            if (direction.equalsIgnoreCase(other.text)
+                    && other.left >= actionText.right - px(8)
+                    && Math.abs(delta) <= px(16)) {
+                directionFound = true;
+            }
+            if (volume.equals(normalizeHistoryVolume(other.text))
+                    && other.left >= actionText.right - px(8)
+                    && Math.abs(delta) <= px(16)) {
+                volumeFound = true;
+            }
+            if (other.left < actionText.left && delta < 0 && -delta <= px(56) && -delta < identifierGap) {
+                identifierGap = -delta;
+                identifier = other;
+            }
+        }
+        return volumeFound && directionFound && identifier != null && symbol.equals(identifier.text);
+    }
+
+    // Nearest text under the action whose body contains a date separator and ':'.
+    private String eblDateLikeTimeBelow(List<HistoryText> texts, HistoryText actionText) {
+        int centerY = (actionText.top + actionText.bottom) / 2;
+        HistoryText best = null;
+        int bestDelta = Integer.MAX_VALUE;
+        for (HistoryText other : texts) {
+            int delta = (other.top + other.bottom) / 2 - centerY;
+            if (delta > 0 && delta <= px(56) && delta < bestDelta && dateLikeHistoryTime(other.text)) {
+                bestDelta = delta;
+                best = other;
+            }
+        }
+        return best == null ? null : best.text.trim();
+    }
+
+    private HistoryCodeResult latestEiehkHistoryTimeFormat(List<HistoryText> texts, String symbol, String volume,
+                                                            String direction, LocalDate today) {
+        int listTop = listAreaTopY();
+        List<HistoryText> labels = visibleHistoryLabels();
+        List<EiehkHistoryTimeCard> cards = new ArrayList<>();
+        for (HistoryText symbolText : texts) {
+            if (symbolText.top < listTop || !symbol.equals(symbolText.text)) {
+                continue;
+            }
+            if (!eiehkVolumeOnIdentifierLine(texts, symbolText, volume)
+                    && !eiehkValueInCard(labels, symbolText, volume)) {
+                continue;
+            }
+            String cardDirection = eiehkDirectionOnIdentifierLine(texts, symbolText);
+            if (cardDirection == null) {
+                cardDirection = eiehkDirectionInCard(labels, symbolText);
+            }
+            if (cardDirection == null || !direction.equalsIgnoreCase(cardDirection)) {
+                continue;
+            }
+            String openTime = eiehkRawActionTime(texts, labels, symbolText, "Open:");
+            String closeTime = eiehkRawActionTime(texts, labels, symbolText, "Close:");
+            cards.add(new EiehkHistoryTimeCard(
+                    new HistoryTimeSample(
+                            "Open", openTime, strictTodayHistoryTimestamp(openTime, today), symbolText.top),
+                    new HistoryTimeSample(
+                            "Close", closeTime, strictTodayHistoryTimestamp(closeTime, today), symbolText.top)));
+        }
+        EiehkHistoryTimeCard selected = selectEiehkHistoryTimeCard(cards);
+        if (selected == null) {
+            return historyTimeFormatResult(new ArrayList<>(), symbol, volume);
+        }
+        List<HistoryTimeSample> samples = new ArrayList<>();
+        samples.add(selected.openSample);
+        samples.add(selected.closeSample);
+        return historyTimeFormatResult(samples, symbol, volume);
+    }
+
+    // One card supplies both times. A strict today Open uses latestValidHistoryTime ordering.
+    private EiehkHistoryTimeCard selectEiehkHistoryTimeCard(List<EiehkHistoryTimeCard> cards) {
+        if (cards == null || cards.isEmpty()) {
+            return null;
+        }
+        List<HistoryTimeSample> opens = new ArrayList<>();
+        for (EiehkHistoryTimeCard card : cards) {
+            opens.add(card.openSample);
+        }
+        HistoryTimeSample strictOpen = latestValidHistoryTime(opens, "Open");
+        if (strictOpen != null) {
+            for (EiehkHistoryTimeCard card : cards) {
+                if (card.openSample == strictOpen) {
+                    return card;
+                }
+            }
+        }
+        EiehkHistoryTimeCard withOpenText = null;
+        EiehkHistoryTimeCard smallest = null;
+        for (EiehkHistoryTimeCard card : cards) {
+            if (smallest == null || card.openSample.top < smallest.openSample.top) {
+                smallest = card;
+            }
+            if (card.openSample.displayedTime != null && !card.openSample.displayedTime.isBlank()
+                    && (withOpenText == null || card.openSample.top < withOpenText.openSample.top)) {
+                withOpenText = card;
+            }
+        }
+        return withOpenText != null ? withOpenText : smallest;
+    }
+
+    // Texts first, then visibleHistoryLabels, matching the eiehkActionTimestamp fallback.
+    private String eiehkRawActionTime(List<HistoryText> texts, List<HistoryText> labels, HistoryText identifier,
+                                       String caption) {
+        String fromTexts = eiehkCaptionDateLikeTime(texts, identifier, caption);
+        if (fromTexts != null) {
+            return fromTexts;
+        }
+        return eiehkCaptionDateLikeTime(labels, identifier, caption);
+    }
+
+    private String eiehkCaptionDateLikeTime(List<HistoryText> nodes, HistoryText identifier, String caption) {
+        int identifierCenter = (identifier.top + identifier.bottom) / 2;
+        int minDelta = eiehkCaptionMinDelta(caption);
+        int maxDelta = eiehkCaptionMaxDelta(caption);
+        for (HistoryText other : nodes) {
+            int delta = (other.top + other.bottom) / 2 - identifierCenter;
+            if (!historyActionCaption(other.text, caption) || other.left > identifier.right
+                    || delta < minDelta || delta > maxDelta) {
+                continue;
+            }
+            String displayed = dateLikeTextRightOfCaption(nodes, other);
+            if (displayed != null) {
+                return displayed;
+            }
+        }
+        return null;
+    }
+
+    private String dateLikeTextRightOfCaption(List<HistoryText> nodes, HistoryText caption) {
+        int captionCenter = (caption.top + caption.bottom) / 2;
+        HistoryText best = null;
+        for (HistoryText other : nodes) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (other.left > caption.left
+                    && Math.abs(otherCenter - captionCenter) <= px(12)
+                    && dateLikeHistoryTime(other.text)
+                    && (best == null || other.left < best.left)) {
+                best = other;
+            }
+        }
+        return best == null ? null : best.text.trim();
+    }
+
+    private boolean dateLikeHistoryTime(String text) {
+        if (text == null) {
+            return false;
+        }
+        String value = text.trim();
+        return (value.indexOf('-') >= 0 || value.indexOf('/') >= 0) && value.indexOf(':') >= 0;
+    }
+
+    // dateValidator rejects extra characters, a slash date, and a missing seconds field.
+    private LocalDateTime strictTodayHistoryTimestamp(String displayed, LocalDate today) {
+        if (displayed == null || displayed.isBlank() || today == null) {
+            return null;
+        }
+        String trimmed = displayed.trim();
+        if (!abs.dateValidator(trimmed)) {
+            return null;
+        }
+        try {
+            LocalDateTime parsed = LocalDateTime.parse(trimmed, HISTORY_TIMESTAMP);
+            if (!today.equals(parsed.toLocalDate())) {
+                return null;
+            }
+            return parsed;
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
+    }
+
+    private HistoryCodeResult historyTimeFormatResult(List<HistoryTimeSample> samples, String symbol, String volume) {
+        HistoryTimeSample open = latestValidHistoryTime(samples, "Open");
+        HistoryTimeSample close = latestValidHistoryTime(samples, "Close");
+        if (open != null && close != null) {
+            if (close.parsedToday.isBefore(open.parsedToday)) {
+                return new HistoryCodeResult(false,
+                        "Latest history Close time '" + close.displayedTime
+                                + "' is before Open time '" + open.displayedTime + "'");
+            }
+            return new HistoryCodeResult(true, null);
+        }
+        String openDetail = actionTimeProblem(samples, "Open", symbol, volume);
+        String closeDetail = actionTimeProblem(samples, "Close", symbol, volume);
+        if (openDetail == null) {
+            return new HistoryCodeResult(false, closeDetail);
+        }
+        if (closeDetail == null) {
+            return new HistoryCodeResult(false, openDetail);
+        }
+        return new HistoryCodeResult(false, openDetail + ". " + closeDetail);
+    }
+
+    // Latest parsed today time, then the smaller top. comparingInt(top).reversed() selects the smaller top, matching latestFact.
+    private HistoryTimeSample latestValidHistoryTime(List<HistoryTimeSample> samples, String action) {
+        return samples.stream()
+                .filter(sample -> action.equals(sample.action) && sample.parsedToday != null)
+                .max(Comparator.comparing((HistoryTimeSample sample) -> sample.parsedToday)
+                        .thenComparing(Comparator.comparingInt((HistoryTimeSample sample) -> sample.top).reversed()))
+                .orElse(null);
+    }
+
+    // A date-like candidate that is not a strict today timestamp is reported from the smallest top.
+    private String actionTimeProblem(List<HistoryTimeSample> samples, String action, String symbol, String volume) {
+        boolean seen = false;
+        HistoryTimeSample bad = null;
+        for (HistoryTimeSample sample : samples) {
+            if (!action.equals(sample.action)) {
+                continue;
+            }
+            seen = true;
+            if (sample.parsedToday != null) {
+                return null;
+            }
+            if (sample.displayedTime != null && !sample.displayedTime.isBlank()
+                    && (bad == null || sample.top < bad.top)) {
+                bad = sample;
+            }
+        }
+        if (bad != null) {
+            return "Portfolio history " + action + " time '" + bad.displayedTime
+                    + "' is not a strict uuuu-MM-dd HH:mm:ss timestamp for today";
+        }
+        if (!seen) {
+            return "Portfolio history " + action + " record was not visible for " + symbol
+                    + " volume " + volume;
+        }
+        return "Portfolio history " + action + " time was not read for " + symbol + " volume " + volume;
+    }
+
+    private record HistoryText(String text, int left, int top, int right, int bottom) {
+    }
+
+    private record HistoryCandidate(String identifier, LocalDateTime timestamp, int top) {
+    }
+
+    private record HistoryCodeResult(boolean shown, String detail) {
+    }
+
+    private record HistoryFact(String action, String identifier, String direction, LocalDateTime timestamp, int top) {
+    }
+
+    private record EiehkCard(String identifier, String direction, LocalDateTime openTime,
+                             LocalDateTime closeTime, int top) {
+    }
+
+    private record HistoryTimeSample(String action, String displayedTime, LocalDateTime parsedToday, int top) {
+    }
+
+    private record EiehkHistoryTimeCard(HistoryTimeSample openSample, HistoryTimeSample closeSample) {
     }
 }

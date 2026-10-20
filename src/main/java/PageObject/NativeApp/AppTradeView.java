@@ -2448,6 +2448,10 @@ public class AppTradeView {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
+        if (isPositionDetailsOpen() && !positionDetailsHasCloseCta()) {
+            closePositionFromOpenPositionsTab();
+            return;
+        }
         if (isPositionDetailsOpen()) {
             tapClosePositionOnDetails();
         }
@@ -2463,6 +2467,64 @@ public class AppTradeView {
             }
             throw new TimeoutException("Close Position page did not open from Position Details");
         }
+    }
+
+    private boolean openPositionsTabSelected(AppPortfolioPage portfolio) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> portfolio.tabIsSelected("Open Positions"));
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private boolean positionDetailsHasCloseCta() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(3))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> bottomActionLabelPresent("Close Position"));
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private void closePositionFromOpenPositionsTab() {
+        getPageElement.logInfo("Position Details has no Close Position CTA; closing from Open Positions");
+        tapBack();
+        if (isPositionDetailsOpen()) {
+            pressAndroidBack();
+            try {
+                new WebDriverWait(driver, Duration.ofSeconds(5))
+                        .ignoring(StaleElementReferenceException.class)
+                        .until(d -> !isPositionDetailsOpen());
+            } catch (TimeoutException e) {
+                throw new TimeoutException("Position Details stayed open after tapping back");
+            }
+        }
+        AppPortfolioPage portfolio = new AppPortfolioPage(driver);
+        portfolio.selectTab("Open Positions");
+        if (!openPositionsTabSelected(portfolio)) {
+            portfolio.selectTab("Open Positions");
+        }
+        if (!openPositionsTabSelected(portfolio)) {
+            throw new TimeoutException("Open Positions tab was not selected");
+        }
+        portfolio.tapButtonOnRow("close");
+        if (isEditPositionUiVisible()) {
+            getPageElement.logInfo("Portfolio close CTA opened Edit Position; leaving and retrying close");
+            leaveEditPositionIfOpen();
+            portfolio.tapButtonOnRow("close");
+        }
+        if (!isClosePositionPageOpen(8)) {
+            portfolio.tapButtonOnRow("close");
+        }
+        if (!isClosePositionPageOpen(5)) {
+            throw new TimeoutException("Close Position page did not open from Open Positions");
+        }
+        submitOpenClosePosition();
     }
 
     private void tapClosePositionOnDetails() {
@@ -2584,11 +2646,30 @@ public class AppTradeView {
         }
         waitUntilOverlayGone();
         hideAndroidKeyboard();
-        tapHeaderBack();
-        waitUntilOverlayGone();
-        if (stillOnTradeView()) {
-            getPageElement.logInfo("Still on trade view after back; tapping header back again");
-            tapHeaderBack();
+        for (int attempt = 0; attempt < 4 && !appFooterVisible(); attempt++) {
+            if (attempt < 2) {
+                tapHeaderBack();
+            } else {
+                getPageElement.logInfo("Footer still hidden; pressing Android back");
+                pressAndroidBack();
+            }
+            waitUntilOverlayGone();
+            if (stillOnTradeView()) {
+                getPageElement.logInfo("Still on trade view after back attempt " + (attempt + 1));
+            }
+        }
+    }
+
+    private boolean appFooterVisible() {
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(2))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !d.findElements(By.xpath(
+                            "//*[@text='Portfolio' or @content-desc='Portfolio']")).isEmpty()
+                            && !d.findElements(By.xpath(
+                            "//*[@text='Home' or @content-desc='Home']")).isEmpty());
+        } catch (TimeoutException e) {
+            return false;
         }
     }
 

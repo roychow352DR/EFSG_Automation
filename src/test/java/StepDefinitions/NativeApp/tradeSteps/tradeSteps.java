@@ -850,6 +850,50 @@ public class tradeSteps extends BaseTest {
         assertLotSizeChangedByStep(fieldName, 1);
     }
 
+    @Then("the user sees an open position record on the portfolio history list")
+    public void the_user_sees_an_open_position_record_on_the_portfolio_history_list() {
+        Assert.assertTrue(
+                appPoManager.getAppPortfolioPage().historyPositionRecordVisible("Open"),
+                "Open position history record was not shown for " + AppMarketsPage.tradeSymbol);
+    }
+
+    @And("the user sees a close position record on the portfolio history list")
+    public void the_user_sees_a_close_position_record_on_the_portfolio_history_list() {
+        Assert.assertTrue(
+                appPoManager.getAppPortfolioPage().historyPositionRecordVisible("Close"),
+                "Close position history record was not shown for " + AppMarketsPage.tradeSymbol);
+    }
+
+    @Then("the user sees transaction record item {string} on the portfolio history list")
+    public void the_user_sees_transaction_record_item_on_the_portfolio_history_list(String item) {
+        boolean shown = appPoManager.getAppPortfolioPage().historyTransactionItemDisplayed(item);
+        String detail = appPoManager.getAppPortfolioPage().lastHistoryTransactionDetail();
+        String message = item + " was not shown on the portfolio history record for " + AppMarketsPage.tradeSymbol;
+        if (detail != null && !detail.isBlank()) {
+            message = message + ". " + detail;
+        }
+        Assert.assertTrue(shown, message);
+    }
+
+    @Then("the user sees transaction record item {string} is {string} on the portfolio history list")
+    public void the_user_sees_transaction_record_item_is_on_the_portfolio_history_list(String item, String expected) {
+        Assert.assertTrue(
+                appPoManager.getAppPortfolioPage().historyTransactionItemEquals(item, expected),
+                item + " was not '" + expected + "' on the portfolio history record for " + AppMarketsPage.tradeSymbol);
+    }
+
+    @Then("the user sees the transaction time format is correct on the portfolio history list")
+    public void the_user_sees_the_transaction_time_format_is_correct_on_the_portfolio_history_list() {
+        boolean valid = appPoManager.getAppPortfolioPage().historyTransactionTimeFormatValid();
+        String detail = appPoManager.getAppPortfolioPage().lastHistoryTransactionDetail();
+        String message = "Transaction time format was not correct on the portfolio history record for "
+                + AppMarketsPage.tradeSymbol;
+        if (detail != null && !detail.isBlank()) {
+            message = message + ". " + detail;
+        }
+        Assert.assertTrue(valid, message);
+    }
+
     private void assertLotSizeChangedByStep(String fieldName, int direction) {
         String displayedValue = appPoManager.getAppInstrumentDetailsPage().getInputFieldValue(fieldName);
         String capturedValue = appPoManager.getAppInstrumentDetailsPage().getValidationValue(fieldName);
