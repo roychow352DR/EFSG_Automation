@@ -192,24 +192,44 @@ public class AppPositionDetailsPage {
     }
 
     public String getContractValue(int contractSize) {
-        String openPriceText = getDetailValue("Open Price");
+        String priceLabel = historyContractPriceLabel();
+        String priceText = getDetailValue(priceLabel);
         String volumeText = getDetailValue("Volume");
-        if (openPriceText == null || volumeText == null) {
-            throw new NoSuchElementException("Could not read Open Price or Volume on Position Details");
+        if (priceText == null || volumeText == null) {
+            throw new NoSuchElementException(
+                    "Could not read " + priceLabel + " or Volume on Position Details");
         }
-        BigDecimal openPrice = new BigDecimal(openPriceText.trim());
+        BigDecimal price = new BigDecimal(priceText.trim());
         BigDecimal lotSize = new BigDecimal(volumeText.trim());
         BigDecimal contract = BigDecimal.valueOf(contractSize);
 
-        System.out.println("open price: " + openPrice);
+        System.out.println("contract price label: " + priceLabel);
+        System.out.println("contract price: " + price);
         System.out.println("lot size: " + lotSize);
         System.out.println("contract: " + contract);
 
-        BigDecimal contractValue = openPrice
+        BigDecimal contractValue = price
                 .multiply(lotSize).multiply(contract)
                 .setScale(2);
 
         return contractValue.toPlainString();
+    }
+
+    // Open history and live open positions use Open Price. Close history uses Close Price.
+    private String historyContractPriceLabel() {
+        String action = optionalDetailValue("Action");
+        if (action != null && action.equalsIgnoreCase("Close")) {
+            return "Close Price";
+        }
+        return "Open Price";
+    }
+
+    private String optionalDetailValue(String label) {
+        try {
+            return getDetailValue(label);
+        } catch (NoSuchElementException e) {
+            return null;
+        }
     }
 
     public String getDefaultInitialMargin() {
@@ -233,7 +253,7 @@ public class AppPositionDetailsPage {
             //  case "Validity" -> validity;
             //   case "Est. Margin", "Estimated Margin" -> estMargin;
             case "Product" -> AppMarketsPage.tradeSymbol;
-            case "Status" -> "Open";
+            case "Status","Action" -> "Open";
             case "Product Name" -> abs.getProductName(AppMarketsPage.tradeSymbol);
             default -> null;
         };

@@ -27,7 +27,7 @@ public class AppLoginPage {
     private static final By EDIT_TEXT = By.className("android.widget.EditText");
     private static final By ME_TAB = By.xpath("//*[@text='Me']");
     private static final By LOGOUT = By.xpath("//*[@text='Logout' or @text='Log Out' or @text='Log out']");
-    private static final By CONFIRM = By.xpath("//*[@text='Confirm' or @text='OK']");
+    private static final By CONFIRM = By.xpath("//*[@text='Confirm' or @text='OK' or @text='Yes']");
 
     public AppLoginPage(AppiumDriver driver) {
         this.driver = driver;
