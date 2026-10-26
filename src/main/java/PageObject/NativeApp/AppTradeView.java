@@ -18,6 +18,7 @@ import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;
@@ -3532,6 +3533,159 @@ public class AppTradeView {
             return;
         }
         tapListTab(listName);
+    }
+
+    // EBL_MT5 pending-order rows show BUY/SELL, volume, and time on the left.
+    // The order type is a separate TextView, "Limit" or "Stop", directly above the target price.
+    public boolean pendingOrderTypeDisplayed(String orderType) {
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
+        }
+        if (orderType == null || orderType.isBlank()) {
+            return false;
+        }
+        String direction = selectedDirection == null ? "" : selectedDirection.trim();
+        String price = AppInstrumentDetailsPage.stopOrderPrice;
+        if (direction.isBlank() || price == null || price.isBlank()) {
+            getPageElement.logInfo("Pending order type check is missing direction or target price");
+            return false;
+        }
+        waitUntilOverlayGone();
+        tapListTab("Pending Orders");
+        waitForPendingListRow();
+        String expectedType = orderType.trim();
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(20))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> pendingOrderTypeRow(expectedType, direction, price.trim()) != null);
+            getPageElement.logInfo("Pending order type " + expectedType
+                    + " is displayed for " + direction + " at " + price);
+            return true;
+        } catch (TimeoutException e) {
+            getPageElement.logInfo("Pending order type " + expectedType
+                    + " was not displayed for " + direction + " at " + price);
+            return false;
+        }
+    }
+
+    public void cancelMatchedPendingOrder(String orderType) {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new TimeoutException("Pending order cancel is implemented for Android only");
+        }
+        String direction = selectedDirection == null ? "" : selectedDirection.trim();
+        String price = AppInstrumentDetailsPage.stopOrderPrice;
+        if (orderType == null || orderType.isBlank() || direction.isBlank()
+                || price == null || price.isBlank()) {
+            throw new TimeoutException("Matched pending order identity was missing");
+        }
+        int[] row = pendingOrderTypeRow(orderType.trim(), direction, price.trim());
+        if (row == null) {
+            throw new TimeoutException("Matched pending order row was not available to cancel");
+        }
+        Point close = ctaFromRightmostIcons("close", compactIconsOnRow(row[1], row[1] + row[3]));
+        if (close == null) {
+            throw new TimeoutException("Close control was not shown on the matched pending order row");
+        }
+        getPageElement.logInfo("Tapping close on pending order type row at "
+                + close.getX() + "," + close.getY());
+        abs.tapAt(close.getX(), close.getY());
+        confirmCancelPendingOrderDialogue();
+    }
+
+    private int[] pendingOrderTypeRow(String orderType, String direction, String price) {
+        int minY = pendingOrdersListTop();
+        int maxY = orderTicketTop();
+        Dimension window = driver.manage().window().getSize();
+        for (WebElement label : safeFindElements(By.className("android.widget.TextView"))) {
+            try {
+                if (!label.isDisplayed()) {
+                    continue;
+                }
+                String text = label.getText();
+                if (text == null || !text.trim().equalsIgnoreCase(orderType)) {
+                    continue;
+                }
+                Point location = label.getLocation();
+                Dimension size = label.getSize();
+                if (size.getHeight() < 8 || size.getHeight() > 80 || size.getWidth() <= 0) {
+                    continue;
+                }
+                int top = location.getY();
+                int bottom = top + size.getHeight();
+                if (top < minY - 4 || bottom > maxY) {
+                    continue;
+                }
+                int bandTop = Math.max(0, top - 16);
+                int bandBottom = Math.min(maxY, bottom + size.getHeight() + 8);
+                if (!pendingRowHasDirectionAndPrice(bandTop, bandBottom, direction, price)) {
+                    continue;
+                }
+                return new int[]{0, bandTop, window.getWidth(), Math.max(1, bandBottom - bandTop)};
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private boolean pendingRowHasDirectionAndPrice(int bandTop, int bandBottom, String direction, String price) {
+        boolean directionMatched = false;
+        boolean priceMatched = false;
+        for (WebElement label : safeFindElements(By.className("android.widget.TextView"))) {
+            try {
+                if (!label.isDisplayed()) {
+                    continue;
+                }
+                Point location = label.getLocation();
+                int centerY = location.getY() + label.getSize().getHeight() / 2;
+                if (centerY < bandTop || centerY > bandBottom) {
+                    continue;
+                }
+                String text = label.getText();
+                if (text == null || text.isBlank()) {
+                    continue;
+                }
+                String value = text.trim();
+                if (value.equalsIgnoreCase(direction)) {
+                    directionMatched = true;
+                }
+                if (samePrice(value, price)) {
+                    priceMatched = true;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return directionMatched && priceMatched;
+    }
+
+    private boolean samePrice(String displayed, String expected) {
+        String left = displayed.replace(",", "").trim();
+        String right = expected.replace(",", "").trim();
+        if (!left.matches("\\d+(\\.\\d+)?") || !right.matches("\\d+(\\.\\d+)?")) {
+            return false;
+        }
+        return new BigDecimal(left).compareTo(new BigDecimal(right)) == 0;
+    }
+
+    private int pendingOrdersListTop() {
+        Integer pendingBottom = compactTabBottomY("Pending Orders");
+        return pendingBottom != null ? pendingBottom : listAreaTopY();
+    }
+
+    private int orderTicketTop() {
+        Dimension window = driver.manage().window().getSize();
+        int best = window.getHeight();
+        for (WebElement ticket : safeFindElements(By.xpath("//*[@text='SELL' or @content-desc='SELL']"))) {
+            try {
+                Point location = ticket.getLocation();
+                Dimension size = ticket.getSize();
+                if (size.getWidth() > window.getWidth() * 0.2
+                        && location.getY() > window.getHeight() * 0.6) {
+                    best = Math.min(best, location.getY());
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return best;
     }
 
 

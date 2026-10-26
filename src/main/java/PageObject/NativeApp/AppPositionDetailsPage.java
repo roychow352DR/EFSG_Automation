@@ -8,6 +8,7 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.BaseTest;
 import utils.GetPageElement;
 
 import java.math.BigDecimal;
@@ -256,6 +257,38 @@ public class AppPositionDetailsPage {
             case "Status","Action" -> "Open";
             case "Product Name" -> abs.getProductName(AppMarketsPage.tradeSymbol);
             default -> null;
+        };
+    }
+
+    // Close-history Action is Close. Product Name comes from the symbol display name.
+    // EBL close direction is the opposite side. EIEHK close direction keeps the traded side.
+    // Open-history callers keep getValidationValue.
+    public String getCloseHistoryValidationValue(String label) {
+        if (label == null) {
+            return null;
+        }
+        return switch (label) {
+            case "Product" -> AppMarketsPage.tradeSymbol;
+            case "Product Name" -> abs.getProductName(AppMarketsPage.tradeSymbol);
+            case "Direction" -> closeHistoryDirection();
+            case "Action" -> "Close";
+            default -> null;
+        };
+    }
+
+    // EBL history is one row per deal, so a close uses the opposite side.
+    // EIEHK keeps the original side. A blank traded side stays blank.
+    private String closeHistoryDirection() {
+        String openDirection = AppTradeView.selectedDirection == null
+                ? ""
+                : AppTradeView.selectedDirection.trim().toUpperCase();
+        if ("EIEHK".equalsIgnoreCase(BaseTest.productEntity)) {
+            return openDirection;
+        }
+        return switch (openDirection) {
+            case "BUY" -> "SELL";
+            case "SELL" -> "BUY";
+            default -> openDirection;
         };
     }
 

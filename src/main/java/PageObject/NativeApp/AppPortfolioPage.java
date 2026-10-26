@@ -15,8 +15,16 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import utils.BaseTest;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -27,6 +35,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,6 +48,11 @@ public class AppPortfolioPage {
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
     private String lastHistoryTransactionDetail;
+    // Section and option stored after a filtering selection.
+    // History pages stay open until Done and require the SvgView checkmark.
+    // A pending-order product option closes the page on tap.
+    private String selectedFilteringSection;
+    private String selectedFilteringOption;
 
     public AppPortfolioPage(AppiumDriver driver) {
         this.driver = driver;
@@ -405,6 +419,592 @@ public class AppPortfolioPage {
     private void waitForFilteringPage() {
         new WebDriverWait(driver, Duration.ofSeconds(10))
                 .until(d -> !d.findElements(By.xpath("//android.widget.TextView[@text='Show']")).isEmpty());
+    }
+
+    public void tapFilteringButton() {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new TimeoutException("Portfolio filtering is implemented for Android only");
+        }
+        new WebDriverWait(driver, Duration.ofSeconds(15))
+                .ignoring(StaleElementReferenceException.class)
+                .withMessage("Portfolio page was not visible")
+                .until(d -> portfolioListChromeVisible());
+        // The label is "Show all" or "Show last ...", depending on the current portfolio tab.
+        abs.tapVisible(By.xpath(
+                "//android.view.ViewGroup[@clickable='true' and starts-with(@content-desc,'Show')]"), 15);
+        waitForFilteringPage();
+    }
+
+    public List<String> optionLabelsUnderSection(String section) {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new TimeoutException("Portfolio filtering is implemented for Android only");
+        }
+        waitForFilteringPage();
+        String expected = section == null ? "" : section.trim();
+        visibleSectionHeading(expected);
+        // Page source keeps text and content-desc. Element attribute lookups omit them.
+        return optionLabelsFromHierarchy(driver.getPageSource(), expected);
+    }
+
+    public String selectedOptionUnderSection(String section) {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new TimeoutException("Portfolio filtering is implemented for Android only");
+        }
+        waitForFilteringPage();
+        String expected = section == null ? "" : section.trim();
+        visibleSectionHeading(expected);
+        // Android reports checked and selected as false on these rows.
+        // The checkmark is an SvgView inside the option ViewGroup.
+        // Scope the check to the named section because Action All is also checked on the same page.
+        return selectedOptionFromHierarchy(driver.getPageSource(), expected);
+    }
+
+    private List<String> optionLabelsFromHierarchy(String source, String section) {
+        Element heading = displayedSectionHeading(parseHierarchy(source), section);
+        if (heading == null) {
+            throw new NoSuchElementException("Filtering section was not visible: " + section);
+        }
+        List<String> labels = new ArrayList<>();
+        boolean afterHeading = false;
+        for (Node sibling = heading.getParentNode().getFirstChild(); sibling != null; sibling = sibling.getNextSibling()) {
+            if (sibling.getNodeType() != Node.ELEMENT_NODE) {
+                continue;
+            }
+            Element element = (Element) sibling;
+            if (!afterHeading) {
+                if (element == heading) {
+                    afterHeading = true;
+                }
+                continue;
+            }
+            if (sectionHeadingText(element) != null) {
+                break;
+            }
+            String label = optionText(element);
+            if (label != null) {
+                labels.add(label);
+            }
+        }
+        return labels;
+    }
+
+    private String selectedOptionFromHierarchy(String source, String section) {
+        Element heading = displayedSectionHeading(parseHierarchy(source), section);
+        if (heading == null) {
+            throw new NoSuchElementException("Filtering section was not visible: " + section);
+        }
+        List<String> selected = new ArrayList<>();
+        boolean afterHeading = false;
+        for (Node sibling = heading.getParentNode().getFirstChild(); sibling != null; sibling = sibling.getNextSibling()) {
+            if (sibling.getNodeType() != Node.ELEMENT_NODE) {
+                continue;
+            }
+            Element element = (Element) sibling;
+            if (!afterHeading) {
+                if (element == heading) {
+                    afterHeading = true;
+                }
+                continue;
+            }
+            if (sectionHeadingText(element) != null) {
+                break;
+            }
+            String label = optionText(element);
+            if (label != null && containsSvgView(element)) {
+                selected.add(label);
+            }
+        }
+        if (selected.size() != 1) {
+            throw new NoSuchElementException(
+                    "Expected one selected option under " + section + " but saw " + selected);
+        }
+        return selected.get(0);
+    }
+
+    public void tapOptionUnderSection(String section, String option) {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new TimeoutException("Portfolio filtering is implemented for Android only");
+        }
+        selectedFilteringSection = null;
+        selectedFilteringOption = null;
+        String expectedSection = section == null ? "" : section.trim();
+        String expectedOption = option == null ? "" : option.trim();
+        if (expectedSection.isEmpty() || expectedOption.isEmpty()) {
+            throw new NoSuchElementException(
+                    "Filtering option was not visible under " + expectedSection + ": " + expectedOption);
+        }
+        waitForFilteringPage();
+        visibleSectionHeading(expectedSection);
+        By optionLocator = By.xpath(
+                "//android.widget.TextView[@text=" + xpathLiteral(expectedSection)
+                        + " or @content-desc=" + xpathLiteral(expectedSection) + "]"
+                        + "/following-sibling::android.view.ViewGroup[@clickable='true' and (@content-desc="
+                        + xpathLiteral(expectedOption) + " or @text=" + xpathLiteral(expectedOption) + ")]");
+        try {
+            abs.tapVisible(optionLocator, 10);
+        } catch (TimeoutException e) {
+            throw new NoSuchElementException(
+                    "Filtering option was not visible under " + expectedSection + ": " + expectedOption);
+        }
+        // History filters stay open, so the SvgView checkmark must appear before the option is stored.
+        // Pending-order product options close the page on tap. Do not call selectedOptionUnderSection here:
+        // it waits for the Show heading and fails once that page is gone.
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> filteringSelectionSettled(expectedSection, expectedOption));
+        } catch (TimeoutException e) {
+            throw new NoSuchElementException(
+                    "Filtering option was not selected under " + expectedSection + ": " + expectedOption);
+        }
+        selectedFilteringSection = expectedSection;
+        selectedFilteringOption = expectedOption;
+    }
+
+    private boolean filteringSelectionSettled(String section, String option) {
+        if (filteringShowHeadingPresent()) {
+            try {
+                return option.equals(selectedOptionFromHierarchy(driver.getPageSource(), section));
+            } catch (NoSuchElementException | IllegalStateException e) {
+                return false;
+            }
+        }
+        return portfolioFilterChipVisible();
+    }
+
+    private boolean filteringShowHeadingPresent() {
+        return !driver.findElements(By.xpath("//android.widget.TextView[@text='Show']")).isEmpty();
+    }
+
+    private boolean portfolioFilterChipVisible() {
+        for (WebElement el : driver.findElements(By.xpath(
+                "//*[@clickable='true' and (@content-desc='Show all' or @content-desc='Show Custom Filter')]"))) {
+            try {
+                if (el.isDisplayed()) {
+                    return true;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return false;
+    }
+
+    public void tapFilteringButtonNamed(String buttonName) {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new TimeoutException("Portfolio filtering is implemented for Android only");
+        }
+        String expected = buttonName == null ? "" : buttonName.trim();
+        if (!"Done".equals(expected)) {
+            throw new NoSuchElementException("Unsupported filtering button: " + expected);
+        }
+        waitForFilteringPage();
+        abs.tapVisible(By.xpath(
+                "//android.view.ViewGroup[@clickable='true' and @content-desc='Done']"), 10);
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(d -> d.findElements(By.xpath("//android.widget.TextView[@text='Show']")).isEmpty());
+        } catch (TimeoutException e) {
+            throw new TimeoutException("Filtering page did not close after Done", e);
+        }
+    }
+
+    // Reads the history rows on screen after Done. There is no scroll.
+    // A complete row needs the mapped product name, code, action, direction, volume, and timestamp.
+    // Product compares the product code. Action compares the Open or Close label.
+    // All accepts every value in that section. The product name only identifies the row.
+    public void assertVisibleHistoryMatchesSelectedOption() {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new TimeoutException("Portfolio filtering is implemented for Android only");
+        }
+        if (selectedFilteringSection == null || selectedFilteringSection.isBlank()
+                || selectedFilteringOption == null || selectedFilteringOption.isBlank()) {
+            throw new AssertionError("No portfolio filtering option was selected");
+        }
+        String section = selectedFilteringSection;
+        String option = selectedFilteringOption;
+        if (!"Product".equalsIgnoreCase(section) && !"Action".equalsIgnoreCase(section)) {
+            throw new AssertionError("Unsupported portfolio filtering section: " + section);
+        }
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> {
+                        if (!portfolioListChromeVisible()) {
+                            return false;
+                        }
+                        VisibleHistoryCheck check = readVisibleHistory(section, option);
+                        return check.completeCount() > 0 || !check.foreignValues().isEmpty();
+                    });
+        } catch (TimeoutException ignored) {
+            // The final read below reports a missing record or a mismatched value.
+        }
+        VisibleHistoryCheck check = readVisibleHistory(section, option);
+        if (!check.foreignValues().isEmpty()) {
+            throw new AssertionError("Visible history " + comparedHistoryField(section) + " " + check.foreignValues()
+                    + " did not match the selected option " + option);
+        }
+        if (check.completeCount() < 1) {
+            throw new AssertionError(
+                    "No complete history record was visible for the selected option " + option);
+        }
+    }
+
+    // Pending rows have no Open/Close action, so this does not reuse the history assertion.
+    // Reads only the rows already inside the list area. Does not scroll.
+    public void assertVisiblePendingOrdersMatchSelectedOption() {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new TimeoutException("Portfolio pending-order filtering is implemented for Android only");
+        }
+        if (selectedFilteringSection == null || selectedFilteringSection.isBlank()
+                || selectedFilteringOption == null || selectedFilteringOption.isBlank()) {
+            throw new AssertionError("No portfolio filtering option was selected");
+        }
+        String section = selectedFilteringSection;
+        String option = selectedFilteringOption;
+        if (!"Product".equalsIgnoreCase(section)) {
+            throw new AssertionError("Unsupported portfolio filtering section: " + section);
+        }
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> {
+                        if (!portfolioListChromeVisible()) {
+                            return false;
+                        }
+                        VisiblePendingCheck check = readVisiblePendingOrders(option);
+                        return check.completeCount() > 0 && check.foreignValues().isEmpty();
+                    });
+        } catch (TimeoutException ignored) {
+            // The final read below reports a missing row or a mismatched product code.
+        }
+        VisiblePendingCheck check = readVisiblePendingOrders(option);
+        if (!check.foreignValues().isEmpty()) {
+            throw new AssertionError("Visible pending-order product code " + check.foreignValues()
+                    + " did not match the selected option " + option);
+        }
+        if (check.completeCount() < 1) {
+            throw new AssertionError(
+                    "No complete pending order was visible for the selected option " + option);
+        }
+    }
+
+    // Portfolio pending cards show Limit or Stop as their own text, above BUY/SELL and the target price.
+    public boolean createdPendingOrderTypeDisplayed(String orderType) {
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
+        }
+        if (orderType == null || orderType.isBlank()) {
+            return false;
+        }
+        String symbol = trimmedOrNull(AppMarketsPage.tradeSymbol);
+        String direction = trimmedOrNull(AppTradeView.selectedDirection);
+        String priceText = trimmedOrNull(AppInstrumentDetailsPage.stopOrderPrice);
+        BigDecimal expectedPrice = priceText == null ? null : pendingDisplayedPrice(priceText);
+        if (symbol == null || direction == null || expectedPrice == null) {
+            System.out.println("Portfolio pending order type check is missing symbol, direction, or target price");
+            return false;
+        }
+        String expectedType = orderType.trim();
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(20))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> topmostCreatedPendingOrder(symbol, direction, expectedType, expectedPrice) != null);
+        } catch (TimeoutException e) {
+            System.out.println("Portfolio pending order type " + expectedType
+                    + " was not displayed for " + symbol + " " + direction + " at " + priceText);
+            return false;
+        }
+    }
+
+    // Cancels only the pending order created by this scenario.
+    // Identity is the traded symbol, direction, displayed type, and pending price captured while placing the order.
+    // A blank filter means the pending list is unfiltered. A stored filter must be All or the traded symbol.
+    public void cancelCreatedPendingOrder() {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new TimeoutException("Cancelling the created pending order is implemented for Android only");
+        }
+        String symbol = trimmedOrNull(AppMarketsPage.tradeSymbol);
+        String direction = trimmedOrNull(AppTradeView.selectedDirection);
+        String priceText = trimmedOrNull(AppInstrumentDetailsPage.stopOrderPrice);
+        if (symbol == null || direction == null || priceText == null) {
+            throw new IllegalStateException("Created pending order identity is blank");
+        }
+        String orderType = displayedPendingOrderType(AppInstrumentDetailsPage.stopOrderType);
+        if (orderType == null) {
+            throw new IllegalStateException("Created pending order type is not Stop or Limit");
+        }
+        BigDecimal expectedPrice = pendingDisplayedPrice(priceText);
+        if (expectedPrice == null) {
+            throw new IllegalStateException("Created pending order price is not numeric");
+        }
+        String filter = selectedFilteringOption == null ? "" : selectedFilteringOption.trim();
+        if (!filter.isBlank() && !"All".equalsIgnoreCase(filter) && !symbol.equals(filter)) {
+            throw new IllegalStateException(
+                    "Stored pending-order filter [" + filter + "] does not match traded symbol [" + symbol + "]");
+        }
+        PendingRowMatch match = topmostCreatedPendingOrder(symbol, direction, orderType, expectedPrice);
+        if (match == null) {
+            throw new NoSuchElementException("Created pending order row was not visible");
+        }
+        Point cancel = leftmostCancelIcon(match.codes(), match.code());
+        if (cancel == null) {
+            throw new NoSuchElementException("Cancel icon was not visible on the created pending order row");
+        }
+        System.out.println("Tapping cancel on created pending order " + symbol + " " + direction
+                + " " + orderType + " at " + cancel.getX() + "," + cancel.getY());
+        abs.tapAt(cancel.getX(), cancel.getY());
+        confirmCancelOrder();
+    }
+
+    private String comparedHistoryField(String section) {
+        return "Action".equalsIgnoreCase(section) ? "action" : "product code";
+    }
+
+    private VisibleHistoryCheck readVisibleHistory(String section, String selected) {
+        int listTop = listAreaTopY();
+        int footerTop = footerTopY();
+        List<HistoryText> texts = new ArrayList<>();
+        for (HistoryText text : visibleHistoryTexts()) {
+            int center = (text.top + text.bottom) / 2;
+            if (center >= listTop && center < footerTop) {
+                texts.add(text);
+            }
+        }
+        List<HistoryText> codes = new ArrayList<>();
+        for (HistoryText text : texts) {
+            if (historyProductCode(text.text)) {
+                codes.add(text);
+            }
+        }
+        codes.sort(Comparator.comparingInt(HistoryText::top));
+        boolean matchProduct = "Product".equalsIgnoreCase(section);
+        boolean acceptAny = "All".equalsIgnoreCase(selected);
+        int completeCount = 0;
+        List<String> foreignValues = new ArrayList<>();
+        for (int i = 0; i < codes.size(); i++) {
+            HistoryText code = codes.get(i);
+            int bandBottom = i + 1 < codes.size() ? codes.get(i + 1).top : footerTop;
+            if (matchProduct) {
+                if (!acceptAny && !selected.equals(code.text)) {
+                    if (!foreignValues.contains(code.text)) {
+                        foreignValues.add(code.text);
+                    }
+                    continue;
+                }
+            } else {
+                HistoryText action = historyActionInBand(texts, code, bandBottom);
+                if (action == null) {
+                    continue;
+                }
+                if (!acceptAny && !selected.equals(action.text)) {
+                    if (!foreignValues.contains(action.text)) {
+                        foreignValues.add(action.text);
+                    }
+                    continue;
+                }
+            }
+            if (completeHistoryRow(texts, code, bandBottom)) {
+                completeCount++;
+            }
+        }
+        return new VisibleHistoryCheck(completeCount, foreignValues);
+    }
+
+    // getProductName maps the traded symbols. Other six-letter labels, such as an account prefix, are not codes.
+    private boolean historyProductCode(String text) {
+        if (text == null || !text.matches("[A-Z]{6}")) {
+            return false;
+        }
+        String name = abs.getProductName(text);
+        return name != null && !name.isBlank() && !"symbol not found".equalsIgnoreCase(name);
+    }
+
+    private boolean completeHistoryRow(List<HistoryText> texts, HistoryText code, int bandBottom) {
+        String name = abs.getProductName(code.text);
+        if (name == null || name.isBlank() || "symbol not found".equalsIgnoreCase(name)) {
+            return false;
+        }
+        int codeCenter = (code.top + code.bottom) / 2;
+        boolean nameFound = false;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (name.equals(other.text)
+                    && otherCenter < codeCenter && codeCenter - otherCenter <= px(80)) {
+                nameFound = true;
+                break;
+            }
+        }
+        HistoryText action = historyActionInBand(texts, code, bandBottom);
+        if (!nameFound || action == null) {
+            return false;
+        }
+        int actionCenter = (action.top + action.bottom) / 2;
+        boolean directionFound = false;
+        boolean volumeFound = false;
+        boolean timeFound = false;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            int delta = otherCenter - actionCenter;
+            if (other.left >= action.right - px(8) && Math.abs(delta) <= px(16)) {
+                if ("BUY".equalsIgnoreCase(other.text) || "SELL".equalsIgnoreCase(other.text)) {
+                    directionFound = true;
+                }
+                if (normalizeHistoryVolume(other.text) != null) {
+                    volumeFound = true;
+                }
+            }
+            if (!timeFound && otherCenter > actionCenter && otherCenter < bandBottom
+                    && historyTimestamp(other.text) != null) {
+                timeFound = true;
+            }
+        }
+        return directionFound && volumeFound && timeFound;
+    }
+
+    // Nearest Open or Close label below the product code and above the next row.
+    private HistoryText historyActionInBand(List<HistoryText> texts, HistoryText code, int bandBottom) {
+        int codeCenter = (code.top + code.bottom) / 2;
+        HistoryText action = null;
+        int actionGap = Integer.MAX_VALUE;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (("Open".equals(other.text) || "Close".equals(other.text))
+                    && otherCenter > codeCenter && otherCenter < bandBottom && otherCenter - codeCenter < actionGap) {
+                actionGap = otherCenter - codeCenter;
+                action = other;
+            }
+        }
+        return action;
+    }
+
+    private String xpathLiteral(String value) {
+        if (value.indexOf('\'') < 0) {
+            return "'" + value + "'";
+        }
+        if (value.indexOf('"') < 0) {
+            return "\"" + value + "\"";
+        }
+        StringBuilder builder = new StringBuilder("concat(");
+        String[] parts = value.split("'", -1);
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                builder.append(", \"'\", ");
+            }
+            builder.append('\'').append(parts[i]).append('\'');
+        }
+        builder.append(')');
+        return builder.toString();
+    }
+
+    private boolean containsSvgView(Element element) {
+        NodeList nodes = element.getElementsByTagName("*");
+        for (int i = 0; i < nodes.getLength(); i++) {
+            Node node = nodes.item(i);
+            if (node.getNodeType() == Node.ELEMENT_NODE && ((Element) node).getTagName().contains("SvgView")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Document parseHierarchy(String source) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            try {
+                factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            } catch (Exception ignored) {
+            }
+            try {
+                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+            } catch (Exception ignored) {
+            }
+            factory.setExpandEntityReferences(false);
+            return factory.newDocumentBuilder().parse(new InputSource(new StringReader(source)));
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not read the filtering page hierarchy", e);
+        }
+    }
+
+    private Element displayedSectionHeading(Document document, String section) {
+        NodeList nodes = document.getElementsByTagName("*");
+        Element fallback = null;
+        for (int i = 0; i < nodes.getLength(); i++) {
+            Element element = (Element) nodes.item(i);
+            if (!section.equals(sectionHeadingText(element))) {
+                continue;
+            }
+            if (!"false".equals(element.getAttribute("displayed"))) {
+                return element;
+            }
+            if (fallback == null) {
+                fallback = element;
+            }
+        }
+        return fallback;
+    }
+
+    private String sectionHeadingText(Element element) {
+        if (element == null || !element.getTagName().contains("TextView")) {
+            return null;
+        }
+        String text = firstHierarchyText(element.getAttribute("text"), element.getAttribute("content-desc"));
+        return text == null || text.isBlank() ? null : text.trim();
+    }
+
+    private String optionText(Element element) {
+        if (element == null || !element.getTagName().contains("ViewGroup")) {
+            return null;
+        }
+        String described = firstHierarchyText(element.getAttribute("content-desc"), element.getAttribute("text"));
+        if (described != null) {
+            return described;
+        }
+        NodeList children = element.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() != Node.ELEMENT_NODE) {
+                continue;
+            }
+            String text = sectionHeadingText((Element) child);
+            if (text != null) {
+                return text;
+            }
+        }
+        return null;
+    }
+
+    private String firstHierarchyText(String primary, String secondary) {
+        if (primary != null && !primary.isBlank()) {
+            return primary.trim();
+        }
+        if (secondary != null && !secondary.isBlank()) {
+            return secondary.trim();
+        }
+        return null;
+    }
+
+    private WebElement visibleSectionHeading(String section) {
+        String expected = section == null ? "" : section.trim();
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> {
+                        for (WebElement el : d.findElements(By.className("android.widget.TextView"))) {
+                            String text = el.getText();
+                            if (text == null || text.isBlank()) {
+                                text = elementAttribute(el, "text");
+                            }
+                            if (text == null || !expected.equals(text.trim()) || !el.isDisplayed()) {
+                                continue;
+                            }
+                            return el;
+                        }
+                        return null;
+                    });
+        } catch (TimeoutException e) {
+            throw new NoSuchElementException("Filtering section was not visible: " + section);
+        }
     }
 
     private Point headerBackPoint() {
@@ -2838,5 +3438,301 @@ public class AppPortfolioPage {
     }
 
     private record EiehkHistoryTimeCard(HistoryTimeSample openSample, HistoryTimeSample closeSample) {
+    }
+
+    private record VisibleHistoryCheck(int completeCount, List<String> foreignValues) {
+    }
+
+    private record VisiblePendingCheck(int completeCount, List<String> foreignValues) {
+    }
+
+    private record PendingRowMatch(HistoryText code, List<HistoryText> codes) {
+    }
+
+    private VisiblePendingCheck readVisiblePendingOrders(String selected) {
+        int listTop = listAreaTopY();
+        int footerTop = footerTopY();
+        List<HistoryText> texts = pendingTextsInList(listTop, footerTop);
+        List<HistoryText> codes = pendingProductCodes(texts);
+        boolean acceptAny = selected != null && "All".equalsIgnoreCase(selected);
+        int completeCount = 0;
+        List<String> foreignValues = new ArrayList<>();
+        for (int i = 0; i < codes.size(); i++) {
+            HistoryText code = codes.get(i);
+            int bandBottom = i + 1 < codes.size() ? codes.get(i + 1).top : footerTop;
+            if (!acceptAny && (selected == null || !selected.equals(code.text))) {
+                if (!foreignValues.contains(code.text)) {
+                    foreignValues.add(code.text);
+                }
+                continue;
+            }
+            if (completePendingOrderRow(texts, code, bandBottom)) {
+                completeCount++;
+            }
+        }
+        return new VisiblePendingCheck(completeCount, foreignValues);
+    }
+
+    // A complete pending row shows the mapped product name above the code, plus direction,
+    // volume, numeric price, and a strict timestamp under the code. A missing field does not pass.
+    private boolean completePendingOrderRow(List<HistoryText> texts, HistoryText code, int bandBottom) {
+        String name = abs.getProductName(code.text);
+        if (name == null || name.isBlank() || "symbol not found".equalsIgnoreCase(name)) {
+            return false;
+        }
+        int codeCenter = (code.top + code.bottom) / 2;
+        boolean nameFound = false;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (name.equals(other.text)
+                    && otherCenter < codeCenter
+                    && codeCenter - otherCenter <= px(80)) {
+                nameFound = true;
+                break;
+            }
+        }
+        if (!nameFound) {
+            return false;
+        }
+        int bandTop = code.top - px(16);
+        boolean directionFound = false;
+        boolean timeFound = false;
+        int volumeOnly = 0;
+        int priceOnly = 0;
+        int numericValue = 0;
+        for (HistoryText other : texts) {
+            if (sameHistoryText(other, code)) {
+                continue;
+            }
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (otherCenter < bandTop || otherCenter >= bandBottom) {
+                continue;
+            }
+            if ("BUY".equalsIgnoreCase(other.text) || "SELL".equalsIgnoreCase(other.text)) {
+                directionFound = true;
+            }
+            if (otherCenter > codeCenter && abs.dateValidator(other.text)) {
+                timeFound = true;
+            }
+            boolean volume = normalizeHistoryVolume(other.text) != null;
+            boolean price = pendingDisplayedPrice(other.text) != null;
+            if (volume && price) {
+                numericValue++;
+            } else if (volume) {
+                volumeOnly++;
+            } else if (price) {
+                priceOnly++;
+            }
+        }
+        // A plain number matches both volume and price. One node must not satisfy both fields.
+        boolean volumeFound = volumeOnly + numericValue >= 1;
+        boolean priceFound = priceOnly + numericValue >= 1;
+        boolean volumeAndPriceAreDistinct = volumeOnly + priceOnly + numericValue >= 2;
+        return directionFound && timeFound && volumeFound && priceFound && volumeAndPriceAreDistinct;
+    }
+
+    private PendingRowMatch topmostCreatedPendingOrder(String symbol, String direction, String orderType,
+                                                        BigDecimal expectedPrice) {
+        int listTop = listAreaTopY();
+        int footerTop = footerTopY();
+        List<HistoryText> texts = pendingTextsInList(listTop, footerTop);
+        List<HistoryText> codes = pendingProductCodes(texts);
+        for (int i = 0; i < codes.size(); i++) {
+            HistoryText code = codes.get(i);
+            if (!symbol.equals(code.text)) {
+                continue;
+            }
+            int bandBottom = i + 1 < codes.size() ? codes.get(i + 1).top : footerTop;
+            if (pendingRowMatchesIdentity(texts, code, bandBottom, direction, orderType, expectedPrice)) {
+                return new PendingRowMatch(code, codes);
+            }
+        }
+        return null;
+    }
+
+    private boolean pendingRowMatchesIdentity(List<HistoryText> texts, HistoryText code, int bandBottom,
+                                               String direction, String orderType, BigDecimal expectedPrice) {
+        if (direction == null || orderType == null || expectedPrice == null) {
+            return false;
+        }
+        int bandTop = code.top - px(16);
+        boolean directionFound = false;
+        boolean typeFound = false;
+        boolean priceFound = false;
+        for (HistoryText other : texts) {
+            int otherCenter = (other.top + other.bottom) / 2;
+            if (otherCenter < bandTop || otherCenter >= bandBottom) {
+                continue;
+            }
+            if (direction.equalsIgnoreCase(other.text)) {
+                directionFound = true;
+            }
+            if (orderType.equalsIgnoreCase(other.text)) {
+                typeFound = true;
+            }
+            BigDecimal displayed = pendingDisplayedPrice(other.text);
+            if (displayed != null && displayed.compareTo(expectedPrice) == 0) {
+                priceFound = true;
+            }
+        }
+        return directionFound && typeFound && priceFound;
+    }
+
+    // Leftmost icon-sized clickable on the right side of this row. No estimated coordinate.
+    private Point leftmostCancelIcon(List<HistoryText> codes, HistoryText code) {
+        int listTop = listAreaTopY();
+        int footerTop = footerTopY();
+        int windowTop = Math.max(listTop, code.top - px(80));
+        int windowBottom = footerTop;
+        int codeCenter = (code.top + code.bottom) / 2;
+        int previousCenter = Integer.MIN_VALUE;
+        int nextCenter = Integer.MAX_VALUE;
+        for (HistoryText other : codes) {
+            if (other.top > code.top && other.top < windowBottom) {
+                windowBottom = other.top;
+            }
+            int center = (other.top + other.bottom) / 2;
+            if (center < codeCenter && center > previousCenter) {
+                previousCenter = center;
+            } else if (center > codeCenter && center < nextCenter) {
+                nextCenter = center;
+            }
+        }
+        if (windowBottom <= windowTop) {
+            return null;
+        }
+        int minLeft = driver.manage().window().getSize().getWidth() / 2;
+        List<int[]> icons = new ArrayList<>();
+        for (WebElement el : clickableRowCandidates()) {
+            try {
+                int[] box = visibleBox(el);
+                if (!pendingCancelIconBox(box, minLeft)) {
+                    continue;
+                }
+                int centerY = (box[1] + box[3]) / 2;
+                if (centerY < windowTop || centerY >= windowBottom) {
+                    continue;
+                }
+                int distance = Math.abs(centerY - codeCenter);
+                if (previousCenter != Integer.MIN_VALUE && Math.abs(centerY - previousCenter) <= distance) {
+                    continue;
+                }
+                if (nextCenter != Integer.MAX_VALUE && Math.abs(centerY - nextCenter) <= distance) {
+                    continue;
+                }
+                icons.add(box);
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        List<int[]> unique = dedupePendingIcons(icons);
+        if (unique.isEmpty()) {
+            return null;
+        }
+        int[] cancel = unique.get(0);
+        return new Point((cancel[0] + cancel[2]) / 2, (cancel[1] + cancel[3]) / 2);
+    }
+
+    private List<int[]> dedupePendingIcons(List<int[]> boxes) {
+        List<int[]> unique = new ArrayList<>();
+        for (int[] box : boxes) {
+            int matchIndex = -1;
+            for (int i = 0; i < unique.size(); i++) {
+                int[] existing = unique.get(i);
+                int existingCenterX = (existing[0] + existing[2]) / 2;
+                int centerX = (box[0] + box[2]) / 2;
+                int existingCenterY = (existing[1] + existing[3]) / 2;
+                int centerY = (box[1] + box[3]) / 2;
+                if (Math.abs(centerX - existingCenterX) <= px(16)
+                        && Math.abs(centerY - existingCenterY) <= px(16)) {
+                    matchIndex = i;
+                    break;
+                }
+            }
+            if (matchIndex < 0) {
+                unique.add(box);
+                continue;
+            }
+            int[] match = unique.get(matchIndex);
+            int matchArea = (match[2] - match[0]) * (match[3] - match[1]);
+            int area = (box[2] - box[0]) * (box[3] - box[1]);
+            if (area > matchArea) {
+                unique.set(matchIndex, box);
+            }
+        }
+        unique.sort(Comparator.comparingInt((int[] box) -> box[0]).thenComparingInt(box -> box[1]));
+        return unique;
+    }
+
+    private boolean pendingCancelIconBox(int[] box, int minLeft) {
+        if (box == null || box[0] < minLeft) {
+            return false;
+        }
+        int width = box[2] - box[0];
+        int height = box[3] - box[1];
+        return width >= px(12) && width <= px(96) && height >= px(12) && height <= px(96);
+    }
+
+    private List<HistoryText> pendingTextsInList(int listTop, int footerTop) {
+        List<HistoryText> texts = new ArrayList<>();
+        for (HistoryText text : visibleHistoryTexts()) {
+            int center = (text.top + text.bottom) / 2;
+            if (center >= listTop && center < footerTop) {
+                texts.add(text);
+            }
+        }
+        return texts;
+    }
+
+    private List<HistoryText> pendingProductCodes(List<HistoryText> texts) {
+        List<HistoryText> codes = new ArrayList<>();
+        for (HistoryText text : texts) {
+            if (historyProductCode(text.text)) {
+                codes.add(text);
+            }
+        }
+        codes.sort(Comparator.comparingInt(HistoryText::top));
+        return codes;
+    }
+
+    private boolean sameHistoryText(HistoryText left, HistoryText right) {
+        return left.left == right.left && left.top == right.top
+                && left.right == right.right && left.bottom == right.bottom
+                && left.text.equals(right.text);
+    }
+
+    private String trimmedOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private String displayedPendingOrderType(String storedType) {
+        if (storedType == null || storedType.isBlank()) {
+            return null;
+        }
+        String lower = storedType.toLowerCase(Locale.ROOT);
+        if (lower.contains("stop")) {
+            return "Stop";
+        }
+        if (lower.contains("limit")) {
+            return "Limit";
+        }
+        return null;
+    }
+
+    private BigDecimal pendingDisplayedPrice(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String text = value.replace(",", "").trim();
+        if (!text.matches("\\d+(\\.\\d+)?")) {
+            return null;
+        }
+        try {
+            return new BigDecimal(text);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 }

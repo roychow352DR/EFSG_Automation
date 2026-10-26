@@ -13,6 +13,7 @@ import utils.BaseTest;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 public class tradeSteps extends BaseTest {
 
@@ -140,6 +141,30 @@ public class tradeSteps extends BaseTest {
                 "New pending order was not shown on the Pending Orders tab"
         );
         appPoManager.getAppTradeView().cancelOrder();
+    }
+
+    @Then("the user sees order type {string} of pending order is displayed on the pending order tab")
+    public void the_user_sees_order_type_of_pending_order_is_displayed_on_the_pending_order_tab(String orderType) {
+        Assert.assertNotNull(orderType, "Expected pending order type was missing");
+        Assert.assertFalse(orderType.isBlank(), "Expected pending order type was blank");
+        Assert.assertTrue(
+                appPoManager.getAppTradeView().pendingOrderTypeDisplayed(orderType),
+                "Order type " + orderType + " was not shown on the Pending Orders tab for "
+                        + AppMarketsPage.tradeSymbol
+        );
+        appPoManager.getAppTradeView().cancelMatchedPendingOrder(orderType);
+    }
+
+    @Then("the user sees order type {string} of pending order is displayed on the pending order tab of portfolio page")
+    public void the_user_sees_order_type_of_pending_order_is_displayed_on_the_pending_order_tab_of_portfolio_page(String orderType) {
+        Assert.assertNotNull(orderType, "Expected pending order type was missing");
+        Assert.assertFalse(orderType.isBlank(), "Expected pending order type was blank");
+        Assert.assertTrue(
+                appPoManager.getAppPortfolioPage().createdPendingOrderTypeDisplayed(orderType),
+                "Order type " + orderType + " was not shown on the portfolio Pending Orders tab for "
+                        + AppMarketsPage.tradeSymbol
+        );
+        appPoManager.getAppPortfolioPage().cancelCreatedPendingOrder();
     }
 
     @And("the user selects validity option {string} on the instrument details page")
@@ -515,9 +540,54 @@ public class tradeSteps extends BaseTest {
         Assert.assertEquals(appPoManager.getAppPortfolioPage().getCheckedProduct(), product);
     }
 
+    @When("the user taps filtering button on the portfolio page")
+    public void the_user_taps_filtering_button_on_the_portfolio_page() {
+        appPoManager.getAppPortfolioPage().tapFilteringButton();
+    }
+
+    @Then("the user sees option {string} under {string} session on the filtering page")
+    public void the_user_sees_option_under_session_on_the_filtering_page(String option, String section) {
+        List<String> options = appPoManager.getAppPortfolioPage().optionLabelsUnderSection(section);
+        Assert.assertEquals(options, List.of(option),
+                "Expected only [" + option + "] under " + section + " but saw " + options);
+    }
+
+    @Then("the user sees option {string} is selected under {string} session on the filtering page")
+    public void the_user_sees_option_is_selected_under_session_on_the_filtering_page(String option, String section) {
+        String selected = appPoManager.getAppPortfolioPage().selectedOptionUnderSection(section);
+        Assert.assertEquals(selected, option,
+                "Expected selected option [" + option + "] under " + section + " but saw " + selected);
+    }
+
     @And("the user taps back button on the portfolio filtering page")
     public void the_user_taps_back_button_on_the_portfolio_filtering_page() {
         appPoManager.getAppPortfolioPage().tapBack();
+    }
+
+    @And("the user taps option {string} under {string} session on the filtering page")
+    public void the_user_taps_option_under_session_on_the_filtering_page(String option, String section) {
+        appPoManager.getAppPortfolioPage().tapOptionUnderSection(section, option);
+    }
+
+    @And("the user taps button {string} on the filtering page")
+    public void the_user_taps_button_on_the_filtering_page(String buttonName) {
+        appPoManager.getAppPortfolioPage().tapFilteringButtonNamed(buttonName);
+    }
+
+    @Then("the user sees the transaction history matched with the selected option on the portfolio page")
+    public void the_user_sees_the_transaction_history_matched_with_the_selected_option_on_the_portfolio_page() {
+        appPoManager.getAppPortfolioPage().assertVisibleHistoryMatchesSelectedOption();
+    }
+
+    @And("the user taps filtering button on the portfolio pending order tab")
+    public void the_user_taps_filtering_button_on_the_portfolio_pending_order_tab() {
+        appPoManager.getAppPortfolioPage().tapFilteringButton();
+    }
+
+    @Then("the user sees the transaction history matched with the selected option on the portfolio pending order tab")
+    public void the_user_sees_the_transaction_history_matched_with_the_selected_option_on_the_portfolio_pending_order_tab() {
+        appPoManager.getAppPortfolioPage().assertVisiblePendingOrdersMatchSelectedOption();
+        appPoManager.getAppPortfolioPage().cancelCreatedPendingOrder();
     }
 
     @Then("the user sees {string} tab is selected on the portfolio page")
@@ -700,6 +770,21 @@ public class tradeSteps extends BaseTest {
                     appPoManager.getAppPositionDetailsPage().getValidationValue(valueName));
         }
         appPoManager.getAppTradeView().closePositionInDetails();
+    }
+
+    @Then("the user sees correct value {string} on the close position details page")
+    public void the_user_sees_correct_value_on_the_close_position_details_page(String valueName) {
+        String displayed = appPoManager.getAppPositionDetailsPage().getDetailValue(valueName);
+        // Close history contract value is Close Price times volume times contract size.
+        String expected = "Contract Value".equalsIgnoreCase(valueName)
+                ? appPoManager.getAppPositionDetailsPage().getContractValue(
+                        tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol))
+                : appPoManager.getAppPositionDetailsPage().getCloseHistoryValidationValue(valueName);
+        Assert.assertNotNull(displayed, "Displayed " + valueName + " was missing on the close position details page");
+        Assert.assertFalse(displayed.isBlank(), "Displayed " + valueName + " was blank on the close position details page");
+        Assert.assertNotNull(expected, "No expected " + valueName + " for the close position details page");
+        Assert.assertFalse(expected.isBlank(), "Expected " + valueName + " was blank");
+        Assert.assertEquals(displayed, expected);
     }
 
     // EIEHK XAUUSD and XAGUSD initial margin is a percentage of contract value.
