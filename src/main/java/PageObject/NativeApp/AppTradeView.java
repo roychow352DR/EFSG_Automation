@@ -651,8 +651,107 @@ public class AppTradeView {
                 case "detail" -> openRowDetails();
                 case "close" -> tapCloseRowCta();
                 case "edit" -> openEditPosition();
+                case "cancel" -> openCancelConfirmation();
             }
         });
+    }
+
+    // Opens the cancel confirmation for the pending order created in this scenario and leaves it open.
+    private void openCancelConfirmation() {
+        if (!isPendingOrderFlow()) {
+            throw new TimeoutException("Cancel CTA requires a pending order on the trade view");
+        }
+        String direction = selectedDirection == null ? "" : selectedDirection.trim();
+        String price = AppInstrumentDetailsPage.stopOrderPrice;
+        String displayedType = displayedPendingOrderType(AppInstrumentDetailsPage.stopOrderType);
+        if (direction.isBlank() || price == null || price.isBlank() || displayedType == null) {
+            throw new TimeoutException("Created pending order identity was missing for the cancel CTA");
+        }
+        revealListForCurrentOrder();
+        waitForPendingListRow();
+        int[] row;
+        try {
+            String targetPrice = price.trim();
+            row = new WebDriverWait(driver, Duration.ofSeconds(20))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> createdPendingOrderRow(displayedType, direction, targetPrice));
+        } catch (TimeoutException e) {
+            getPageElement.logInfo("Pending order row was not visible for " + direction
+                    + " " + displayedType + " at " + price.trim());
+            throw new TimeoutException("Created pending order row was not visible for the cancel CTA", e);
+        }
+        Point cancel = ctaFromRightmostIcons("cancel", compactIconsOnRow(row[1], row[1] + row[3]));
+        if (cancel == null) {
+            throw new TimeoutException("Cancel icon was not shown on the created pending order row");
+        }
+        getPageElement.logInfo("Tapping cancel CTA at icon " + cancel.getX() + "," + cancel.getY());
+        abs.tapAt(cancel.getX(), cancel.getY());
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(12))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> isCancelOrderPromptVisible());
+        } catch (TimeoutException e) {
+            throw new TimeoutException(
+                    "Cancel confirmation dialogue was not shown after tapping the cancel CTA", e);
+        }
+    }
+
+    public String confirmationDialogueTitle() {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new UnsupportedOperationException("Cancel confirmation dialogue is implemented for Android");
+        }
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(12))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> isCancelOrderPromptVisible() ? topOverlayText() : null);
+        } catch (TimeoutException e) {
+            return null;
+        }
+    }
+
+    public void confirmVisibleCancelOrder() {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new UnsupportedOperationException("Cancel confirmation dialogue is implemented for Android");
+        }
+        confirmCancelPendingOrderDialogue();
+    }
+
+    private String displayedPendingOrderType(String storedType) {
+        if (storedType == null || storedType.isBlank()) {
+            return null;
+        }
+        String lower = storedType.toLowerCase(Locale.ROOT);
+        if (lower.contains("stop")) {
+            return "Stop";
+        }
+        if (lower.contains("limit")) {
+            return "Limit";
+        }
+        return null;
+    }
+
+    private String topOverlayText() {
+        String best = null;
+        int bestY = Integer.MAX_VALUE;
+        for (WebElement element : safeFindElements(By.xpath(
+                "//*[@resource-id='RNE__Overlay']/android.widget.TextView"))) {
+            try {
+                if (!element.isDisplayed()) {
+                    continue;
+                }
+                String text = element.getText();
+                if (text == null || text.isBlank()) {
+                    continue;
+                }
+                int y = element.getLocation().getY();
+                if (y < bestY) {
+                    bestY = y;
+                    best = text.trim();
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return best;
     }
 
     private void dismissTradeConfirmIfShown() {
@@ -2481,6 +2580,13 @@ public class AppTradeView {
         }
     }
 
+    public boolean hasClosePositionButton() {
+        if (!(driver instanceof AndroidDriver)) {
+            return false;
+        }
+        return positionDetailsHasCloseCta();
+    }
+
     private boolean positionDetailsHasCloseCta() {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(3))
@@ -2956,6 +3062,367 @@ public class AppTradeView {
         } catch (TimeoutException | NoSuchElementException e) {
             getPageElement.logInfo("Confirmation dialogue close button was not visible");
         }
+    }
+
+    // EIEHK instrument Positions rows show "BUY 0.01" and leave the symbol in the page header.
+    // Read text and content-desc. The lot is on the same line as BUY/SELL, to its right.
+    public String openPositionVolume(String symbol, String direction) {
+        if (!(driver instanceof AndroidDriver)) {
+            return null;
+        }
+        if (symbol == null || symbol.isBlank() || direction == null || direction.isBlank()) {
+            throw new NoSuchElementException("Open position symbol or direction is missing");
+        }
+        String wantedSymbol = symbol.trim();
+        String wantedDirection = direction.trim();
+        waitUntilOverlayGone();
+        closeDialogue();
+        tapListTab("Positions");
+        waitForFirstListRow();
+        try {
+            String volume = new WebDriverWait(driver, Duration.ofSeconds(20))
+                    .pollingEvery(Duration.ofMillis(400))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> volumeOnTopOpenPosition(wantedSymbol, wantedDirection));
+            if (volume == null || volume.isBlank()) {
+                throw new NoSuchElementException("Open position volume was not visible on the Positions tab for "
+                        + wantedSymbol + " " + wantedDirection);
+            }
+            getPageElement.logInfo("Positions tab volume for " + wantedSymbol + " "
+                    + wantedDirection + " is " + volume);
+            return volume;
+        } catch (TimeoutException e) {
+            getPageElement.logInfo("Open position volume was not visible for " + wantedSymbol
+                    + " " + wantedDirection);
+            throw new NoSuchElementException("Open position volume was not visible on the Positions tab for "
+                    + wantedSymbol + " " + wantedDirection);
+        }
+    }
+
+    private String volumeOnTopOpenPosition(String symbol, String direction) {
+        if (!tradeHeaderShowsSymbol(symbol)) {
+            return null;
+        }
+        List<PositionLabel> labels = positionLabelsInList();
+        PositionMatch match = topOpenPosition(labels, symbol, direction);
+        if (match == null) {
+            match = topOpenDirectionRow(labels, direction);
+        }
+        if (match == null) {
+            return null;
+        }
+        String volume = volumeBesideDirection(match.direction, labels, direction);
+        if (volume == null || volume.isBlank()) {
+            return null;
+        }
+        return volume;
+    }
+
+    // The symbol is the trade-view header. Position rows do not repeat it.
+    private boolean tradeHeaderShowsSymbol(String symbol) {
+        if (symbol == null || !symbol.matches("[A-Za-z0-9]+")) {
+            return false;
+        }
+        By locator = By.xpath("//*[@text='" + symbol + "' or @content-desc='" + symbol + "'"
+                + " or contains(@text,'" + symbol + "') or contains(@content-desc,'" + symbol + "')]");
+        return !safeFindElements(locator).isEmpty();
+    }
+
+    // Topmost open-position row for this direction, below Open Positions and above the quote buttons.
+    private PositionMatch topOpenDirectionRow(List<PositionLabel> labels, String direction) {
+        int minY = openPositionsListTop();
+        int maxY = orderTicketTop();
+        PositionMatch best = null;
+        for (PositionLabel label : labels) {
+            if (label.top < minY || label.centerY() >= maxY) {
+                continue;
+            }
+            if (!isDirectionVolumeAnchor(label, direction)) {
+                continue;
+            }
+            if (best == null || label.top < best.top) {
+                best = new PositionMatch(label, label.top);
+            }
+        }
+        return best;
+    }
+
+    private int openPositionsListTop() {
+        Integer openPositionsBottom = compactTabBottomY("Open Positions");
+        return openPositionsBottom != null ? openPositionsBottom : listAreaTopY();
+    }
+
+    private boolean isDirectionVolumeAnchor(PositionLabel label, String direction) {
+        if (!matchesDirectionVolume(label.text, direction)
+                && !matchesDirectionVolume(label.contentDesc, direction)) {
+            return false;
+        }
+        int width = label.right - label.left;
+        int height = label.bottom - label.top;
+        if (width <= 0 || height <= 0 || height > px(80)) {
+            return false;
+        }
+        int screenWidth = driver.manage().window().getSize().getWidth();
+        return width <= (int) (screenWidth * 0.72);
+    }
+
+    private boolean matchesDirectionVolume(String value, String direction) {
+        if (value == null || value.isBlank() || direction == null || direction.isBlank()) {
+            return false;
+        }
+        String text = value.trim();
+        if (text.equalsIgnoreCase(direction)) {
+            return true;
+        }
+        return text.matches("(?i)" + Pattern.quote(direction) + "\\s+\\d.*");
+    }
+
+    private PositionMatch topOpenPosition(List<PositionLabel> labels, String symbol, String direction) {
+        PositionMatch best = null;
+        for (PositionLabel symbolLabel : labels) {
+            if (!isCompactToken(symbolLabel, symbol)) {
+                continue;
+            }
+            PositionLabel directionLabel = compactDirectionOnRow(labels, symbolLabel, direction);
+            if (directionLabel == null) {
+                continue;
+            }
+            int top = Math.min(symbolLabel.top, directionLabel.top);
+            if (best == null || top < best.top) {
+                best = new PositionMatch(directionLabel, top);
+            }
+        }
+        if (best != null) {
+            return best;
+        }
+        for (PositionLabel label : labels) {
+            if (!isCombinedPositionRow(label, symbol, direction)) {
+                continue;
+            }
+            if (best == null || label.top < best.top) {
+                best = new PositionMatch(label, label.top);
+            }
+        }
+        return best;
+    }
+
+    private PositionLabel compactDirectionOnRow(List<PositionLabel> labels, PositionLabel symbolLabel, String direction) {
+        int minY = symbolLabel.top - px(24);
+        int maxY = symbolLabel.bottom + px(140);
+        PositionLabel best = null;
+        int bestGap = Integer.MAX_VALUE;
+        for (PositionLabel label : labels) {
+            if (label == symbolLabel || !isCompactToken(label, direction)) {
+                continue;
+            }
+            int centerY = label.centerY();
+            if (centerY < minY || centerY > maxY) {
+                continue;
+            }
+            int gap = Math.abs(centerY - symbolLabel.centerY());
+            if (gap < bestGap) {
+                bestGap = gap;
+                best = label;
+            }
+        }
+        return best;
+    }
+
+    private boolean isCompactToken(PositionLabel label, String token) {
+        if (!equalsToken(label.text, token) && !equalsToken(label.contentDesc, token)) {
+            return false;
+        }
+        int width = label.right - label.left;
+        int height = label.bottom - label.top;
+        if (width <= 0 || height <= 0 || height > px(80)) {
+            return false;
+        }
+        int screenWidth = driver.manage().window().getSize().getWidth();
+        return width <= (int) (screenWidth * 0.45);
+    }
+
+    private boolean isCombinedPositionRow(PositionLabel label, String symbol, String direction) {
+        boolean inText = containsToken(label.text, symbol) && containsToken(label.text, direction);
+        boolean inDesc = containsToken(label.contentDesc, symbol) && containsToken(label.contentDesc, direction);
+        if (!inText && !inDesc) {
+            return false;
+        }
+        int height = label.bottom - label.top;
+        int width = label.right - label.left;
+        if (height < px(28) || height > px(180) || width <= 0) {
+            return false;
+        }
+        int screenWidth = driver.manage().window().getSize().getWidth();
+        return width >= (int) (screenWidth * 0.45);
+    }
+
+    private String volumeBesideDirection(PositionLabel direction, List<PositionLabel> labels, String directionName) {
+        String bestLots = null;
+        String bestNumeric = null;
+        int bestLotsLeft = Integer.MAX_VALUE;
+        int bestNumericLeft = Integer.MAX_VALUE;
+        bestLots = preferLotsToken(bestLots, volumeTokenAfterDirection(direction.text, directionName));
+        bestLots = preferLotsToken(bestLots, volumeTokenAfterDirection(direction.contentDesc, directionName));
+        String embeddedNumeric = firstNonLots(
+                volumeTokenAfterDirection(direction.text, directionName),
+                volumeTokenAfterDirection(direction.contentDesc, directionName));
+        if (bestLots == null) {
+            bestNumeric = embeddedNumeric;
+        }
+        int band = Math.max(px(16), 20);
+        int centerY = direction.centerY();
+        int screenWidth = driver.manage().window().getSize().getWidth();
+        boolean wideAnchor = direction.right - direction.left > (int) (screenWidth * 0.45);
+        for (PositionLabel other : labels) {
+            if (other == direction) {
+                continue;
+            }
+            boolean sameBand = Math.abs(other.centerY() - centerY) <= band
+                    && other.left >= direction.right - px(8);
+            boolean insideWideRow = wideAnchor
+                    && other.left >= direction.left - px(4)
+                    && other.top >= direction.top - px(4)
+                    && other.bottom <= direction.bottom + px(8);
+            if (!sameBand && !insideWideRow) {
+                continue;
+            }
+            for (String raw : new String[]{other.text, other.contentDesc}) {
+                String token = classifyLotToken(raw);
+                if (token == null) {
+                    continue;
+                }
+                boolean hasLots = raw.toLowerCase(Locale.ROOT).contains("lot");
+                if (hasLots && other.left < bestLotsLeft) {
+                    bestLotsLeft = other.left;
+                    bestLots = token;
+                } else if (!hasLots && bestLots == null && other.left < bestNumericLeft) {
+                    bestNumericLeft = other.left;
+                    bestNumeric = token;
+                }
+            }
+        }
+        String chosen = bestLots != null ? bestLots : bestNumeric;
+        if (chosen == null || chosen.isBlank()) {
+            return null;
+        }
+        String canonical = getPageElement.canonicalizeVolume(chosen);
+        if (canonical == null || canonical.isBlank() || !isLotScaleNumber(canonical)) {
+            return null;
+        }
+        return canonical;
+    }
+
+    private String preferLotsToken(String current, String candidate) {
+        if (candidate == null || !candidate.toLowerCase(Locale.ROOT).contains("lot")) {
+            return current;
+        }
+        return current == null ? candidate : current;
+    }
+
+    private String firstNonLots(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.toLowerCase(Locale.ROOT).contains("lot")) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String volumeTokenAfterDirection(String raw, String direction) {
+        if (raw == null || raw.isBlank() || equalsToken(raw, direction)) {
+            return null;
+        }
+        Matcher dir = Pattern.compile(
+                "(?i)(^|[^A-Za-z])" + Pattern.quote(direction) + "([^A-Za-z]|$)").matcher(raw);
+        if (!dir.find()) {
+            return null;
+        }
+        return classifyLotToken(raw.substring(dir.end()));
+    }
+
+    private String classifyLotToken(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String text = raw.replace('\n', ' ').replace('\u00A0', ' ').trim();
+        if (text.startsWith("+") || text.startsWith("-")) {
+            return null;
+        }
+        Matcher labeled = Pattern.compile("(?i)(\\d+(?:[.,]\\d+)?)\\s*Lots?").matcher(text);
+        if (labeled.find()) {
+            return labeled.group(0).trim();
+        }
+        Matcher glued = Pattern.compile("(?i)(\\d+(?:[.,]\\d+)?)Lots?").matcher(text);
+        if (glued.find()) {
+            return glued.group(0).trim();
+        }
+        String lower = text.toLowerCase(Locale.ROOT);
+        if (lower.contains("usd") || lower.contains("hkd") || lower.contains("cnh") || text.contains("%")) {
+            return null;
+        }
+        Matcher number = Pattern.compile("\\d+(?:[.,]\\d+)?").matcher(text);
+        while (number.find()) {
+            String token = number.group();
+            if (isLotScaleNumber(token)) {
+                return token;
+            }
+        }
+        return null;
+    }
+
+    // Reject quote-sized numbers. Configured max lot is 10. XAUUSD and XAGUSD prices are larger.
+    private boolean isLotScaleNumber(String text) {
+        String normalized = text.replaceAll("(?i)\\s*lots?", "").trim();
+        if (normalized.contains(",") && !normalized.contains(".")) {
+            normalized = normalized.replace(',', '.');
+        } else {
+            normalized = normalized.replace(",", "");
+        }
+        try {
+            BigDecimal value = new BigDecimal(normalized);
+            return value.compareTo(BigDecimal.ZERO) > 0
+                    && value.compareTo(new BigDecimal("20")) <= 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private List<PositionLabel> positionLabelsInList() {
+        int minY = listAreaTopY() - 10;
+        int maxY = driver.manage().window().getSize().getHeight();
+        List<PositionLabel> labels = new ArrayList<>();
+        for (WebElement element : safeFindElements(By.xpath("//*[@text or @content-desc]"))) {
+            try {
+                int[] box = visibleBox(element);
+                if (box == null || box[1] < minY || box[1] >= maxY) {
+                    continue;
+                }
+                String text = elementAttribute(element, "text");
+                String contentDesc = elementAttribute(element, "content-desc");
+                if (text == null && contentDesc == null) {
+                    continue;
+                }
+                labels.add(new PositionLabel(text, contentDesc, box[0], box[1], box[2], box[3]));
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return labels;
+    }
+
+    private boolean equalsToken(String value, String expected) {
+        return value != null && expected != null && value.trim().equalsIgnoreCase(expected);
+    }
+
+    private boolean containsToken(String value, String token) {
+        if (value == null || token == null || token.isBlank()) {
+            return false;
+        }
+        return Pattern.compile("(?i)(^|[^A-Za-z0-9])" + Pattern.quote(token) + "([^A-Za-z0-9]|$)")
+                .matcher(value)
+                .find();
     }
 
     public String getOpenPositionTime() {
@@ -3592,6 +4059,102 @@ public class AppTradeView {
         confirmCancelPendingOrderDialogue();
     }
 
+    // EBL rows label the type as Limit or Stop. EIEHK pending rows show direction and price only.
+    private int[] createdPendingOrderRow(String displayedType, String direction, String price) {
+        int[] typed = pendingOrderTypeRow(displayedType, direction, price);
+        return typed != null ? typed : pendingOrderRowByDirectionAndPrice(direction, price);
+    }
+
+    private int[] pendingOrderRowByDirectionAndPrice(String direction, String price) {
+        int minY = pendingOrdersListTop();
+        int maxY = orderTicketTop();
+        Dimension window = driver.manage().window().getSize();
+        int bestTop = Integer.MAX_VALUE;
+        int bandTop = 0;
+        int bandBottom = 0;
+        for (WebElement element : safeFindElements(By.xpath("//*[@text or @content-desc]"))) {
+            try {
+                int[] box = visibleBox(element);
+                if (box == null || box[1] < minY - 4 || box[3] > maxY) {
+                    continue;
+                }
+                int height = box[3] - box[1];
+                if (height < 8 || height > px(80)) {
+                    continue;
+                }
+                String text = visibleLabel(element);
+                if (!textHasPrice(text, price)) {
+                    continue;
+                }
+                int top = Math.max(minY, box[1] - px(36));
+                int bottom = Math.min(maxY, box[3] + px(36));
+                if (!bandHasDirection(top, bottom, direction)) {
+                    continue;
+                }
+                if (box[1] < bestTop) {
+                    bestTop = box[1];
+                    bandTop = top;
+                    bandBottom = bottom;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        if (bestTop == Integer.MAX_VALUE) {
+            return null;
+        }
+        return new int[]{0, bandTop, window.getWidth(), Math.max(1, bandBottom - bandTop)};
+    }
+
+    private boolean bandHasDirection(int bandTop, int bandBottom, String direction) {
+        for (WebElement element : safeFindElements(By.xpath("//*[@text or @content-desc]"))) {
+            try {
+                int[] box = visibleBox(element);
+                if (box == null) {
+                    continue;
+                }
+                int centerY = (box[1] + box[3]) / 2;
+                if (centerY < bandTop || centerY > bandBottom) {
+                    continue;
+                }
+                int height = box[3] - box[1];
+                if (height < 8 || height > px(80)) {
+                    continue;
+                }
+                String text = visibleLabel(element);
+                if (containsToken(text, direction)) {
+                    return true;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return false;
+    }
+
+    private boolean textHasPrice(String displayed, String expected) {
+        if (samePrice(displayed, expected)) {
+            return true;
+        }
+        if (displayed == null || expected == null) {
+            return false;
+        }
+        Matcher matcher = Pattern.compile("\\d+(?:[.,]\\d+)?").matcher(displayed);
+        while (matcher.find()) {
+            if (samePrice(matcher.group(), expected)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String visibleLabel(WebElement element) {
+        String text = elementAttribute(element, "text");
+        if (text != null && !text.isBlank()) {
+            return text.trim();
+        }
+        String contentDesc = elementAttribute(element, "content-desc");
+        return contentDesc == null ? "" : contentDesc.trim();
+    }
+
     private int[] pendingOrderTypeRow(String orderType, String direction, String price) {
         int minY = pendingOrdersListTop();
         int maxY = orderTicketTop();
@@ -3686,6 +4249,38 @@ public class AppTradeView {
             }
         }
         return best;
+    }
+
+    private static final class PositionLabel {
+        private final String text;
+        private final String contentDesc;
+        private final int left;
+        private final int top;
+        private final int right;
+        private final int bottom;
+
+        private PositionLabel(String text, String contentDesc, int left, int top, int right, int bottom) {
+            this.text = text;
+            this.contentDesc = contentDesc;
+            this.left = left;
+            this.top = top;
+            this.right = right;
+            this.bottom = bottom;
+        }
+
+        private int centerY() {
+            return (top + bottom) / 2;
+        }
+    }
+
+    private static final class PositionMatch {
+        private final PositionLabel direction;
+        private final int top;
+
+        private PositionMatch(PositionLabel direction, int top) {
+            this.direction = direction;
+            this.top = top;
+        }
     }
 
 

@@ -30,9 +30,13 @@ public class AppClosePositionPage {
     private final MobileAbstractComponents abs;
     private final GetPageElement getPageElement;
     public static String lotsBeforeAdjust;
+    public static String originalLots;
+    public static String partialCloseLots;
 
     public static void resetCapturedOrderValues() {
         lotsBeforeAdjust = null;
+        originalLots = null;
+        partialCloseLots = null;
     }
 
     public AppClosePositionPage(AppiumDriver driver){
@@ -57,6 +61,87 @@ public class AppClosePositionPage {
             return normalizeLots(readFieldText(lotsField()));
         }
         return "No edit field found";
+    }
+
+    public void editLotSizeSmallerThanCurrent(String stepSize, double minLot) {
+        if (!(driver instanceof AndroidDriver androidDriver)) {
+            throw new IllegalStateException("Close Position lot edit is implemented for Android only");
+        }
+        if (stepSize == null || stepSize.isBlank()) {
+            throw new IllegalArgumentException("Lot step size is missing");
+        }
+        originalLots = null;
+        partialCloseLots = null;
+        String currentRaw = normalizeLots(readFieldText(lotsField()));
+        if (currentRaw == null || currentRaw.isBlank()) {
+            throw new IllegalStateException("Close Position lots field is missing or blank");
+        }
+        BigDecimal current;
+        BigDecimal step;
+        try {
+            current = new BigDecimal(currentRaw.trim());
+            step = new BigDecimal(stepSize.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "Close Position lots '" + currentRaw + "' or step '" + stepSize + "' is not numeric", e);
+        }
+        BigDecimal edited = current.subtract(step).setScale(2, RoundingMode.HALF_UP);
+        if (edited.compareTo(current) >= 0) {
+            throw new IllegalStateException("Edited close lot " + edited.toPlainString()
+                    + " is not strictly smaller than " + current.toPlainString());
+        }
+        if (edited.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException(
+                    "Edited close lot " + edited.toPlainString() + " is not greater than zero");
+        }
+        BigDecimal minimum = BigDecimal.valueOf(minLot);
+        if (edited.compareTo(minimum) < 0) {
+            throw new IllegalStateException("Edited close lot " + edited.toPlainString()
+                    + " is below minimum lot " + minimum.toPlainString());
+        }
+        String editedText = edited.toPlainString();
+        abs.typeWithAndroidKeys(androidDriver, lotsField(), editedText);
+        abs.dismissAndroidKeyboardSafely();
+        String shown;
+        try {
+            shown = new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> lotsMatching(edited));
+        } catch (TimeoutException e) {
+            String latest = normalizeLots(readFieldText(lotsField()));
+            throw new IllegalStateException("Close Position lots field did not show edited value "
+                    + editedText + ". Field was '" + latest + "'", e);
+        }
+        if (shown == null || shown.isBlank() || new BigDecimal(shown.trim()).compareTo(edited) != 0) {
+            throw new IllegalStateException("Close Position lots field did not show edited value "
+                    + editedText + ". Field was '" + shown + "'");
+        }
+        originalLots = current.setScale(2, RoundingMode.HALF_UP).toPlainString();
+        partialCloseLots = editedText;
+        getPageElement.logInfo("Edited Close Position lots from " + originalLots + " to " + partialCloseLots);
+    }
+
+    public String remainingOpenLots() {
+        if (originalLots == null || originalLots.isBlank()
+                || partialCloseLots == null || partialCloseLots.isBlank()) {
+            throw new IllegalStateException("Captured original lots or partial close lots are missing");
+        }
+        return new BigDecimal(originalLots.trim())
+                .subtract(new BigDecimal(partialCloseLots.trim()))
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString();
+    }
+
+    private String lotsMatching(BigDecimal edited) {
+        String value = normalizeLots(readFieldText(lotsField()));
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value.trim()).compareTo(edited) == 0 ? value.trim() : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     public void clickBtn(String btnName) {

@@ -1,7 +1,7 @@
 Feature: Native App trade
 
     @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
-    Scenario: The trading volume and estimated margin are displayed correctly after the 0.5 lot button is tapped
+    Scenario: The trading volume and estimated margin of market order are displayed correctly after the 0.5 lot button is tapped
       Given the user launch the app
       And the user logs in on the App login page
       And the user taps button "Markets" on the app footer
