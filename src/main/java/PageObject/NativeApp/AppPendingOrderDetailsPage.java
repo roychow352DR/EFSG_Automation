@@ -421,6 +421,8 @@ public class AppPendingOrderDetailsPage {
             case "Product Name" -> abs.getProductName(AppMarketsPage.tradeSymbol);
             case "Order Type" -> AppInstrumentDetailsPage.stopOrderType.split(" ")[1];
             case "Validity" -> AppInstrumentDetailsPage.validity;
+            case "Stop Loss Price" -> AppInstrumentDetailsPage.stopLossPrice;
+            case "Take Profit Price" -> AppInstrumentDetailsPage.takeProfitPrice;
             default -> null;
         };
     }

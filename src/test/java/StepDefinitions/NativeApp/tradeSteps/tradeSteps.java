@@ -118,6 +118,17 @@ public class tradeSteps extends BaseTest {
         appPoManager.getAppTradeView().tapCtaButton(buttonName);
     }
 
+    @Then("the user sees a dialogue with title {string} is prompted on the app trade view")
+    public void the_user_sees_a_dialogue_with_title_is_prompted_on_the_app_trade_view(String title) {
+        Assert.assertNotNull(title, "Expected dialogue title was missing");
+        Assert.assertFalse(title.isBlank(), "Expected dialogue title was blank");
+        String displayed = appPoManager.getAppTradeView().confirmationDialogueTitle();
+        Assert.assertNotNull(displayed, "Cancel confirmation dialogue title was missing on the app trade view");
+        Assert.assertFalse(displayed.isBlank(), "Cancel confirmation dialogue title was blank on the app trade view");
+        Assert.assertEquals(displayed, title);
+        appPoManager.getAppTradeView().confirmVisibleCancelOrder();
+    }
+
     @And("the user selects order type {string} on the instrument details page")
     public void the_user_selects_order_type_on_the_app_trade_view(String orderType) throws InterruptedException {
         appPoManager.getAppInstrumentDetailsPage().selectOrderType(orderType);
@@ -620,6 +631,41 @@ public class tradeSteps extends BaseTest {
         appPoManager.getAppTradeView().closePosition();
     }
 
+    @And("the user edit the lot size which is smaller than the current lot size on the close position page")
+    public void the_user_edit_the_lot_size_which_is_smaller_than_the_current_lot_size_on_the_close_position_page() {
+        appPoManager.getAppClosePositionPage().editLotSizeSmallerThanCurrent(
+                tradeSymbolConfig.getStepSize(productEntity),
+                tradeSymbolConfig.getMinLotSize(AppMarketsPage.tradeSymbol));
+        String displayed = appPoManager.getAppClosePositionPage().getEditFieldVal();
+        String original = AppClosePositionPage.originalLots;
+        String partial = AppClosePositionPage.partialCloseLots;
+        Assert.assertNotNull(displayed, "Displayed close lots were missing");
+        Assert.assertFalse(displayed.isBlank(), "Displayed close lots were blank");
+        Assert.assertNotNull(original, "Original close lots were missing");
+        Assert.assertFalse(original.isBlank(), "Original close lots were blank");
+        Assert.assertNotNull(partial, "Partial close lots were missing");
+        Assert.assertFalse(partial.isBlank(), "Partial close lots were blank");
+        Assert.assertTrue(
+                new BigDecimal(displayed.trim()).compareTo(new BigDecimal(original.trim())) < 0,
+                "Displayed close lots " + displayed + " were not strictly smaller than " + original);
+        Assert.assertTrue(
+                new BigDecimal(displayed.trim()).compareTo(new BigDecimal(partial.trim())) == 0,
+                "Displayed close lots " + displayed + " did not equal partial close lots " + partial);
+    }
+
+    @And("the user sees correct lot size of the partially closed position on the position tab of app trade view")
+    public void the_user_sees_correct_lot_size_of_the_partially_closed_position_on_the_position_tab_of_app_trade_view() {
+        String expected = appPoManager.getAppClosePositionPage().remainingOpenLots();
+        String displayed = appPoManager.getAppTradeView().openPositionVolume(
+                AppMarketsPage.tradeSymbol, AppTradeView.selectedDirection);
+        Assert.assertNotNull(displayed, "Displayed remaining open lot was missing");
+        Assert.assertFalse(displayed.isBlank(), "Displayed remaining open lot was blank");
+        Assert.assertNotNull(expected, "Expected remaining open lot was missing");
+        Assert.assertFalse(expected.isBlank(), "Expected remaining open lot was blank");
+        Assert.assertEquals(displayed, expected);
+        appPoManager.getAppTradeView().closePosition();
+    }
+
     private String lotsAfterStep(String currentLots, String stepSize, int direction) {
         return new BigDecimal(currentLots.trim())
                 .add(new BigDecimal(stepSize.trim()).multiply(BigDecimal.valueOf(direction)))
@@ -827,6 +873,13 @@ public class tradeSteps extends BaseTest {
                         tradeSymbolConfig.getContractSize(symbol)))));
     }
 
+    private void assertTakeProfitAndStopLossPrice(){
+        Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue("Stop Loss Price"),
+                appPoManager.getAppPendingOrderDetailsPage().getValidationValue("Stop Loss Price"));
+        Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue("Take Profit Price"),
+                appPoManager.getAppPendingOrderDetailsPage().getValidationValue("Take Profit Price"));
+    }
+
     private String scaleAmount(String amount) {
         return new BigDecimal(amount.trim().replace(",", ""))
                 .setScale(2, RoundingMode.HALF_UP)
@@ -848,7 +901,10 @@ public class tradeSteps extends BaseTest {
                     String.format("%.2f", Float.parseFloat(String.valueOf(tradeSymbolConfig.getInitialMargin(AppMarketsPage.tradeSymbol)))));
         } else if (valueName.equalsIgnoreCase("Estimated Margin")) {
             assertPendingOrderEstimatedMargin();
-        } else {
+        } else if (valueName.equalsIgnoreCase("TP/SL")) {
+            assertTakeProfitAndStopLossPrice();
+        }
+        else {
             Assert.assertEquals(appPoManager.getAppPendingOrderDetailsPage().getDetailValue(valueName),
                     appPoManager.getAppPendingOrderDetailsPage().getValidationValue(valueName));
         }
@@ -864,6 +920,11 @@ public class tradeSteps extends BaseTest {
     @And("the user taps back button on the app trade view")
     public void the_user_taps_back_button_on_the_app_trade_view() {
         appPoManager.getAppTradeView().leaveTradeView();
+    }
+
+    @When("the user taps {string} cta button of open position on the watchlist details page")
+    public void the_user_taps_cta_button_of_open_position_on_the_watchlist_details_page(String buttonName) {
+        appPoManager.getAppWatchlistDetailsPage().tapOpenPositionCta(buttonName);
     }
 
     @Then("the user sees confirmation dialogue on the portfolio page")

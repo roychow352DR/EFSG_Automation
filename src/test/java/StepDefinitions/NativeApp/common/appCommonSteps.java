@@ -48,6 +48,9 @@ public class appCommonSteps extends BaseTest {
         Assert.assertEquals(actualHeaderTitle, expectedHeader);
 
         if (expectedHeader.equals("Position Details")) {
+            if (appPoManager.getAppTradeView().hasClosePositionButton()) {
+                appPoManager.getAppTradeView().closePositionInDetails();
+            }
             return;
         }
         if (!expectedHeader.equals("Close Position")) {

@@ -7,6 +7,7 @@ Feature: Native App trade
       And the user taps button "Markets" on the app footer
       When the user taps symbol on the app markets page
       And the user selects direction "BUY" on the app trade view
+      And the user selects order type "Limit / Stop Order" on the instrument details page
       And the user fills in the text field "Lot Size" with value "0.5" on the instrument details page
       And the user taps button "+" of the "Lots" input text field on the instrument details page
       Then the user sees the lots value is increased by default step size on the instrument details page
