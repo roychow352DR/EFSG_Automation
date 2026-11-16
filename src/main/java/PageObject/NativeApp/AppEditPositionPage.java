@@ -82,6 +82,13 @@ public class AppEditPositionPage {
 
     public String getDisplayedValue(String label, String symbolDecimal) {
         waitForEditPositionReady();
+        if ("Product".equalsIgnoreCase(label)) {
+            String productCode = displayedProductCode();
+            if (productCode == null || productCode.isBlank()) {
+                throw new NoSuchElementException("Could not find value on Edit Position for label: Product");
+            }
+            return productCode;
+        }
         String uiLabel = getPageElement.mapUiLabel(label);
         String rawValue = getPageElement.readLabelValueFast(uiLabel);
         if ((rawValue == null || rawValue.isBlank()) && isVolumeLabel(label)) {
@@ -94,6 +101,209 @@ public class AppEditPositionPage {
             throw new NoSuchElementException("Could not find value on Edit Position for label: " + uiLabel);
         }
         return getPageElement.normalizeByLabel(label, rawValue.trim(), symbolDecimal);
+    }
+
+    // Header shows the mapped product name with the trade symbol on the next line in the same column.
+    public void assertTradeSymbolUnderProductName() {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new AssertionError("Edit Position trade symbol placement is implemented for Android only");
+        }
+        waitForEditPositionReady();
+        String symbol = AppMarketsPage.tradeSymbol == null ? "" : AppMarketsPage.tradeSymbol.trim();
+        String productName = abs.getProductName(symbol);
+        if (!mappedProductName(symbol, productName)) {
+            throw new AssertionError("Product name was not mapped for trade symbol [" + symbol + "]");
+        }
+        ScreenText placed;
+        try {
+            placed = new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> symbolUnderProductName(symbol, productName));
+        } catch (TimeoutException e) {
+            placed = null;
+        }
+        if (placed == null) {
+            List<ScreenText> titles = exactTexts("Edit Position");
+            if (editPositionTitle(titles) == null) {
+                throw new AssertionError("Edit Position header was not visible. Title nodes: " + titles);
+            }
+            throw new AssertionError("Trade symbol [" + symbol + "] was not underneath product name ["
+                    + productName + "] on the edit position page");
+        }
+        getPageElement.logInfo("Edit Position shows " + productName + " above " + symbol
+                + " at " + placed.left + "," + placed.top);
+    }
+
+    // Edit Position has no Product label. The code is the symbol line under the product name.
+    private String displayedProductCode() {
+        String symbol = AppMarketsPage.tradeSymbol == null ? "" : AppMarketsPage.tradeSymbol.trim();
+        String productName = abs.getProductName(symbol);
+        if (!mappedProductName(symbol, productName)) {
+            return null;
+        }
+        ScreenText placed = symbolUnderProductName(symbol, productName);
+        return placed == null ? null : placed.text();
+    }
+
+    private boolean mappedProductName(String symbol, String productName) {
+        return !symbol.isBlank()
+                && productName != null
+                && !productName.isBlank()
+                && !"symbol not found".equalsIgnoreCase(productName)
+                && !productName.equalsIgnoreCase(symbol);
+    }
+
+    private ScreenText symbolUnderProductName(String symbol, String productName) {
+        ScreenText title = editPositionTitle(exactTexts("Edit Position"));
+        if (title == null) {
+            return null;
+        }
+        int headerBottom = (int) (driver.manage().window().getSize().getHeight() * 0.45);
+        List<ScreenText> names = exactTexts(productName);
+        List<ScreenText> symbols = exactTexts(symbol);
+        ScreenText bestName = null;
+        ScreenText bestSymbol = null;
+        int bestGap = Integer.MAX_VALUE;
+        for (ScreenText name : names) {
+            for (ScreenText code : symbols) {
+                if (name.top >= headerBottom || code.top >= headerBottom) {
+                    continue;
+                }
+                int titleTolerance = Math.max(1, title.height() / 8);
+                if (name.top < title.bottom - titleTolerance) {
+                    continue;
+                }
+                if (contains(name, code) || contains(code, name) || !sameColumn(name, code)) {
+                    continue;
+                }
+                if (code.centerY() <= name.centerY()) {
+                    continue;
+                }
+                int gap = code.top - name.bottom;
+                int lineHeight = Math.max(name.height(), code.height());
+                int gapTolerance = Math.max(1, lineHeight / 8);
+                if (gap < -gapTolerance || gap > lineHeight) {
+                    continue;
+                }
+                if (gap < bestGap || (gap == bestGap && bestName != null && name.top < bestName.top)) {
+                    bestGap = gap;
+                    bestName = name;
+                    bestSymbol = code;
+                }
+            }
+        }
+        return bestSymbol == null ? null : bestSymbol;
+    }
+
+    // Full-width header titles stay in the top band. The bottom submit control is below that band.
+    private ScreenText editPositionTitle(List<ScreenText> titles) {
+        Dimension window = driver.manage().window().getSize();
+        int maxHeaderY = (int) (window.getHeight() * 0.45);
+        int topBand = (int) (window.getHeight() * 0.12);
+        ScreenText best = null;
+        for (ScreenText title : titles) {
+            if (title.top >= maxHeaderY) {
+                continue;
+            }
+            if (title.height() > 220 && title.top >= topBand) {
+                continue;
+            }
+            if (best == null || title.height() < best.height()) {
+                best = title;
+            }
+        }
+        return best;
+    }
+
+    private List<ScreenText> exactTexts(String expected) {
+        List<ScreenText> found = new ArrayList<>();
+        String token = expected.replace("\"", "");
+        By locator = By.xpath("//*[@text=\"" + token + "\" or @content-desc=\"" + token + "\"]");
+        for (WebElement element : driver.findElements(locator)) {
+            try {
+                String text = exactNodeText(element, expected);
+                if (text == null) {
+                    continue;
+                }
+                int[] box = nodeBounds(element);
+                if (box == null) {
+                    continue;
+                }
+                ScreenText node = new ScreenText(text.trim(), box[0], box[1], box[2], box[3]);
+                if (!alreadyCollected(found, node)) {
+                    found.add(node);
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return found;
+    }
+
+    private String exactNodeText(WebElement element, String expected) {
+        String textAttr = elementAttribute(element, "text");
+        String descAttr = elementAttribute(element, "content-desc");
+        if (textAttr != null && textAttr.trim().equalsIgnoreCase(expected)) {
+            return textAttr.trim();
+        }
+        if (descAttr != null && descAttr.trim().equalsIgnoreCase(expected)) {
+            return descAttr.trim();
+        }
+        try {
+            String visible = element.getText();
+            if (visible != null && visible.trim().equalsIgnoreCase(expected)) {
+                return visible.trim();
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return null;
+    }
+
+    private int[] nodeBounds(WebElement element) {
+        int[] box = parseBounds(elementAttribute(element, "bounds"));
+        if (box != null && box[2] > box[0] && box[3] > box[1]) {
+            return box;
+        }
+        try {
+            Point location = element.getLocation();
+            Dimension size = element.getSize();
+            if (size.getWidth() <= 0 || size.getHeight() <= 0) {
+                return null;
+            }
+            return new int[]{
+                    location.getX(),
+                    location.getY(),
+                    location.getX() + size.getWidth(),
+                    location.getY() + size.getHeight()
+            };
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private boolean alreadyCollected(List<ScreenText> found, ScreenText node) {
+        for (ScreenText existing : found) {
+            if (existing.left == node.left && existing.top == node.top
+                    && existing.right == node.right && existing.bottom == node.bottom) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean contains(ScreenText outer, ScreenText inner) {
+        boolean covers = outer.left <= inner.left && outer.top <= inner.top
+                && outer.right >= inner.right && outer.bottom >= inner.bottom;
+        return covers && (outer.height() > inner.height() || outer.width() > inner.width());
+    }
+
+    private boolean sameColumn(ScreenText name, ScreenText code) {
+        int overlap = Math.min(name.right, code.right) - Math.max(name.left, code.left);
+        if (overlap <= 0) {
+            return false;
+        }
+        boolean centerInsideName = code.centerX() >= name.left && code.centerX() <= name.right;
+        int narrower = Math.min(name.width(), code.width());
+        return centerInsideName || overlap * 2 >= narrower;
     }
 
     private boolean isVolumeLabel(String label) {
@@ -761,6 +971,24 @@ public class AppEditPositionPage {
             }
         }
         return null;
+    }
+
+    private record ScreenText(String text, int left, int top, int right, int bottom) {
+        private int centerX() {
+            return (left + right) / 2;
+        }
+
+        private int centerY() {
+            return (top + bottom) / 2;
+        }
+
+        private int width() {
+            return Math.max(1, right - left);
+        }
+
+        private int height() {
+            return Math.max(1, bottom - top);
+        }
     }
 
     public void tapButtonOnDialogue(String btnName) {

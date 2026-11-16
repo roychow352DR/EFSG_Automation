@@ -594,6 +594,10 @@ public class AppPortfolioPage {
             throw new TimeoutException("Portfolio filtering is implemented for Android only");
         }
         String expected = buttonName == null ? "" : buttonName.trim();
+        if ("Default".equals(expected)) {
+            tapDefaultOnFilteringPage();
+            return;
+        }
         if (!"Done".equals(expected)) {
             throw new NoSuchElementException("Unsupported filtering button: " + expected);
         }
@@ -605,6 +609,36 @@ public class AppPortfolioPage {
                     .until(d -> d.findElements(By.xpath("//android.widget.TextView[@text='Show']")).isEmpty());
         } catch (TimeoutException e) {
             throw new TimeoutException("Filtering page did not close after Done", e);
+        }
+    }
+
+    // Default stays on the filtering page and restores Action All and Product All.
+    // Clear the stored selection so a later history check does not reuse the pre-reset option.
+    private void tapDefaultOnFilteringPage() {
+        waitForFilteringPage();
+        abs.tapVisible(By.xpath(
+                "//android.view.ViewGroup[@clickable='true' and @content-desc='Default']"), 10);
+        selectedFilteringSection = null;
+        selectedFilteringOption = null;
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> filteringDefaultsSelected());
+        } catch (TimeoutException e) {
+            throw new TimeoutException("Filtering page did not return to All after Default", e);
+        }
+    }
+
+    private boolean filteringDefaultsSelected() {
+        if (!filteringShowHeadingPresent()) {
+            return false;
+        }
+        try {
+            String source = driver.getPageSource();
+            return "All".equals(selectedOptionFromHierarchy(source, "Product"))
+                    && "All".equals(selectedOptionFromHierarchy(source, "Action"));
+        } catch (NoSuchElementException | IllegalStateException e) {
+            return false;
         }
     }
 
@@ -1266,7 +1300,7 @@ public class AppPortfolioPage {
                 Point retry = estimatedCtaPoint("close");
                 abs.tapAt(retry.getX(), retry.getY());
             }
-        } else if ("edit".equalsIgnoreCase(buttonName) && !editPositionPageVisible(5)) {
+        } else if ("edit".equalsIgnoreCase(buttonName) && !editDestinationVisible(5)) {
             Point retry = estimatedCtaPoint("edit");
             abs.tapAt(retry.getX(), retry.getY());
         }
@@ -1565,15 +1599,32 @@ public class AppPortfolioPage {
         }
     }
 
-    private boolean editPositionPageVisible(int seconds) {
+    // Pending-order edit opens Modify Order. Open-position edit opens Edit Position.
+    private boolean editDestinationVisible(int seconds) {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(Math.max(1, seconds)))
                     .ignoring(StaleElementReferenceException.class)
-                    .until(d -> !d.findElements(By.xpath(
-                            "//*[@text='Edit Position' or @content-desc='Edit Position']"
-                    )).isEmpty());
+                    .until(d -> editPositionLabelPresent() || compactModifyOrderHeaderPresent());
             return true;
         } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private boolean compactModifyOrderHeaderPresent() {
+        try {
+            Dimension window = driver.manage().window().getSize();
+            int maxHeaderY = (int) (window.getHeight() * 0.45);
+            for (WebElement el : driver.findElements(By.xpath(
+                    "//*[@text='Modify Order' or @content-desc='Modify Order']"))) {
+                Point location = el.getLocation();
+                Dimension size = el.getSize();
+                if (location.getY() <= maxHeaderY && size.getHeight() <= 220) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (StaleElementReferenceException e) {
             return false;
         }
     }
@@ -1821,7 +1872,7 @@ public class AppPortfolioPage {
         return lastHistoryTransactionDetail;
     }
 
-    // Product Code, Product Name, Direction, and Open Price each use their own expected value.
+    // Product Code, Product Name, Direction, Open Price, and Close Price each use their own expected value.
     public boolean historyTransactionItemDisplayed(String item) {
         lastHistoryTransactionDetail = null;
         if (!(driver instanceof AndroidDriver)) {
@@ -1839,6 +1890,9 @@ public class AppPortfolioPage {
         }
         if (item != null && "Open Price".equalsIgnoreCase(item.trim())) {
             return waitForHistoryResult(() -> latestHistoryShowsPrice("Open"));
+        }
+        if (item != null && "Close Price".equalsIgnoreCase(item.trim())) {
+            return waitForHistoryResult(() -> latestHistoryShowsPrice("Close"));
         }
         String expectedCode = expectedHistoryProductCode(item);
         if (expectedCode == null) {
@@ -1908,13 +1962,16 @@ public class AppPortfolioPage {
     // EIEHK: Open: stays about 8dp to 40dp below the symbol. Close: uses about 16dp to 140dp.
     // The close price is the plain decimal on the Close: line left of the timestamp, or inside "Close: 4144.50".
     // An open-only card may have no Close: line. EBL close uses the opposite side; EIEHK keeps the original side.
+    // Open compares executedPrice from the order confirmation. Close compares closeExecutedPrice from Current Price.
     private HistoryCodeResult latestHistoryShowsPrice(String action) {
         String symbol = trimmedHistorySymbol();
         String volume = expectedHistoryVolume();
         if (symbol == null || volume == null || volume.isBlank()) {
             return new HistoryCodeResult(false, "Portfolio history symbol or volume is missing");
         }
-        String expected = AppInstrumentDetailsPage.executedPrice;
+        String expected = "Close".equals(action)
+                ? AppInstrumentDetailsPage.closeExecutedPrice
+                : AppInstrumentDetailsPage.executedPrice;
         List<HistoryText> texts = visibleHistoryTexts();
         if (isEiehkHistory()) {
             return latestEiehkHistoryPrice(texts, symbol, volume, action, expected);

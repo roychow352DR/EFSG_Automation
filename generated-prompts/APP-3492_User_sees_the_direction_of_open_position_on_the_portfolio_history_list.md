@@ -16,9 +16,9 @@ User sees the direction of open position on the portfolio history list
 
 ## Tags
 
-`@App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro @AppTest`
+`@App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro @AppTest @Test`
 
-Effective entity tags: `@EBL_MT5` and `@EIEHK`. `@XPro` is an unresolved declaration with no Android package mapping. This scenario has no `@Test` tag, so the scoped command overrides the runner tag with `@App`.
+Effective entity tags: `@EBL_MT5` and `@EIEHK`. `@XPro` is an unresolved declaration with no Android package mapping. The scenario has `@Test`. The scoped command still selects it with `@App`.
 
 ## Environment
 
@@ -38,18 +38,18 @@ Use the entity credentials already loaded by `the user logs in on the App login 
 5. When the user taps back button on the app trade view
 6. And the user taps button "Portfolio" on the app footer
 7. And the user selects tab "History" on the portfolio page
-8. Then the user sees transaction record item "Direction" on the portfolio history list
+8. Then the user sees transaction record item "Direction" on the portfolio history list and closes the open position
 
 ## Expected Assertions
 
-The scenario does not close the position, so the position remains open. Direction is checked on the latest Open row for this product code and captured volume when no Close row is at or after that Open timestamp. The expected direction is the order direction, BUY.
+Direction is checked on the latest Open row for this product code and captured volume when no Close row is at or after that Open timestamp. The expected direction is the order direction, BUY. After that check passes, the step selects the Open Positions tab and closes the open position through the existing portfolio close path.
 
 ## Entity coverage
 
 ### EBL_MT5
 
 - Target: env `bauuat` or `mt5uat`, platform `ANDROID`, package `com.emperorfs.ebltrading.android`, artifact `com.emperorfs.ebltrading.android_uat-0.0.303-0909.apk.zip`. Installed build was not verified in this change.
-- UI path: `AppPortfolioPage.historyTransactionItemDisplayed("Direction")` on the latest Open row.
+- UI path: `AppPortfolioPage.historyTransactionItemDisplayed("Direction")` on the latest Open row, then `selectTab("Open Positions")` and `AppTradeView.closePosition()`.
 - Status: implemented for Android. iOS is not implemented.
 - Evidence: source inspection of the EBL history row geometry. No new device inspection in this change.
 - Runtime result: not run.
@@ -57,7 +57,7 @@ The scenario does not close the position, so the position remains open. Directio
 ### EIEHK
 
 - Target: env `bauuat` or `mt5uat`, platform `ANDROID`, package `com.efsg.eiehktrading.android`, artifact `com.efsg.eietrading.android_0.0.220-20261007.apk.zip`. Installed build was not verified in this change.
-- UI path: the latest card whose identifier is the product code and which has today's Open line. Direction is read from the symbol line, or from BUY/SELL text or content description elsewhere on that card. Without a later Close, the expected direction is the order direction.
+- UI path: the latest card whose identifier is the product code and which has today's Open line. Direction is read from the symbol line, or from BUY/SELL text or content description elsewhere on that card. Without a later Close, the expected direction is the order direction. After the check, the same step selects Open Positions and closes the position.
 - Status: implemented for Android. iOS is not implemented.
 - Evidence: source inspection. No new device inspection in this change.
 - Runtime result: not run.

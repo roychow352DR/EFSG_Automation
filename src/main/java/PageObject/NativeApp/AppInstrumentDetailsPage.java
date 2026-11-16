@@ -40,9 +40,11 @@ public class AppInstrumentDetailsPage {
     public static String selectedDirection;
     public static String lotSize;
     public static String executedPrice;
+    public static String closeExecutedPrice;
     public static String validity;
     public static String editPrice;
     public static String estMargin;
+    public static String expectedContractValue;
     public static boolean SCROLLED = false;
 
     public static void resetCapturedOrderValues() {
@@ -53,9 +55,11 @@ public class AppInstrumentDetailsPage {
         selectedDirection = null;
         lotSize = null;
         executedPrice = null;
+        closeExecutedPrice = null;
         validity = null;
         editPrice = null;
         estMargin = null;
+        expectedContractValue = null;
         SCROLLED = false;
     }
 
@@ -380,6 +384,10 @@ public class AppInstrumentDetailsPage {
         revealTpslField(fieldName);
         return editFieldNear(tpslFieldLabel(fieldName), fieldName);
     }
+
+    private static final Pattern FULL_PRICE = Pattern.compile("^[0-9][0-9,]*\\.[0-9]+$");
+    private static final Pattern WHOLE_PRICE = Pattern.compile("^[0-9][0-9,]*$");
+    private static final Pattern FRACTION_PRICE = Pattern.compile("^\\.[0-9]+$");
 
     private static final By DIRECTION_AT_PRICE_LABEL = By.xpath(
             "//*[normalize-space(@text)='Buy at' or normalize-space(@text)='Sell at'"
@@ -1400,6 +1408,26 @@ public class AppInstrumentDetailsPage {
         executedPrice = readConfirmationExecutedPrice();
     }
 
+    // Close confirmation shows Open Price and Current Price. History close fill is compared to Current Price only.
+    public void captureCloseConfirmationPrice() {
+        getPageElement.clearPageSourceCache();
+        getPageElement.waitForConfirmationPrice();
+        String raw = getPageElement.readLabelValueFast("Current Price");
+        if (raw == null || raw.isBlank()) {
+            getPageElement.clearPageSourceCache();
+            raw = getPageElement.readLabelValueFast("Current Price");
+        }
+        if (raw == null || raw.isBlank()) {
+            throw new NoSuchElementException("Could not find value in hierarchy for label: Current Price");
+        }
+        String normalized = getPageElement.normalizeByLabel("Current Price", raw.trim(), "");
+        if (normalized == null || normalized.isBlank()) {
+            throw new NoSuchElementException("Could not find value in hierarchy for label: Current Price");
+        }
+        closeExecutedPrice = normalized;
+        getPageElement.logInfo("Captured close confirmation price from [Current Price]: " + closeExecutedPrice);
+    }
+
     private String readConfirmationExecutedPrice() {
         getPageElement.clearPageSourceCache();
         getPageElement.waitForConfirmationPrice();
@@ -1945,6 +1973,7 @@ public class AppInstrumentDetailsPage {
             case "Stop Order Price" -> stopOrderPrice;
             case "Validity" -> validity;
             case "Est. Margin", "Estimated Margin" -> estMargin;
+            case "Contract Value" -> expectedContractValue;
             case "Product" -> AppMarketsPage.tradeSymbol;
             default -> null;
         };
@@ -1982,6 +2011,96 @@ public class AppInstrumentDetailsPage {
 
     public void setEstMargin(Integer initialMargin) {
         estMargin = abs.normalizePriceToDecimals(String.valueOf(Float.parseFloat(lotSize) * initialMargin), "2");
+    }
+
+    // Quote and contract value come from one ticket snapshot. Lot size is read from the current Lots field.
+    public void expectContractValue(int contractSize) {
+        expectedContractValue = null;
+        getPageElement.clearPageSourceCache();
+        getPageElement.capturePageSource();
+        String rawContract = getPageElement.readLabelValueFast("Contract Value");
+        if (isBlank(rawContract)) {
+            getPageElement.clearPageSourceCache();
+            throw new NoSuchElementException("Could not find value in hierarchy for label: Contract Value");
+        }
+        String displayed = abs.normalizeDialogueValue("Contract Value", rawContract.trim());
+        if (isBlank(displayed)) {
+            getPageElement.clearPageSourceCache();
+            throw new NoSuchElementException("Contract Value was blank on the instrument details page");
+        }
+        String direction = AppTradeView.selectedDirection;
+        String price = quotePriceFromVisibleText(direction);
+        if (isBlank(price)) {
+            getPageElement.clearPageSourceCache();
+            throw new NoSuchElementException(
+                    "Could not read " + direction + " price text from the ticket snapshot");
+        }
+        String lots = displayedLotSize(getInputFieldValue("Lot Size"));
+        if (isBlank(lots)) {
+            getPageElement.clearPageSourceCache();
+            throw new NoSuchElementException("Could not read Lot Size on the instrument details page");
+        }
+        expectedContractValue = contractValueFromQuote(price, lots, contractSize);
+        getPageElement.logInfo("Expected contract value from visible price text " + price
+                + ", lots " + lots + ", contract size " + contractSize
+                + ", displayed " + displayed + ": " + expectedContractValue);
+    }
+
+    // Contract value uses visible text beside the direction label. Quote content-desc stays on the pending-order path.
+    private String quotePriceFromVisibleText(String direction) {
+        String xml = getPageElement.cachedPageSource();
+        if (xml == null || direction == null || direction.isBlank()) {
+            return null;
+        }
+        String side = direction.trim().toUpperCase(Locale.ROOT);
+        List<String> texts = visibleTextValues(xml);
+        for (int i = 0; i < texts.size(); i++) {
+            if (!side.equals(texts.get(i).trim().toUpperCase(Locale.ROOT))) {
+                continue;
+            }
+            String price = priceTextAfterDirection(texts, i + 1);
+            if (price != null) {
+                return price;
+            }
+        }
+        return null;
+    }
+
+    private List<String> visibleTextValues(String xml) {
+        List<String> texts = new ArrayList<>();
+        Matcher matcher = Pattern.compile("(?:^|[\\s])text=\"([^\"]*)\"").matcher(xml);
+        while (matcher.find()) {
+            String value = unescapeConstraintText(matcher.group(1)).trim();
+            if (!value.isEmpty()) {
+                texts.add(value);
+            }
+        }
+        return texts;
+    }
+
+    private String priceTextAfterDirection(List<String> texts, int start) {
+        if (start >= texts.size()) {
+            return null;
+        }
+        String first = texts.get(start).trim();
+        if (FULL_PRICE.matcher(first).matches()) {
+            return first.replace(",", "");
+        }
+        if (start + 1 < texts.size() && WHOLE_PRICE.matcher(first).matches()) {
+            String fraction = texts.get(start + 1).trim();
+            if (FRACTION_PRICE.matcher(fraction).matches()) {
+                return first.replace(",", "") + fraction;
+            }
+        }
+        return null;
+    }
+
+    private String contractValueFromQuote(String price, String lots, int contractSize) {
+        return new BigDecimal(price.trim().replace(",", ""))
+                .multiply(new BigDecimal(lots.trim().replace(",", "")))
+                .multiply(BigDecimal.valueOf(contractSize))
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString();
     }
 
     // Contract value and the margin amount are read from one ticket snapshot so a live quote cannot split them.

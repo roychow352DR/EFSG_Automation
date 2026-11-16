@@ -16,7 +16,9 @@ import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -203,16 +205,31 @@ public class AppModifyOrderPage {
         }
     }
     public boolean getHeader() {
+        return !getHeaderText().isEmpty();
+    }
+
+    // Read the compact Modify Order title. A missing header stays empty so the assertion fails.
+    public String getHeaderText() {
         if (!(driver instanceof AndroidDriver)) {
-            return false;
+            return "";
         }
         try {
-            new WebDriverWait(driver, Duration.ofSeconds(10))
+            WebElement header = new WebDriverWait(driver, Duration.ofSeconds(10))
                     .ignoring(StaleElementReferenceException.class)
-                    .until(d -> compactModifyOrderHeader() != null);
-            return true;
+                    .until(d -> compactModifyOrderHeader());
+            if (header == null) {
+                return "";
+            }
+            String text = header.getText();
+            if (text == null || text.isBlank()) {
+                text = header.getAttribute("text");
+            }
+            if (text == null || text.isBlank()) {
+                text = header.getAttribute("content-desc");
+            }
+            return text == null ? "" : text.trim();
         } catch (TimeoutException e) {
-            return false;
+            return "";
         }
     }
 
@@ -238,6 +255,274 @@ public class AppModifyOrderPage {
         } catch (StaleElementReferenceException e) {
             return null;
         }
+    }
+
+    // Modify Order may nest the Switch instead of placing it as the label's next sibling.
+    // Pending Order is a different row, so the switch is chosen from the Take Profit / Stop Loss row.
+    private static final By PROFIT_OR_LOSS_LABEL = By.xpath(
+            "//*[contains(@text,'Profit') or contains(@text,'Loss')"
+                    + " or contains(@content-desc,'Profit') or contains(@content-desc,'Loss')]"
+    );
+
+    public void switchOnTakeProfitAndStopLoss() {
+        requireAndroid("Take Profit and Stop Loss on the modify order page is implemented for Android only");
+        if (getHeaderText().isEmpty()) {
+            throw new TimeoutException("Modify Order header was not visible");
+        }
+        if (revealTargetProfitLabel() == null) {
+            throw new TimeoutException(
+                    "Take Profit and Stop Loss switch was not visible on the modify order page. Labels: "
+                            + profitLossLabelSample());
+        }
+        turnSwitch(true);
+    }
+
+    public void switchOffTakeProfitAndStopLoss() {
+        requireAndroid("Take Profit and Stop Loss on the modify order page is implemented for Android only");
+        if (getHeaderText().isEmpty()) {
+            throw new TimeoutException("Modify Order header was not visible");
+        }
+        if (revealTargetProfitLabel() == null) {
+            throw new TimeoutException(
+                    "Take Profit and Stop Loss switch was not visible on the modify order page. Labels: "
+                            + profitLossLabelSample());
+        }
+        turnSwitch(false);
+    }
+
+    public boolean isTakeProfitStopLossOn() {
+        requireAndroid("Take Profit and Stop Loss on the modify order page is implemented for Android only");
+        WebElement toggle = shownTargetProfitSwitch();
+        if (toggle == null) {
+            revealTargetProfitLabel();
+            toggle = shownTargetProfitSwitch();
+        }
+        Boolean checked = checkedState(toggle);
+        if (checked == null) {
+            throw new NoSuchElementException(
+                    "Take Profit and Stop Loss switch checked state was not readable on the modify order page. Labels: "
+                            + profitLossLabelSample());
+        }
+        return checked;
+    }
+
+    private void requireAndroid(String message) {
+        if (!(driver instanceof AndroidDriver)) {
+            throw new UnsupportedOperationException(message);
+        }
+    }
+
+    private void turnSwitch(boolean desiredOn) {
+        WebElement toggle = new WebDriverWait(driver, Duration.ofSeconds(8))
+                .ignoring(StaleElementReferenceException.class)
+                .until(d -> shownTargetProfitSwitch());
+        if (toggle != null && isSwitchChecked(toggle) == desiredOn) {
+            return;
+        }
+        Point center = toggle == null ? null : shownCenter(toggle);
+        if (center == null) {
+            throw new TimeoutException("Take Profit and Stop Loss switch was not visible on the modify order page");
+        }
+        abs.tapAt(center.getX(), center.getY());
+        new WebDriverWait(driver, Duration.ofSeconds(8))
+                .ignoring(StaleElementReferenceException.class)
+                .until(d -> {
+                    WebElement current = shownTargetProfitSwitch();
+                    return current != null && isSwitchChecked(current) == desiredOn;
+                });
+    }
+
+    private WebElement revealTargetProfitLabel() {
+        for (int swipe = 0; swipe < 6; swipe++) {
+            WebElement label = targetProfitLabel();
+            if (label != null) {
+                return label;
+            }
+            abs.swipeUp(driver);
+        }
+        return targetProfitLabel();
+    }
+
+    private WebElement shownTargetProfitSwitch() {
+        WebElement label = targetProfitLabel();
+        if (label == null) {
+            return null;
+        }
+        WebElement toggle = nearestSwitchOnRow(label, driver.findElements(By.className("android.widget.Switch")));
+        if (toggle != null) {
+            return toggle;
+        }
+        return nearestSwitchOnRow(label, driver.findElements(By.xpath("//*[@checkable='true']")));
+    }
+
+    private WebElement targetProfitLabel() {
+        WebElement fallback = null;
+        try {
+            for (WebElement element : driver.findElements(PROFIT_OR_LOSS_LABEL)) {
+                String text = visibleText(element);
+                if (!isToggleLabel(text) || shownCenter(element) == null) {
+                    continue;
+                }
+                String lower = text.toLowerCase(Locale.ROOT);
+                if (lower.contains("stop loss")
+                        && (lower.contains("take profit") || lower.contains("target profit"))) {
+                    return element;
+                }
+                if (fallback == null) {
+                    fallback = element;
+                }
+            }
+        } catch (StaleElementReferenceException e) {
+            return null;
+        }
+        return fallback;
+    }
+
+    private boolean isToggleLabel(String text) {
+        String lower = text.toLowerCase(Locale.ROOT);
+        if (lower.isBlank()) {
+            return false;
+        }
+        if (lower.contains("(")) {
+            return false;
+        }
+        if (lower.startsWith("set target profit") || lower.contains("set target profit")) {
+            return true;
+        }
+        boolean stopLoss = lower.contains("stop loss");
+        boolean profit = lower.contains("take profit") || lower.contains("target profit");
+        return stopLoss && profit;
+    }
+
+    private WebElement nearestSwitchOnRow(WebElement label, List<WebElement> toggles) {
+        int[] labelBox = elementBox(label);
+        if (labelBox == null) {
+            return null;
+        }
+        int labelCenterY = (labelBox[1] + labelBox[3]) / 2;
+        int tolerance = Math.max(labelBox[3] - labelBox[1], 72);
+        WebElement best = null;
+        int bestScore = Integer.MAX_VALUE;
+        for (WebElement toggle : toggles) {
+            try {
+                if (toggle.equals(label)) {
+                    continue;
+                }
+                int[] toggleBox = elementBox(toggle);
+                Point center = shownCenter(toggle);
+                if (toggleBox == null || center == null) {
+                    continue;
+                }
+                int toggleCenterY = (toggleBox[1] + toggleBox[3]) / 2;
+                if (Math.abs(toggleCenterY - labelCenterY) > tolerance) {
+                    continue;
+                }
+                if (toggleBox[2] < labelBox[0]) {
+                    continue;
+                }
+                int score = Math.abs(toggleCenterY - labelCenterY) * 10 + Math.abs(toggleBox[0] - labelBox[2]);
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = toggle;
+                }
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return best;
+    }
+
+    private String visibleText(WebElement element) {
+        String text = element.getAttribute("text");
+        if (text == null || text.isBlank()) {
+            text = element.getText();
+        }
+        if (text == null || text.isBlank()) {
+            text = element.getAttribute("content-desc");
+        }
+        return text == null ? "" : text.replace('\n', ' ').trim();
+    }
+
+    private String profitLossLabelSample() {
+        List<String> lines = new ArrayList<>();
+        try {
+            for (WebElement element : driver.findElements(PROFIT_OR_LOSS_LABEL)) {
+                String text = visibleText(element);
+                if (text.isBlank() || lines.contains(text)) {
+                    continue;
+                }
+                lines.add(text);
+                if (lines.size() == 8) {
+                    break;
+                }
+            }
+        } catch (StaleElementReferenceException ignored) {
+        }
+        return lines.isEmpty() ? "(none)" : String.join(" | ", lines);
+    }
+
+    private Boolean checkedState(WebElement toggle) {
+        if (toggle == null) {
+            return null;
+        }
+        String checked = toggle.getAttribute("checked");
+        if (checked == null || "null".equalsIgnoreCase(checked)) {
+            return null;
+        }
+        return Boolean.parseBoolean(checked);
+    }
+
+    private int[] elementBox(WebElement element) {
+        int[] bounds = parseBounds(element.getAttribute("bounds"));
+        if (bounds != null && bounds[2] > bounds[0] && bounds[3] > bounds[1]) {
+            return bounds;
+        }
+        Point location = element.getLocation();
+        Dimension size = element.getSize();
+        if (size.getWidth() <= 0 || size.getHeight() <= 0) {
+            return null;
+        }
+        return new int[]{
+                location.getX(),
+                location.getY(),
+                location.getX() + size.getWidth(),
+                location.getY() + size.getHeight()
+        };
+    }
+
+    // React Native often reports getLocation() as 0,0 while UiAutomator bounds stay on screen.
+    private Point shownCenter(WebElement element) {
+        int[] bounds = parseBounds(element.getAttribute("bounds"));
+        if (bounds != null && bounds[2] > bounds[0] && bounds[3] > bounds[1]) {
+            Point center = new Point((bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2);
+            if (isInsideWindow(center)) {
+                return center;
+            }
+        }
+        if (!element.isDisplayed()) {
+            return null;
+        }
+        Point location = element.getLocation();
+        Dimension size = element.getSize();
+        if (size.getWidth() <= 0 || size.getHeight() <= 0) {
+            return null;
+        }
+        Point center = new Point(location.getX() + size.getWidth() / 2, location.getY() + size.getHeight() / 2);
+        return isInsideWindow(center) ? center : null;
+    }
+
+    private boolean isInsideWindow(Point point) {
+        Dimension window = driver.manage().window().getSize();
+        int top = (int) (window.getHeight() * 0.04);
+        int bottom = (int) (window.getHeight() * 0.98);
+        return point.getX() > 0
+                && point.getX() < window.getWidth()
+                && point.getY() > top
+                && point.getY() < bottom;
+    }
+
+    private boolean isSwitchChecked(WebElement toggle) {
+        String checked = toggle.getAttribute("checked");
+        return checked != null && Boolean.parseBoolean(checked);
     }
 
 }

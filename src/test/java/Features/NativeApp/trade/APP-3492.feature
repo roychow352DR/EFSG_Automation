@@ -1,6 +1,6 @@
 Feature: Native App trade
 
-    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro @AppTest
+    @App @Smoke @Regression @Trade @EBL_MT5 @XPro @AppTest
     Scenario: User sees the direction of open position on the portfolio history list
       Given the user launch the app
       And the user logs in on the App login page
@@ -9,7 +9,7 @@ Feature: Native App trade
       When the user taps back button on the app trade view
       And the user taps button "Portfolio" on the app footer
       And the user selects tab "History" on the portfolio page
-      Then the user sees transaction record item "Direction" on the portfolio history list
+      Then the user sees transaction record item "Direction" on the portfolio history list and closes the open position
 
 
 

@@ -421,10 +421,44 @@ public class AppPendingOrderDetailsPage {
             case "Product Name" -> abs.getProductName(AppMarketsPage.tradeSymbol);
             case "Order Type" -> AppInstrumentDetailsPage.stopOrderType.split(" ")[1];
             case "Validity" -> AppInstrumentDetailsPage.validity;
+            case "Volume", "Lot Size" -> getPageElement.canonicalizeVolume(AppInstrumentDetailsPage.lotSize);
+            case "Target Price", "Price", "Stop Order Price" -> AppInstrumentDetailsPage.stopOrderPrice;
             case "Stop Loss Price" -> AppInstrumentDetailsPage.stopLossPrice;
             case "Take Profit Price" -> AppInstrumentDetailsPage.takeProfitPrice;
             default -> null;
         };
+    }
+
+    // Comparison helper for one pending-order assertion. Validity stays the stored selection.
+    // symbolDecimal comes from the test step because TradeSymbolConfig lives in test sources.
+    public String comparableUserInput(String label, String raw, String symbolDecimal) {
+        if (raw == null) {
+            return null;
+        }
+        if ("Volume".equalsIgnoreCase(label) || "Lot Size".equalsIgnoreCase(label) || "Lots".equalsIgnoreCase(label)) {
+            return getPageElement.canonicalizeVolume(raw);
+        }
+        if (isTargetPriceLabel(label)) {
+            return comparableTargetPrice(raw, symbolDecimal);
+        }
+        return raw.trim();
+    }
+
+    private boolean isTargetPriceLabel(String label) {
+        return "Target Price".equalsIgnoreCase(label)
+                || "Price".equalsIgnoreCase(label)
+                || "Stop Order Price".equalsIgnoreCase(label);
+    }
+
+    private String comparableTargetPrice(String raw, String symbolDecimal) {
+        String numeric = raw.trim().replace(",", "").replaceAll("[^0-9.\\-]", "");
+        if (numeric.isBlank() || ".".equals(numeric) || "-".equals(numeric)) {
+            return raw.trim();
+        }
+        if (symbolDecimal == null || symbolDecimal.isBlank()) {
+            return numeric;
+        }
+        return abs.normalizePriceToDecimals(numeric, symbolDecimal);
     }
 
 

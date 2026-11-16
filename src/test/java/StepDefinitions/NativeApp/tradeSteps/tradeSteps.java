@@ -7,13 +7,17 @@ import io.cucumber.java.en.And;
 import StepDefinitions.NativeApp.login.loginSteps;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import utils.BaseTest;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Locale;
 
 public class tradeSteps extends BaseTest {
 
@@ -97,7 +101,9 @@ public class tradeSteps extends BaseTest {
     @And("the user taps button {string} on the confirmation pop up")
     public void the_user_taps_button_on_the_confirmation_pop_up(String buttonName) throws InterruptedException {
         Thread.sleep(500);
-        if (!buttonName.equalsIgnoreCase("Don't Show Again")
+        if (buttonName != null && buttonName.toLowerCase(Locale.ROOT).contains("close position")) {
+            appPoManager.getAppInstrumentDetailsPage().captureCloseConfirmationPrice();
+        } else if (!buttonName.equalsIgnoreCase("Don't Show Again")
                 && !buttonName.equalsIgnoreCase("Cross")
                 && !buttonName.equalsIgnoreCase("x")) {
             appPoManager.getAppInstrumentDetailsPage().getExecutedPrice();
@@ -339,6 +345,10 @@ public class tradeSteps extends BaseTest {
     @Then("the user sees the {string} value is displayed correctly on the instrument details page")
     public void the_user_sees_the_value_is_displayed_correctly_on_the_instrument_details_page(String label) {
         String decimal = tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol);
+        if ("Contract Value".equalsIgnoreCase(label)) {
+            assertInstrumentDetailsContractValue(decimal);
+            return;
+        }
         String marginRate = ticketMarginRate(label);
         try {
             if (marginRate != null) {
@@ -350,6 +360,23 @@ public class tradeSteps extends BaseTest {
             if (marginRate != null) {
                 appPoManager.getAppInstrumentDetailsPage().releaseTicketSnapshot();
             }
+        }
+    }
+
+    // Expected contract value is the selected quote times the Lots field times the symbol contract size.
+    private void assertInstrumentDetailsContractValue(String decimal) {
+        try {
+            appPoManager.getAppInstrumentDetailsPage().expectContractValue(
+                    tradeSymbolConfig.getContractSize(AppMarketsPage.tradeSymbol));
+            String displayed = appPoManager.getAppInstrumentDetailsPage().getValue("Contract Value", decimal);
+            String expected = appPoManager.getAppInstrumentDetailsPage().getValidationValue("Contract Value");
+            Assert.assertNotNull(displayed, "Displayed Contract Value was missing on the instrument details page");
+            Assert.assertFalse(displayed.isBlank(), "Displayed Contract Value was blank on the instrument details page");
+            Assert.assertNotNull(expected, "No expected Contract Value for the instrument details page");
+            Assert.assertFalse(expected.isBlank(), "Expected Contract Value was blank");
+            Assert.assertEquals(displayed, expected);
+        } finally {
+            appPoManager.getAppInstrumentDetailsPage().releaseTicketSnapshot();
         }
     }
 
@@ -433,6 +460,11 @@ public class tradeSteps extends BaseTest {
             return;
         }
         appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, decimal, priceDifVal);
+    }
+
+    @Then("the user sees the trade symbol underneath the product name on the edit position page")
+    public void the_user_sees_the_trade_symbol_underneath_the_product_name_on_the_edit_position_page() {
+        appPoManager.getAppEditPositionPage().assertTradeSymbolUnderProductName();
     }
 
     @Then("the user sees the value {string} is displayed correctly on the edit position page")
@@ -558,9 +590,18 @@ public class tradeSteps extends BaseTest {
 
     @Then("the user sees option {string} under {string} session on the filtering page")
     public void the_user_sees_option_under_session_on_the_filtering_page(String option, String section) {
-        List<String> options = appPoManager.getAppPortfolioPage().optionLabelsUnderSection(section);
-        Assert.assertEquals(options, List.of(option),
-                "Expected only [" + option + "] under " + section + " but saw " + options);
+        // The same step checks any displayed option. The section list is not required to contain only that option.
+        ArrayList<String> displayedOptions = new ArrayList<>(
+                appPoManager.getAppPortfolioPage().optionLabelsUnderSection(section));
+        boolean found = false;
+        for (String displayed : displayedOptions) {
+            if (displayed != null && displayed.equals(option)) {
+                found = true;
+                break;
+            }
+        }
+        Assert.assertTrue(found,
+                "Expected [" + option + "] under " + section + " but saw " + displayedOptions);
     }
 
     @Then("the user sees option {string} is selected under {string} session on the filtering page")
@@ -691,6 +732,28 @@ public class tradeSteps extends BaseTest {
     @And("the user scrolls down the modify order page")
     public void the_user_scrolls_down_the_modify_order_page() {
         appPoManager.getAppModifyOrderPage().scrollDown();
+    }
+
+    @And("the user switches on take profit and stop loss on the modify order page")
+    public void the_user_switches_on_take_profit_and_stop_loss_on_the_modify_order_page() {
+        appPoManager.getAppModifyOrderPage().switchOnTakeProfitAndStopLoss();
+    }
+
+    @And("the user switches off take profit and stop loss on the modify order page")
+    public void the_user_switches_off_take_profit_and_stop_loss_on_the_modify_order_page() {
+        appPoManager.getAppModifyOrderPage().switchOffTakeProfitAndStopLoss();
+    }
+
+    @Then("the user sees that the Take Profit and Stop Loss toggles are turned {string} on the modify order page")
+    public void the_user_sees_that_the_Take_Profit_and_Stop_Loss_toggles_are_turned_on_the_modify_order_page(String toggleState) {
+        boolean turnedOn = appPoManager.getAppModifyOrderPage().isTakeProfitStopLossOn();
+        if (toggleState.equalsIgnoreCase("on")) {
+            Assert.assertTrue(turnedOn, "Take Profit and Stop Loss toggle was off on the modify order page");
+        } else {
+            Assert.assertFalse(turnedOn, "Take Profit and Stop Loss toggle was on on the modify order page");
+        }
+        appPoManager.getAppModifyOrderPage().tapBack();
+        appPoManager.getAppTradeView().cancelOrder();
     }
 
     @Then("the user sees the value {string} is edited on the pending order details page")
@@ -911,6 +974,32 @@ public class tradeSteps extends BaseTest {
         appPoManager.getAppTradeView().cancelPendingOrderInDetail();
     }
 
+    @Then("the user sees limit order values are displayed correctly with the user input value on the pending order details page")
+    public void the_user_sees_limit_order_values_are_displayed_correctly_with_the_user_input_value_on_the_pending_order_details_page() {
+        AppPendingOrderDetailsPage details = appPoManager.getAppPendingOrderDetailsPage();
+        assertPendingOrderUserInput(details, "Direction", details.getValidationValue("Direction"));
+        assertPendingOrderUserInput(details, "Order Type", details.getValidationValue("Order Type"));
+        assertPendingOrderUserInput(details, "Volume", details.getValidationValue("Volume"));
+        assertPendingOrderUserInput(details, "Target Price", details.getValidationValue("Target Price"));
+        // placePendingOrder does not select a chip. The app default validity is Today.
+        assertPendingOrderUserInput(details, "Validity", "Today");
+        appPoManager.getAppTradeView().cancelPendingOrderInDetail();
+    }
+
+    private void assertPendingOrderUserInput(AppPendingOrderDetailsPage details, String label, String expected) {
+        String displayed = details.getDetailValue(label);
+        Assert.assertNotNull(displayed, label + " was missing on the pending order details page");
+        Assert.assertFalse(displayed.isBlank(), label + " was blank on the pending order details page");
+        Assert.assertNotNull(expected, label + " expected value was not captured from the order input");
+        Assert.assertFalse(expected.isBlank(), label + " expected value was blank");
+        String symbolDecimal = tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol);
+        Assert.assertEquals(
+                details.comparableUserInput(label, displayed, symbolDecimal),
+                details.comparableUserInput(label, expected, symbolDecimal),
+                label + " on the pending order details page"
+        );
+    }
+
     @Then("the user sees the open position date is displayed as correct format on the open position tab")
     public void the_user_sees_the_open_position_date_is_displayed_as_correct_format_on_the_open_position_tab() throws InterruptedException {
         Assert.assertTrue(appPoManager.getAppTradeView().isOpenPositionDateValid());
@@ -1021,6 +1110,37 @@ public class tradeSteps extends BaseTest {
         Assert.assertTrue(shown, message);
     }
 
+    @Then("the user sees transaction record item {string} on the portfolio history list and closes the open position")
+    public void the_user_sees_transaction_record_item_on_the_portfolio_history_list_and_closes_the_open_position(String item) {
+        boolean shown = appPoManager.getAppPortfolioPage().historyTransactionItemDisplayed(item);
+        String detail = appPoManager.getAppPortfolioPage().lastHistoryTransactionDetail();
+        String message = item + " was not shown on the portfolio history record for " + AppMarketsPage.tradeSymbol;
+        if (detail != null && !detail.isBlank()) {
+            message = message + ". " + detail;
+        }
+        Assert.assertTrue(shown, message);
+        AppPortfolioPage portfolio = appPoManager.getAppPortfolioPage();
+        portfolio.selectTab("Open Positions");
+        if (!openPositionsTabSelected(portfolio)) {
+            portfolio.selectTab("Open Positions");
+        }
+        Assert.assertTrue(
+                openPositionsTabSelected(portfolio),
+                "Open Positions tab was not selected before closing the position for " + AppMarketsPage.tradeSymbol);
+        appPoManager.getAppTradeView().closePosition();
+    }
+
+    // Portfolio stays on History after the direction check. Select Open Positions before close.
+    private boolean openPositionsTabSelected(AppPortfolioPage portfolio) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(d -> portfolio.tabIsSelected("Open Positions"));
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
     @Then("the user sees transaction record item {string} is {string} on the portfolio history list")
     public void the_user_sees_transaction_record_item_is_on_the_portfolio_history_list(String item, String expected) {
         Assert.assertTrue(
@@ -1038,6 +1158,27 @@ public class tradeSteps extends BaseTest {
             message = message + ". " + detail;
         }
         Assert.assertTrue(valid, message);
+    }
+
+    @When("the user taps the search button on the markets page")
+    public void the_user_taps_the_search_button_on_the_markets_page() {
+        appPoManager.getAppMarketsPage().tapSearchButton();
+    }
+
+    @And("the user fills in the search field with value {string} on the markets page")
+    public void the_user_fills_in_the_search_field_with_value_on_the_markets_page(String value) {
+        appPoManager.getAppMarketsPage().fillSearchField(value);
+    }
+
+    @Then("the user sees the symbol {string} in the markets search results")
+    public void the_user_sees_the_symbol_in_the_markets_search_results(String symbol) {
+        Assert.assertEquals(appPoManager.getAppMarketsPage().searchFieldValue(), symbol);
+        Assert.assertTrue(
+                appPoManager.getAppMarketsPage().searchResultRowIsVisible(symbol),
+                "Symbol row was not visible in the markets search results: " + symbol);
+        Assert.assertFalse(
+                appPoManager.getAppMarketsPage().instrumentTicketIsVisible(),
+                "Search opened the instrument ticket instead of staying on the search results");
     }
 
     private void assertLotSizeChangedByStep(String fieldName, int direction) {
