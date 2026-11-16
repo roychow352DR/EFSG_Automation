@@ -12,13 +12,13 @@ Native App trade — Portfolio History list
 
 ## Scenario Title
 
-User sees the open price of open position is open on the portfolio history list
+User sees the open price of open position on the portfolio history list
 
 ## Tags
 
-`@App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @AppTest @Test`
+`@App @Smoke @Regression @Trade @EBL_MT5 @XPro @AppTest @Test`
 
-Effective entity tags: `@EBL_MT5` and `@EIEHK`. Both entities are required. The scenario has `@Test`, so the scoped commands keep that tag.
+Effective entity tag: `@EBL_MT5` only. EIEHK is not required for this scenario. `@XPro` is unresolved and has no Android package mapping. The scenario has `@Test`, so the scoped command keeps that tag.
 
 ## Environment
 
@@ -26,6 +26,7 @@ Effective entity tags: `@EBL_MT5` and `@EIEHK`. Both entities are required. The 
 - env=bauuat
 - platform=ANDROID
 - symbol=XAUUSD
+- entity=EBL_MT5
 
 Use the entity credentials already loaded by `the user logs in on the App login page`. Do not copy passwords into this prompt or other generated artifacts.
 
@@ -38,11 +39,11 @@ Use the entity credentials already loaded by `the user logs in on the App login 
 5. When the user taps back button on the app trade view
 6. And the user taps button "Portfolio" on the app footer
 7. And the user selects tab "History" on the portfolio page
-8. Then the user sees transaction record item "Open Price" on the portfolio history list
+8. Then the user sees transaction record item "Open Price" on the portfolio history list and closes the open position
 
 ## Expected Assertions
 
-The scenario does not close the position. `historyTransactionItemDisplayed("Open Price")` waits for the latest today Open record for the traded symbol and captured volume. The expected price is `AppInstrumentDetailsPage.executedPrice`, captured from the order confirmation before the market order is confirmed. Prices are compared as numbers after commas are removed. A missing expected price, a missing displayed price, or unequal numbers fails. Two nulls are not a success. Older Close rows for other deals may remain; the check selects the latest Open for this symbol and volume. EBL close rows use the opposite side. EIEHK keeps the original side. A non-Android driver returns false.
+`historyTransactionItemDisplayed("Open Price")` waits for the latest Open record for the traded symbol and captured volume. The expected price is `AppInstrumentDetailsPage.executedPrice`, captured from the order confirmation before the market order is confirmed. Prices are compared as numbers after commas are removed. A missing expected price, a missing displayed price, or unequal numbers fails. Two nulls are not a success. Older Close rows for other deals may remain; the check selects the latest Open for this symbol and volume. EBL close rows use the opposite side. A non-Android driver returns false. After the price assertion passes, the same step selects Open Positions and closes the position.
 
 ## Entity coverage
 
@@ -50,28 +51,18 @@ The scenario does not close the position. `historyTransactionItemDisplayed("Open
 
 - Target: env `bauuat` or `mt5uat`, platform `ANDROID`, package `com.emperorfs.ebltrading.android`, artifact `com.emperorfs.ebltrading.android_uat-0.0.303-0909.apk.zip`. Installed build was not verified in this change.
 - UI path: `AppPortfolioPage.historyTransactionItemDisplayed("Open Price")` reads the plain decimal under the `Price` label on the latest Open row. A signed P/L value is ignored.
-- Status: implemented for Android. iOS is not implemented.
+- Status: implemented for Android. iOS is not implemented. EIEHK is out of scope for this scenario.
 - Evidence: source inspection, plus the existing portfolio history-list videos in `app_videos` (open/close records, open and close action, open and close direction, product code, and product name). No new device inspection in this change.
 - Runtime result: not run.
 
-### EIEHK
+### Unresolved
 
-- Target: env `bauuat` or `mt5uat`, platform `ANDROID`, package `com.efsg.eiehktrading.android`, artifact `com.efsg.eietrading.android_0.0.220-20261007.apk.zip`. Installed build was not verified in this change.
-- UI path: the price on the `Open:` line of the latest matching card, between the label and the timestamp. A `Close:` line is not required.
-- Status: implemented for Android. iOS is not implemented.
-- Evidence: source inspection, plus the existing portfolio history-list videos in `app_videos`. No new device inspection in this change.
-- Runtime result: not run.
+- `@XPro` has no verified entity mapping. No command is provided for it.
 
 ## Scoped commands
 
 ```bash
 mvn test -PAppTests -Dproduct=app -Denv=bauuat -Dentity=EBL_MT5 -Dplatform=ANDROID -Dsymbol=XAUUSD \
-  -Dcucumber.features=src/test/java/Features/NativeApp/trade/APP-3493.feature \
-  -Dcucumber.filter.tags="@Test"
-```
-
-```bash
-mvn test -PAppTests -Dproduct=app -Denv=bauuat -Dentity=EIEHK -Dplatform=ANDROID -Dsymbol=XAUUSD \
   -Dcucumber.features=src/test/java/Features/NativeApp/trade/APP-3493.feature \
   -Dcucumber.filter.tags="@Test"
 ```

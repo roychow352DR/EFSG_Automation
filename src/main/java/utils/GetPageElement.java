@@ -66,6 +66,14 @@ public class GetPageElement {
         pageSourceCache = null;
     }
 
+    // Return the snapshot already captured for this page. A missing cache stays missing.
+    public String cachedPageSource() {
+        if (pageSourceCache == null || pageSourceCache.isBlank()) {
+            return null;
+        }
+        return pageSourceCache;
+    }
+
     private String pageSource() {
         if (pageSourceCache != null && !pageSourceCache.isBlank()) {
             return pageSourceCache;

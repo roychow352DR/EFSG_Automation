@@ -1,0 +1,13 @@
+Feature: Native App trade
+
+    @App @Smoke @Regression @Trade @EIEHK @XPro
+    Scenario: The contract value is displayed correctly after the lot size changed
+      Given the user launch the app
+      And the user logs in on the App login page
+      And the user taps button "Markets" on the app footer
+      When the user taps symbol "XAUUSD" on the app markets page
+      And the user selects direction "BUY" on the app trade view
+      And the user fills in the text field "Lot Size" with value "0.5" on the instrument details page
+      Then the user sees the "Contract Value" value is displayed correctly on the instrument details page
+
+

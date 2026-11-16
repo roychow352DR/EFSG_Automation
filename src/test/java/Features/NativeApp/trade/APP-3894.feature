@@ -1,6 +1,6 @@
 Feature: Native App trade
 
-    @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
+    @App @Smoke @Regression @Trade @EBL_MT5
     Scenario: The trading volume of pending order is displayed correctly after the 1 lot button is tapped
       Given the user launch the app
       And the user logs in on the App login page

@@ -1,0 +1,4 @@
+interface:
+  display_name: "EFSG Orchestrator"
+  short_description: "Coordinate EFSG automation with specialist agents"
+  default_prompt: "Use $efsg-orchestrator to coordinate this EFSG automation request, inspect the existing implementation, and propose the files and actions before changes."

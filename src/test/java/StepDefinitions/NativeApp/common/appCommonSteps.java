@@ -44,9 +44,18 @@ public class appCommonSteps extends BaseTest {
             case "Pending Order Details" -> actualHeaderTitle = appPoManager.getAppPendingOrderDetailsPage().getHeader();
             case "Close Position" -> actualHeaderTitle = appPoManager.getAppClosePositionPage().getHeaderText();
             case "Edit Position" -> actualHeaderTitle = appPoManager.getAppEditPositionPage().getHeaderText();
+            case "Modify Order" -> actualHeaderTitle = appPoManager.getAppModifyOrderPage().getHeaderText();
         }
         Assert.assertEquals(actualHeaderTitle, expectedHeader);
 
+        if ("Modify Order".equals(expectedHeader)) {
+            appPoManager.getAppTradeView().cancelOrder();
+            return;
+        }
+        if ("Pending Order Details".equals(expectedHeader)) {
+            appPoManager.getAppTradeView().cancelPendingOrderInDetail();
+            return;
+        }
         if (expectedHeader.equals("Position Details")) {
             if (appPoManager.getAppTradeView().hasClosePositionButton()) {
                 appPoManager.getAppTradeView().closePositionInDetails();

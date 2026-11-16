@@ -1574,26 +1574,51 @@ public class AppTradeView {
     }
 
     private void confirmCancelPendingOrderDialogue() {
+        By overlay = By.xpath("//*[@resource-id='RNE__Overlay']");
         By overlayCancel = By.xpath(
-                "//android.view.ViewGroup[@resource-id='RNE__Overlay']//*[@text='Cancel Order']"
+                "//*[@resource-id='RNE__Overlay']//*["
+                        + "(@clickable='true' and (@text='Cancel Order' or @content-desc='Cancel Order'))"
+                        + " or @text='Cancel Order' or @content-desc='Cancel Order']"
         );
-        By cancelLabel = By.xpath("//*[@text='Cancel Order']");
+        By clickableCancel = By.xpath(
+                "//*[@resource-id='RNE__Overlay']//*[@clickable='true' and (@text='Cancel Order' or @content-desc='Cancel Order')]"
+                        + " | //*[@resource-id='RNE__Overlay']//*[@text='Cancel Order' or @content-desc='Cancel Order']/parent::*[@clickable='true']"
+        );
         try {
             new WebDriverWait(driver, Duration.ofSeconds(10))
                     .ignoring(StaleElementReferenceException.class)
-                    .until(d -> !d.findElements(overlayCancel).isEmpty()
-                            || !d.findElements(cancelLabel).isEmpty());
-            try {
-                abs.tapBottomMost(overlayCancel, 8);
-            } catch (TimeoutException e) {
-                abs.tapBottomMost(cancelLabel, 8);
-            }
-            getPageElement.logInfo("Tapped Cancel Order on the confirmation dialogue");
+                    .until(d -> !d.findElements(overlayCancel).isEmpty());
         } catch (TimeoutException e) {
             if (AppSettingPage.isTradeConfirmNeeded) {
                 throw new TimeoutException("Cancel Order confirmation dialogue was not shown", e);
             }
             System.out.println("Pending order cancelled without confirmation dialogue");
+            return;
+        }
+        abs.tapBottomMost(overlayCancel, 8);
+        getPageElement.logInfo("Tapped Cancel Order on the confirmation dialogue");
+        if (cancelConfirmationClosed(overlay)) {
+            return;
+        }
+        try {
+            abs.tapBottomMost(clickableCancel, 3);
+            getPageElement.logInfo("Retried Cancel Order on the clickable confirmation control");
+        } catch (TimeoutException e) {
+            throw new TimeoutException("Cancel Order on the confirmation dialogue could not be tapped", e);
+        }
+        if (!cancelConfirmationClosed(overlay)) {
+            throw new TimeoutException("Cancel Order on the confirmation dialogue could not be tapped");
+        }
+    }
+
+    private boolean cancelConfirmationClosed(By overlay) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> d.findElements(overlay).isEmpty());
+            return true;
+        } catch (TimeoutException e) {
+            return false;
         }
     }
 
@@ -1601,8 +1626,13 @@ public class AppTradeView {
         if (!(driver instanceof AndroidDriver)) {
             return;
         }
+        // A previous Android BACK can leave EIEHK on the launcher. Bring it forward before tapping close.
+        abs.bringAppToForeground();
         hideAndroidKeyboard();
-        leaveEditPositionIfOpen();
+        if (confirmedOnEditPosition()) {
+            leaveEditPositionIfOpen();
+        }
+        abs.bringAppToForeground();
         dismissLeaveEditPromptIfShown();
         waitUntilOverlayGone();
         if (isPositionDetailsOpen()) {
@@ -1613,21 +1643,8 @@ public class AppTradeView {
             submitOpenClosePosition();
             return;
         }
-        if (isPortfolioListVisible()) {
-            AppPortfolioPage portfolio = new AppPortfolioPage(driver);
-            portfolio.tapButtonOnRow("close");
-            if (isEditPositionUiVisible()) {
-                getPageElement.logInfo("Portfolio close CTA opened Edit Position; leaving and retrying close");
-                leaveEditPositionIfOpen();
-                portfolio.tapButtonOnRow("close");
-            }
-            if (!isClosePositionPageOpen(8)) {
-                portfolio.tapButtonOnRow("close");
-            }
-            if (!isClosePositionPageOpen(5)) {
-                throw new TimeoutException("Close Position page did not open after tapping the close CTA");
-            }
-            submitOpenClosePosition();
+        if (onPortfolioForClose()) {
+            closeOpenPositionFromPortfolio();
             return;
         }
         waitUntilTradeListVisible();
@@ -1656,6 +1673,44 @@ public class AppTradeView {
             throw new TimeoutException("Close Position page did not open after tapping the close CTA");
         }
         submitOpenClosePosition();
+    }
+
+    private void closeOpenPositionFromPortfolio() {
+        AppPortfolioPage portfolio = new AppPortfolioPage(driver);
+        portfolio.tapButtonOnRow("close");
+        if (editPositionHeaderVisible()) {
+            getPageElement.logInfo("Portfolio close CTA opened Edit Position; leaving and retrying close");
+            leaveEditPositionIfOpen();
+            portfolio.tapButtonOnRow("close");
+        }
+        if (!isClosePositionPageOpen(8)) {
+            portfolio.tapButtonOnRow("close");
+        }
+        if (!isClosePositionPageOpen(5)) {
+            throw new TimeoutException("Close Position page did not open after tapping the close CTA");
+        }
+        submitOpenClosePosition();
+    }
+
+    private boolean confirmedOnEditPosition() {
+        return editPositionHeaderVisible() && !appFooterPresent();
+    }
+
+    private boolean onPortfolioForClose() {
+        if (headerTitleInTree("Close Position")
+                || headerTitleInTree("Modify Order")
+                || headerTitleInTree("Position Details")) {
+            return false;
+        }
+        // A leftover Edit Position node must not hide the portfolio once the footer is back.
+        if (editPositionHeaderVisible() && !appFooterPresent()) {
+            return false;
+        }
+        if (isPortfolioListVisible()) {
+            return true;
+        }
+        return compactTabPoint("Open Positions") != null
+                && (appFooterPresent() || portfolioShowFilterPresent());
     }
 
     private void leaveEditPositionIfOpen() {
@@ -1694,7 +1749,7 @@ public class AppTradeView {
             return;
         }
         tapEditPositionHeaderBack();
-        waitForLeaveEditPromptOrEditGone();
+        waitUntilEditPositionHeaderGone();
         dismissLeaveEditPromptIfShown();
         if (isLeaveEditPromptVisible() || isBlockingOverlayVisible()) {
             dismissLeaveEditPromptIfShown();
@@ -1702,11 +1757,13 @@ public class AppTradeView {
             return;
         }
         if (hasLeftEditPosition()) {
+            getPageElement.logInfo("Edit Position header is gone or the portfolio root is visible; skipping Android back");
             return;
         }
         getPageElement.logInfo("Edit Position still open after header back; pressing Android back");
         pressAndroidBack();
         hideAndroidKeyboard();
+        abs.bringAppToForeground();
         waitForLeaveEditPromptOrEditGone();
         dismissLeaveEditPromptIfShown();
         waitUntilEditPositionCloses();
@@ -1722,7 +1779,52 @@ public class AppTradeView {
     }
 
     private boolean hasLeftEditPosition() {
-        return !isEditPositionUiVisible() || isTradeListVisible();
+        if (!editPositionHeaderVisible()) {
+            return true;
+        }
+        return appFooterPresent() || isTradeListVisible();
+    }
+
+    private boolean editPositionHeaderVisible() {
+        return compactHeaderVisible("Edit Position") || headerTitleInTree("Edit Position");
+    }
+
+    private void waitUntilEditPositionHeaderGone() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .ignoring(StaleElementReferenceException.class)
+                    .until(d -> !editPositionHeaderVisible() || appFooterPresent());
+        } catch (TimeoutException ignored) {
+        }
+    }
+
+    private boolean appFooterPresent() {
+        return footerLabelOnScreen("Portfolio") && footerLabelOnScreen("Home");
+    }
+
+    // React Native footer labels often report isDisplayed false. Use the bottom band instead.
+    private boolean footerLabelOnScreen(String label) {
+        Dimension window = driver.manage().window().getSize();
+        int minFooterY = (int) (window.getHeight() * 0.75);
+        for (WebElement element : safeFindElements(By.xpath(
+                "//*[@text='" + label + "' or @content-desc='" + label + "']"))) {
+            try {
+                int[] box = visibleBox(element);
+                if (box == null || box[1] < minFooterY || box[1] >= window.getHeight()) {
+                    continue;
+                }
+                return true;
+            } catch (StaleElementReferenceException ignored) {
+            }
+        }
+        return false;
+    }
+
+    private boolean portfolioShowFilterPresent() {
+        return !safeFindElements(By.xpath(
+                "//*[@text='Show all' or @text='Show All' or @content-desc='Show all'"
+                        + " or contains(@content-desc,'Show last') or contains(@text,'Show last')]"
+        )).isEmpty();
     }
 
     private void tapEditPositionHeaderBack() {
@@ -1805,9 +1907,9 @@ public class AppTradeView {
 
     private void waitForLeaveEditPromptOrEditGone() {
         try {
-            new WebDriverWait(driver, Duration.ofSeconds(3))
+            new WebDriverWait(driver, Duration.ofSeconds(5))
                     .ignoring(StaleElementReferenceException.class)
-                    .until(d -> !isEditPositionUiVisible() || isLeaveEditPromptVisible());
+                    .until(d -> !editPositionHeaderVisible() || appFooterPresent() || isLeaveEditPromptVisible());
         } catch (TimeoutException ignored) {
         }
     }
@@ -2425,16 +2527,13 @@ public class AppTradeView {
     }
 
     private boolean isPortfolioListVisible() {
-        if (isEditPositionUiVisible() || headerTitleInTree("Close Position")
-                || headerTitleInTree("Modify Order")) {
+        if (headerTitleInTree("Close Position") || headerTitleInTree("Modify Order")) {
             return false;
         }
-        boolean historyTab = compactTabPoint("History") != null;
-        boolean showFilter = !safeFindElements(By.xpath(
-                "//*[@text='Show all' or @text='Show All' or @content-desc='Show all'"
-                        + " or contains(@content-desc,'Show last') or contains(@text,'Show last')]"
-        )).isEmpty();
-        return historyTab && showFilter;
+        if (editPositionHeaderVisible() && !appFooterPresent()) {
+            return false;
+        }
+        return compactTabPoint("History") != null && portfolioShowFilterPresent();
     }
 
     private boolean isClosePositionPageOpen(int seconds) {
@@ -2732,11 +2831,25 @@ public class AppTradeView {
         if (!isOnPageWithBackNavigation() && !isEditPositionUiVisible()) {
             return;
         }
+        boolean editPositionOpen = editPositionHeaderVisible();
         tapBackChevron();
         dismissLeaveEditPromptIfShown();
+        if (editPositionOpen) {
+            waitUntilEditPositionHeaderGone();
+        }
+        // Hardware BACK from the portfolio root moves EIEHK to the background.
+        if (appFooterPresent()) {
+            getPageElement.logInfo("Portfolio root is visible; skipping Android back");
+            return;
+        }
+        if (editPositionOpen && !editPositionHeaderVisible()) {
+            getPageElement.logInfo("Edit Position header is gone; skipping Android back");
+            return;
+        }
         if (isOnPageWithBackNavigation() || isEditPositionUiVisible()) {
             pressAndroidBack();
             hideAndroidKeyboard();
+            abs.bringAppToForeground();
             dismissLeaveEditPromptIfShown();
         }
         try {

@@ -1,7 +1,7 @@
 Feature: App Trade
 
   @App @Smoke @Regression @Trade @EBL_MT5 @EIEHK @XPro
-  Scenario: Prompted confirmation dialogue of cancel order after the cancel button is tapped on pending order tab
+  Scenario: The confirmation dialogue of cancel order is prompted after the cancel button is tapped on pending order tab
     Given the user launch the app
     And the user logs in on the App login page
     And the user taps button "Markets" on the app footer
