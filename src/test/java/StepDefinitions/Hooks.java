@@ -6,8 +6,10 @@ import Data.TradeRecord;
 import PageObject.NativeApp.*;
 import io.appium.java_client.InteractsWithApps;
 import io.cucumber.java.*;
+import org.openqa.selenium.HasCapabilities;
 import org.openqa.selenium.NoSuchSessionException;
 import utils.BaseTest;
+import utils.app.MobileDriver;
 import utils.VideoRecorder;
 
 import java.io.File;
@@ -142,6 +144,7 @@ public class Hooks extends BaseTest {
         boolean terminateBeforeQuit = shouldTerminateAppBeforeQuit();
         boolean stopEiehkAfterQuit = !terminateBeforeQuit;
         String androidPackage = resolveAndroidPackage();
+        String androidUdid = androidUdidFromSession();
 
         try {
             if (terminateBeforeQuit && driver instanceof InteractsWithApps appDriver) {
@@ -165,7 +168,7 @@ public class Hooks extends BaseTest {
         } finally {
             driver = null;
             if (stopEiehkAfterQuit) {
-                forceStopAppAfterSessionQuit(androidPackage);
+                forceStopAppAfterSessionQuit(androidPackage, androidUdid);
             }
         }
     }
@@ -183,13 +186,36 @@ public class Hooks extends BaseTest {
         }
     }
 
-    private void forceStopAppAfterSessionQuit(String androidPackage) {
+    private String androidUdidFromSession() {
+        if (driver instanceof HasCapabilities hasCapabilities) {
+            Object udid = hasCapabilities.getCapabilities().getCapability("appium:udid");
+            if (!(udid instanceof String value) || value.isBlank()) {
+                udid = hasCapabilities.getCapabilities().getCapability("udid");
+            }
+            if (udid instanceof String value && !value.isBlank()) {
+                return value;
+            }
+        }
+        try {
+            return MobileDriver.resolveAndroidSerial();
+        } catch (RuntimeException e) {
+            System.err.println("Could not resolve Android serial for force-stop: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private void forceStopAppAfterSessionQuit(String androidPackage, String androidUdid) {
         if (androidPackage == null || androidPackage.isBlank()) {
             System.err.println("Skipped force-stop because the Android package is empty.");
             return;
         }
+        if (androidUdid == null || androidUdid.isBlank()) {
+            System.err.println("Skipped force-stop because the Android serial is unknown.");
+            return;
+        }
         try {
-            Process process = new ProcessBuilder(resolveAdbExecutable(), "shell", "am", "force-stop", androidPackage)
+            Process process = new ProcessBuilder(
+                    MobileDriver.resolveAdbExecutable(), "-s", androidUdid, "shell", "am", "force-stop", androidPackage)
                     .redirectErrorStream(true)
                     .start();
             if (!process.waitFor(10, TimeUnit.SECONDS)) {
@@ -205,20 +231,6 @@ public class Hooks extends BaseTest {
         } catch (Exception e) {
             System.err.println("Failed to force-stop app after session quit: " + e.getMessage());
         }
-    }
-
-    private String resolveAdbExecutable() {
-        String sdkRoot = System.getenv("ANDROID_HOME");
-        if (sdkRoot == null || sdkRoot.isBlank()) {
-            sdkRoot = System.getenv("ANDROID_SDK_ROOT");
-        }
-        if (sdkRoot != null && !sdkRoot.isBlank()) {
-            File adb = new File(sdkRoot, "platform-tools/adb");
-            if (adb.isFile()) {
-                return adb.getAbsolutePath();
-            }
-        }
-        return "adb";
     }
 
     /**
