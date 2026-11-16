@@ -154,15 +154,12 @@ public class BaseTest {
         try {
             if (appiumDriver instanceof io.appium.java_client.android.AndroidDriver androidDriver) {
                 String pkg = androidDriver.getCurrentPackage();
-                if (pkg == null || pkg.isBlank()) {
+                String expectedPackage = appConfig == null ? null : appConfig.getAndroidPackage();
+                if (pkg == null || pkg.isBlank() || expectedPackage == null || expectedPackage.isBlank()) {
                     return false;
                 }
-                // A launcher or system package is not a live EIEHK session.
-                if (isEiehk()) {
-                    String expectedPackage = appConfig == null ? null : appConfig.getAndroidPackage();
-                    return expectedPackage != null && pkg.equals(expectedPackage);
-                }
-                return true;
+                // Launcher and system packages are not a live session for the target app.
+                return pkg.equals(expectedPackage);
             }
             return true;
         } catch (Exception e) {
@@ -177,60 +174,20 @@ public class BaseTest {
     }
 
     private void startAndroidScreenRecording() {
-        try {
-            ((CanRecordScreen) driver).startRecordingScreen();
-        } catch (WebDriverException e) {
-            System.err.println("startRecordingScreen failed: " + e.getMessage());
-            if (!isSessionHangUp(e)) {
-                continueWithoutEiehkRecording(e);
-                return;
-            }
-            System.err.println("Recreating Android session after recording proxy failure");
-            try {
-                driver.quit();
-            } catch (Exception ignored) {
-            }
-            driver = null;
-            try {
-                driver = mobileDriver.initializeAndroidDriver(appConfig.getAndroidAppPath(), appConfig.getAndroidPackage());
-                ((CanRecordScreen) driver).startRecordingScreen();
-            } catch (Exception retryError) {
-                if (isEiehk() && driver != null) {
-                    continueWithoutEiehkRecording(retryError);
-                    return;
-                }
-                throw new RuntimeException("Failed to start Android screen recording", retryError);
-            }
-        }
-    }
-
-    private void continueWithoutEiehkRecording(Exception error) {
-        if (!isEiehk()) {
-            if (error instanceof RuntimeException runtimeException) {
-                throw runtimeException;
-            }
-            throw new RuntimeException(error);
-        }
-        System.err.println("Continuing EIEHK scenario without screen recording: " + error.getMessage());
         if (!(driver instanceof CanRecordScreen recorder)) {
+            System.err.println("Android driver cannot record the screen; continuing without recording");
             return;
         }
         try {
-            recorder.stopRecordingScreen();
-        } catch (Exception stopError) {
-            System.err.println("Ignoring screen recording stop after a failed start: " + stopError.getMessage());
+            recorder.startRecordingScreen();
+        } catch (Exception e) {
+            System.err.println("Continuing without Android screen recording: " + e.getMessage());
+            try {
+                recorder.stopRecordingScreen();
+            } catch (Exception stopError) {
+                System.err.println("Ignoring screen recording stop after a failed start: " + stopError.getMessage());
+            }
         }
-    }
-
-    private boolean isEiehk() {
-        return productEntity != null && productEntity.equalsIgnoreCase("EIEHK");
-    }
-
-    private boolean isSessionHangUp(Throwable error) {
-        String message = String.valueOf(error.getMessage()).toLowerCase(Locale.ROOT);
-        return message.contains("socket hang up")
-                || message.contains("could not proxy")
-                || message.contains("cannot be proxied");
     }
 
     /**

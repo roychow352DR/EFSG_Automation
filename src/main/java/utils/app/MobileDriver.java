@@ -23,12 +23,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -41,6 +45,9 @@ public class MobileDriver {
     private static final String APPIUM_JS_PATH = "//usr//local//lib//node_modules//appium//build//lib//main.js";
     private static final Duration IMPLICIT_WAIT = Duration.ZERO;
     private static final Duration APP_READY_WAIT = Duration.ofSeconds(60);
+    private static final Duration ANDROID_FOREGROUND_WAIT = Duration.ofSeconds(45);
+    private static final int ANDROID_ADB_TIMEOUT_MS = 180_000;
+    private static final Duration ADB_DEVICES_WAIT = Duration.ofSeconds(15);
     // Package is entity-specific; the RN launcher class is still CopyMaster MainActivity.
     private static final String ANDROID_LAUNCH_ACTIVITY = "com.mfinance.copymaster.MainActivity";
     private static final Duration WDA_LAUNCH_TIMEOUT = Duration.ofSeconds(20);
@@ -114,47 +121,30 @@ public class MobileDriver {
         }
     }
 
-    private void waitForAppReady(AppiumDriver driver, String androidAppPackage) {
-        if (driver instanceof AndroidDriver) {
-            waitForAndroidAppReady(driver, androidAppPackage);
-        } else {
-            System.err.println("Unknown driver type; skipping app-ready wait");
-        }
-    }
-
-    private void waitForAndroidAppReady(AppiumDriver driver, String appPackage) {
-        System.out.println("Waiting for Android app to be ready...");
-        new MobileAbstractComponents(driver).waitUntilLaunchComplete(APP_READY_WAIT);
-    }
-
-    private void activateEiehkApp(AppiumDriver sessionDriver, String androidPackage) {
-        // Keep this package aligned with AppConfig's EIEHK mapping.
-        if (!"com.efsg.eiehktrading.android".equals(androidPackage)) {
-            return;
+    private void activateAndroidApp(AppiumDriver sessionDriver, String androidPackage) {
+        if (androidPackage == null || androidPackage.isBlank()) {
+            throw new IllegalArgumentException("Cannot activate Android app because the package is empty");
         }
         if (!(sessionDriver instanceof InteractsWithApps apps)) {
-            return;
+            throw new IllegalStateException("Android driver cannot activate " + androidPackage);
         }
         System.out.println("Activating Android app: " + androidPackage);
         apps.activateApp(androidPackage);
     }
 
-    private boolean isRecoverableSessionError(Throwable error, String androidPackage) {
+    private boolean isRecoverableSessionError(Throwable error) {
         String message = String.valueOf(error.getMessage()).toLowerCase(Locale.ROOT);
-        // Keep this package aligned with AppConfig's EIEHK mapping.
-        boolean eiehkLaunchFailure = "com.efsg.eiehktrading.android".equals(androidPackage)
-                && (message.contains("instrumentation process cannot be initialized")
-                || message.contains("cannot start the"));
         if (message.contains("socket hang up")
                 || message.contains("could not proxy")
                 || message.contains("cannot be proxied")
                 || message.contains("instrumentation process is not running")
-                || (message.contains("cannot start the") && message.contains("uiautomator2"))
-                || eiehkLaunchFailure) {
+                || message.contains("instrumentation process cannot be initialized")
+                || message.contains("cannot start the")
+                || message.contains("not in the foreground")) {
             return true;
         }
         Throwable cause = error.getCause();
-        return cause != null && cause != error && isRecoverableSessionError(cause, androidPackage);
+        return cause != null && cause != error && isRecoverableSessionError(cause);
     }
 
     private void quitQuietly() {
@@ -177,12 +167,124 @@ public class MobileDriver {
         }
     }
 
-    private void waitUntilAppInForeground(AppiumDriver driver, String appPackage) {
-        if (!(driver instanceof InteractsWithApps apps)) {
+    /**
+     * Resolves the adb executable from ANDROID_HOME or ANDROID_SDK_ROOT.
+     * Falls back to {@code adb} on PATH.
+     */
+    public static String resolveAdbExecutable() {
+        String sdkRoot = System.getenv("ANDROID_HOME");
+        if (sdkRoot == null || sdkRoot.isBlank()) {
+            sdkRoot = System.getenv("ANDROID_SDK_ROOT");
+        }
+        if (sdkRoot != null && !sdkRoot.isBlank()) {
+            File adb = new File(sdkRoot, "platform-tools/adb");
+            if (adb.isFile()) {
+                return adb.getAbsolutePath();
+            }
+        }
+        return "adb";
+    }
+
+    /**
+     * Selects the Android serial for this session.
+     * {@code -Dudid} wins. Otherwise exactly one online device is used.
+     */
+    public static String resolveAndroidSerial() {
+        String requested = System.getProperty("udid");
+        if (requested != null && !requested.isBlank()) {
+            return requested.trim();
+        }
+        List<String> online = new ArrayList<>();
+        List<String> notReady = new ArrayList<>();
+        for (String line : runAdb("devices").split("\\R")) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("List of devices")) {
+                continue;
+            }
+            String[] parts = trimmed.split("\\s+");
+            if (parts.length < 2) {
+                continue;
+            }
+            if ("device".equals(parts[1])) {
+                online.add(parts[0]);
+            } else {
+                notReady.add(parts[0] + " (" + parts[1] + ")");
+            }
+        }
+        if (online.size() == 1) {
+            return online.get(0);
+        }
+        if (online.isEmpty()) {
+            if (!notReady.isEmpty()) {
+                throw new IllegalStateException("Android device is not ready: " + notReady
+                        + ". Accept the USB debugging prompt, then retry.");
+            }
+            throw new IllegalStateException(
+                    "No online Android device. Connect a device with USB debugging enabled.");
+        }
+        throw new IllegalStateException("Multiple Android devices are online: " + online
+                + ". Pass -Dudid=<serial> to select the device.");
+    }
+
+    private static String runAdb(String... args) {
+        List<String> command = new ArrayList<>();
+        command.add(resolveAdbExecutable());
+        command.addAll(List.of(args));
+        try {
+            Process process = new ProcessBuilder(command)
+                    .redirectErrorStream(true)
+                    .start();
+            boolean finished = process.waitFor(ADB_DEVICES_WAIT.toSeconds(), TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+            }
+            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            if (!finished) {
+                throw new IllegalStateException("Timed out running adb " + String.join(" ", args));
+            }
+            if (process.exitValue() != 0) {
+                throw new IllegalStateException("adb " + String.join(" ", args)
+                        + " exited " + process.exitValue() + ": " + output.trim());
+            }
+            return output;
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to run adb " + String.join(" ", args), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while running adb " + String.join(" ", args), e);
+        }
+    }
+
+    private void configureDeviceUnlock() {
+        String unlockType = System.getProperty("unlockType");
+        String unlockKey = System.getProperty("unlockKey");
+        boolean hasUnlockCredentials = unlockType != null && !unlockType.isBlank()
+                && unlockKey != null && !unlockKey.isBlank();
+        boolean skipUnlock = Boolean.parseBoolean(System.getProperty("skipUnlock", "false"));
+        if (hasUnlockCredentials) {
+            skipUnlock = false;
+        }
+        aosOptions.setCapability("appium:skipUnlock", skipUnlock);
+        if (skipUnlock) {
+            System.out.println("Android unlock skipped because skipUnlock=true");
             return;
         }
+        if (!hasUnlockCredentials) {
+            System.out.println("Android unlock will dismiss a non-secure lock screen");
+            return;
+        }
+        aosOptions.setCapability("appium:unlockType", unlockType.trim());
+        aosOptions.setCapability("appium:unlockKey", unlockKey);
+        aosOptions.setCapability("appium:unlockSuccessTimeout", 10_000);
+        System.out.println("Android unlock type: " + unlockType.trim());
+    }
+
+    private void waitUntilAppInForeground(AppiumDriver sessionDriver, String appPackage) {
+        if (!(sessionDriver instanceof InteractsWithApps apps)) {
+            throw new IllegalStateException("Android driver cannot query " + appPackage);
+        }
         try {
-            new WebDriverWait(driver, APP_READY_WAIT).until(d -> {
+            new WebDriverWait(sessionDriver, ANDROID_FOREGROUND_WAIT).until(d -> {
                 try {
                     var currentState = apps.queryAppState(appPackage);
                     System.out.println("Android app state: " + currentState);
@@ -193,9 +295,12 @@ public class MobileDriver {
                     return false;
                 }
             });
-        } catch (Exception e) {
-            System.err.println("Error waiting for Android app foreground: " + e.getMessage());
+        } catch (TimeoutException e) {
+            throw new TimeoutException("Android app was not in the foreground after "
+                    + ANDROID_FOREGROUND_WAIT.toSeconds() + "s: " + appPackage, e);
         }
+        System.out.println("Android app is in the foreground: " + appPackage
+                + ". Home chrome is checked by the launch step.");
     }
 
     private boolean waitForFirstScreen(AppiumDriver driver) {
@@ -264,15 +369,13 @@ public class MobileDriver {
                 driver = new AndroidDriver(new URL(APPIUM_SERVER_URL), aosOptions);
                 driver.manage().timeouts().implicitlyWait(IMPLICIT_WAIT);
                 System.out.println("Android driver initialized successfully. Session ID: " + driver.getSessionId());
-                activateEiehkApp(driver, androidPackage);
-                waitForAppReady(driver, androidPackage);
+                activateAndroidApp(driver, androidPackage);
+                waitUntilAppInForeground(driver, androidPackage);
                 return (AndroidDriver) driver;
-            } catch (TimeoutException e) {
-                throw e;
             } catch (Exception e) {
                 lastError = e;
                 System.err.println("Error initializing Android driver (attempt " + attempt + "): " + e.getMessage());
-                if (!isRecoverableSessionError(e, androidPackage) || attempt == 3) {
+                if (!isRecoverableSessionError(e) || attempt == 3) {
                     e.printStackTrace();
                     throw new RuntimeException("Failed to initialize Android driver", e);
                 }
@@ -364,21 +467,22 @@ public class MobileDriver {
             throw new IllegalStateException("Options object is null!");
         }
 
-        // device emulator name
-        aosOptions.setDeviceName("AndroidDevice");
+        String serial = resolveAndroidSerial();
+        aosOptions.setDeviceName(serial);
+        aosOptions.setCapability("appium:udid", serial);
+        System.out.println("Android device serial: " + serial);
 
         // Set basic capabilities
         aosOptions.setPlatformName("Android");
         aosOptions.setAutomationName("UiAutomator2");
-        // aosOptions.setDeviceName(deviceName);
+        configureDeviceUnlock();
 
         // Use already installed app
         aosOptions.setAppPackage(androidPackage);
         aosOptions.setAppActivity(ANDROID_LAUNCH_ACTIVITY);
         // Do not wait for a single activity name; splash or alias activities may appear first
         aosOptions.setCapability("appWaitActivity", "*");
-        aosOptions.setCapability("appWaitForLaunch", true);
-        aosOptions.setCapability("appWaitDuration", (int) APP_READY_WAIT.toMillis());
+        aosOptions.setCapability("appWaitDuration", ANDROID_ADB_TIMEOUT_MS);
         aosOptions.setCapability("appium:autoAcceptAlerts", true);
         aosOptions.setCapability("appium:autoDismissAlerts",true);
 
@@ -388,20 +492,15 @@ public class MobileDriver {
         aosOptions.setNoReset(true);
         aosOptions.setFullReset(false);
 
-        // EIEHK is force-stopped after the previous session. Starting it during
-        // session creation fails while the package is stopped, so activate it
-        // only after the session exists. Other entities still auto-launch.
-        boolean deferEiehkLaunch = "com.efsg.eiehktrading.android".equals(androidPackage);
-        aosOptions.setCapability("autoLaunch", !deferEiehkLaunch);
-        if (deferEiehkLaunch) {
-            aosOptions.setCapability("appWaitForLaunch", false);
-        }
-        aosOptions.setCapability("skipUnlock", true);
+        // A force-stopped package cannot be started reliably while the session is
+        // still being created. Install during creation, then activate afterwards.
+        aosOptions.setCapability("autoLaunch", false);
+        aosOptions.setCapability("appWaitForLaunch", false);
         aosOptions.setCapability("skipServerInstallation", false);
         aosOptions.setNewCommandTimeout(Duration.ofSeconds(300));
-        aosOptions.setCapability("appium:uiautomator2ServerLaunchTimeout", 60_000);
-        aosOptions.setCapability("appium:uiautomator2ServerInstallTimeout", 60_000);
-        aosOptions.setCapability("appium:adbExecTimeout", 60_000);
+        aosOptions.setCapability("appium:uiautomator2ServerLaunchTimeout", ANDROID_ADB_TIMEOUT_MS);
+        aosOptions.setCapability("appium:uiautomator2ServerInstallTimeout", ANDROID_ADB_TIMEOUT_MS);
+        aosOptions.setCapability("appium:adbExecTimeout", ANDROID_ADB_TIMEOUT_MS);
         aosOptions.setCapability("appium:ignoreHiddenApiPolicyError", true);
         aosOptions.setCapability("appium:settings[waitForIdleTimeout]", 0);
         aosOptions.setCapability("appium:settings[waitForSelectorTimeout]", 0);
