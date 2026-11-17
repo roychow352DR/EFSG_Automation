@@ -56,10 +56,10 @@ public class TradeSymbolConfig {
         if (isInitialMarginZero) return 0;
         else {
             return switch (symbol) {
-                case "XAUUSD" -> 1000;
-                case "XAGUSD" -> 10000;
-                case "RKGCNH" -> 1300;
-                case "HKGHKD" -> 4000;
+                case "XAUUSD" -> 3000;
+                case "XAGUSD" -> 3000;
+                case "RKGCNH" -> 3000;
+                case "HKGHKD" -> 3000;
                 default -> 0;
             };
         }
