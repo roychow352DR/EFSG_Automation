@@ -45,7 +45,9 @@ public class MobileDriver {
     private static final String APPIUM_JS_PATH = "//usr//local//lib//node_modules//appium//build//lib//main.js";
     private static final Duration IMPLICIT_WAIT = Duration.ZERO;
     private static final Duration APP_READY_WAIT = Duration.ofSeconds(60);
-    private static final Duration ANDROID_FOREGROUND_WAIT = Duration.ofSeconds(45);
+    private static final Duration ANDROID_FOREGROUND_WAIT = Duration.ofSeconds(15);
+    private static final Duration APPIUM_SERVER_READY_WAIT = Duration.ofSeconds(2);
+    private static final Duration APPIUM_STATUS_POLL = Duration.ofMillis(200);
     private static final int ANDROID_ADB_TIMEOUT_MS = 180_000;
     private static final Duration ADB_DEVICES_WAIT = Duration.ofSeconds(15);
     // Package is entity-specific; the RN launcher class is still CopyMaster MainActivity.
@@ -361,7 +363,7 @@ public class MobileDriver {
                 if (attempt > 1) {
                     System.out.println("Retrying Android session create, attempt " + attempt);
                     quitQuietly();
-                    sleepQuietly(2000);
+                    sleepQuietly(1000);
                 }
                 aosOptions = new UiAutomator2Options();
                 configureAndroidOptions(androidAppPath, androidPackage);
@@ -448,14 +450,54 @@ public class MobileDriver {
 
             service = builder.build();
             service.start();
-
-            // Wait a bit for server to be ready
-            Thread.sleep(2000);
+            waitUntilAppiumServerReady();
             System.out.println("Appium server started successfully");
         } catch (Exception e) {
             System.err.println("Failed to start Appium server: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Appium server failed to start", e);
+        }
+    }
+
+    /**
+     * Polls Appium /status until it responds or the ready wait expires.
+     * Returns as soon as the server is accepting requests.
+     */
+    private void waitUntilAppiumServerReady() {
+        long deadline = System.nanoTime() + APPIUM_SERVER_READY_WAIT.toNanos();
+        while (System.nanoTime() < deadline) {
+            if (isAppiumServerReady()) {
+                return;
+            }
+            try {
+                Thread.sleep(APPIUM_STATUS_POLL.toMillis());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while waiting for Appium server", e);
+            }
+        }
+        if (isAppiumServerReady()) {
+            return;
+        }
+        throw new IllegalStateException("Appium server did not become ready within "
+                + APPIUM_SERVER_READY_WAIT.toSeconds() + "s");
+    }
+
+    private boolean isAppiumServerReady() {
+        java.net.HttpURLConnection connection = null;
+        try {
+            connection = (java.net.HttpURLConnection) new URL(APPIUM_SERVER_URL + "/status").openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout((int) APPIUM_STATUS_POLL.toMillis());
+            connection.setReadTimeout((int) APPIUM_STATUS_POLL.toMillis());
+            connection.connect();
+            return connection.getResponseCode() == 200;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 
