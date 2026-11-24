@@ -25,8 +25,9 @@ public class AppWatchlistDetailsPage {
 
     private static final By SHOW_MORE = By.xpath(
             "//*[@text='show more' or @content-desc='show more' or @text='Show more' or @content-desc='Show more']");
+    // Full content-desc. Percent is optional and may be signed: "Gold, XAUUSD" or "Gold, XAUUSD, +0.50%".
     private static final Pattern SYMBOL_HEADER = Pattern.compile(
-            ".+,\\s*[A-Z][A-Z0-9]{2,},\\s*-?\\d+(?:\\.\\d+)?%");
+            ".+,\\s*[A-Z][A-Z0-9]{2,}(?:,\\s*[+-]?\\d+(?:\\.\\d+)?%)?");
     private static final Pattern POSITION_ROW = Pattern.compile(
             "^(BUY|SELL),\\s*\\d+(?:\\.\\d+)?,\\s*\\S.*");
     private static final Pattern BOUNDS = Pattern.compile("\\[(\\d+),(\\d+)]\\[(\\d+),(\\d+)]");
@@ -46,19 +47,23 @@ public class AppWatchlistDetailsPage {
     public void tapShowMore() {
         requireAndroid();
         // EIEHK lists open positions under the symbol. EBL keeps them collapsed behind show more.
-        boolean rowsAlreadyVisible = rowAppearsWithin(2)
-                || (!"EBL_MT5".equalsIgnoreCase(BaseTest.productEntity) && rowAppearsWithin(8));
-        if (rowsAlreadyVisible) {
-            getPageElement.logInfo("Open position rows are already visible on the watchlist");
+        revealSymbolHeader();
+        if (rowUnderSymbolAppearsWithin(2)) {
+            getPageElement.logInfo("Open position row is already visible under " + requiredSymbol());
             return;
         }
         if (!"EBL_MT5".equalsIgnoreCase(BaseTest.productEntity)) {
+            if (rowUnderSymbolAppearsWithin(8)) {
+                getPageElement.logInfo("Open position row is already visible under " + requiredSymbol());
+                return;
+            }
             throw new TimeoutException(
                     "Open position row was not visible on the " + BaseTest.productEntity + " watchlist");
         }
         abs.tapVisible(SHOW_MORE, 10);
-        if (!rowAppearsWithin(10)) {
-            throw new TimeoutException("Open position row was not visible after tapping show more");
+        if (!rowUnderSymbolAppearsWithin(10)) {
+            throw new TimeoutException(
+                    "Open position row was not visible under " + requiredSymbol() + " after tapping show more");
         }
         getPageElement.logInfo("Tapped show more on the watchlist");
     }
@@ -73,6 +78,7 @@ public class AppWatchlistDetailsPage {
             tapShowMore();
         } else {
             getPageElement.logInfo("Skip show more for entity " + BaseTest.productEntity);
+            revealSymbolHeader();
         }
         WebElement row = waitForPositionRow();
         int[] rowBounds = boundsOf(row);
@@ -99,11 +105,11 @@ public class AppWatchlistDetailsPage {
         }
     }
 
-    private boolean rowAppearsWithin(int seconds) {
+    private boolean rowUnderSymbolAppearsWithin(int seconds) {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(seconds))
                     .ignoring(StaleElementReferenceException.class)
-                    .until(d -> anyOpenPositionRow() != null);
+                    .until(d -> positionRowUnderSymbol() != null);
             return true;
         } catch (TimeoutException e) {
             return false;
@@ -121,17 +127,19 @@ public class AppWatchlistDetailsPage {
         }
     }
 
-    private WebElement anyOpenPositionRow() {
-        int minWidth = (int) (driver.manage().window().getSize().getWidth() * 0.7);
-        for (WebElement element : driver.findElements(By.xpath("//*[@content-desc]"))) {
-            String desc = safeAttribute(element, "content-desc");
-            int[] box = boundsOf(element);
-            if (desc != null && POSITION_ROW.matcher(desc.trim()).matches()
-                    && box != null && box[2] - box[0] >= minWidth) {
-                return element;
+    private void revealSymbolHeader() {
+        String symbol = requiredSymbol();
+        Pattern token = symbolToken(symbol);
+        if (findSymbolHeader(token) != null) {
+            return;
+        }
+        for (int pass = 0; pass < 3; pass++) {
+            abs.swipeUp(driver);
+            if (findSymbolHeader(token) != null) {
+                getPageElement.logInfo("Scrolled the " + symbol + " watchlist header into view");
+                return;
             }
         }
-        return null;
     }
 
     private WebElement positionRowUnderSymbol() {
@@ -166,17 +174,11 @@ public class AppWatchlistDetailsPage {
     }
 
     private WebElement symbolHeader(String symbol) {
-        Pattern token = Pattern.compile("(^|[^A-Z0-9])" + Pattern.quote(symbol) + "([^A-Z0-9]|$)");
-        for (int pass = 0; pass < 4; pass++) {
-            WebElement header = findSymbolHeader(token);
-            if (header != null) {
-                return header;
-            }
-            if (pass < 3) {
-                abs.swipeUp(driver);
-            }
-        }
-        return null;
+        return findSymbolHeader(symbolToken(symbol));
+    }
+
+    private Pattern symbolToken(String symbol) {
+        return Pattern.compile("(^|[^A-Z0-9])" + Pattern.quote(symbol) + "([^A-Z0-9]|$)");
     }
 
     private WebElement findSymbolHeader(Pattern token) {
@@ -200,7 +202,7 @@ public class AppWatchlistDetailsPage {
     }
 
     private int nextSymbolHeaderTop(int afterY, String currentSymbol) {
-        Pattern token = Pattern.compile("(^|[^A-Z0-9])" + Pattern.quote(currentSymbol) + "([^A-Z0-9]|$)");
+        Pattern token = symbolToken(currentSymbol);
         int nextTop = Integer.MAX_VALUE;
         for (WebElement element : driver.findElements(By.xpath("//*[@content-desc]"))) {
             String desc = safeAttribute(element, "content-desc");

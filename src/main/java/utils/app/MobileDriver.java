@@ -371,6 +371,7 @@ public class MobileDriver {
                 driver = new AndroidDriver(new URL(APPIUM_SERVER_URL), aosOptions);
                 driver.manage().timeouts().implicitlyWait(IMPLICIT_WAIT);
                 System.out.println("Android driver initialized successfully. Session ID: " + driver.getSessionId());
+                new MobileAbstractComponents(driver).relaxUiAutomatorIdleWait();
                 activateAndroidApp(driver, androidPackage);
                 waitUntilAppInForeground(driver, androidPackage);
                 return (AndroidDriver) driver;
@@ -544,8 +545,6 @@ public class MobileDriver {
         aosOptions.setCapability("appium:uiautomator2ServerInstallTimeout", ANDROID_ADB_TIMEOUT_MS);
         aosOptions.setCapability("appium:adbExecTimeout", ANDROID_ADB_TIMEOUT_MS);
         aosOptions.setCapability("appium:ignoreHiddenApiPolicyError", true);
-        aosOptions.setCapability("appium:settings[waitForIdleTimeout]", 0);
-        aosOptions.setCapability("appium:settings[waitForSelectorTimeout]", 0);
 
         // Handle app path configuration. A .zip is unpacked first so Appium receives a real APK.
         if (androidAppPath != null && !androidAppPath.isBlank()) {
