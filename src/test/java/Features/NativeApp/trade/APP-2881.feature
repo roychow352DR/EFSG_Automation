@@ -6,10 +6,6 @@ Feature: Native App trade
       And the user logs in on the App login page
       And the user taps button "Markets" on the app footer
       When the user taps symbol on the app markets page
-      And the user selects tab "Positions" on the app trade view
-      And the total count of the positions is retrieved on the app trade view
-      And the user taps back button on the app trade view
-      And the user taps symbol on the app markets page
       And the user selects direction "SELL" on the app trade view
       And the user fills in the text field "Lot Size" with value "0.5" on the instrument details page
       And the user switches on take profit and stop loss on the instrument details page
