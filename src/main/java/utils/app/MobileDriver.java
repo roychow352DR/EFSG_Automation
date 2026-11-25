@@ -539,7 +539,8 @@ public class MobileDriver {
         // still being created. Install during creation, then activate afterwards.
         aosOptions.setCapability("autoLaunch", false);
         aosOptions.setCapability("appWaitForLaunch", false);
-        aosOptions.setCapability("skipServerInstallation", false);
+        // Reuse the UiAutomator2 server already installed on the device.
+        aosOptions.setCapability("skipServerInstallation", true);
         aosOptions.setNewCommandTimeout(Duration.ofSeconds(300));
         aosOptions.setCapability("appium:uiautomator2ServerLaunchTimeout", ANDROID_ADB_TIMEOUT_MS);
         aosOptions.setCapability("appium:uiautomator2ServerInstallTimeout", ANDROID_ADB_TIMEOUT_MS);
