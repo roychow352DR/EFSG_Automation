@@ -3,13 +3,24 @@ package utils;
 import AbstractComponent.MobileAbstractComponents;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
+import net.sourceforge.tess4j.Tesseract;
+import net.sourceforge.tess4j.TesseractException;
+import net.sourceforge.tess4j.util.LoadLibs;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.OutputType;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -17,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,6 +38,7 @@ public class GetPageElement {
     private final AppiumDriver driver;
     private final MobileAbstractComponents abs;
     private String pageSourceCache;
+    private static volatile String bundledTessDataPath;
 
     public GetPageElement(AppiumDriver driver){
         this.driver = driver;
@@ -108,6 +121,11 @@ public class GetPageElement {
                 if (value == null && "Price".equals(uiLabel)) {
                     value = readConfirmationPriceValue();
                 }
+            }
+            // Colored BUY/SELL text is often absent from the accessibility tree.
+            // Read only the strip to the right of the Direction label.
+            if (value == null && ("Direction".equals(uiLabel) || "Side".equals(uiLabel))) {
+                value = readPaintedDirection();
             }
             return value;
         } finally {
@@ -783,6 +801,125 @@ public class GetPageElement {
 
     private String normalizeDirection(String value) {
         return value.equalsIgnoreCase("SELL") ? "SELL" : "BUY";
+    }
+
+    // The Direction label is in the hierarchy. The colored BUY/SELL value often is not.
+    // Crop the label row from a screenshot and accept only one of those two words.
+    private String readPaintedDirection() {
+        Rect labelRect = labelBounds("Direction");
+        if (labelRect == null) {
+            labelRect = labelBoundsFromPageSource("Direction");
+        }
+        if (labelRect == null) {
+            logWarn("Direction label bounds were not available for image read");
+            return null;
+        }
+        File screenshot = null;
+        try {
+            screenshot = driver.getScreenshotAs(OutputType.FILE);
+            BufferedImage fullImg = ImageIO.read(screenshot);
+            if (fullImg == null) {
+                return null;
+            }
+            Dimension viewport = driver.manage().window().getSize();
+            double scaleX = viewport.getWidth() == 0 ? 1 : (double) fullImg.getWidth() / viewport.getWidth();
+            double scaleY = viewport.getHeight() == 0 ? 1 : (double) fullImg.getHeight() / viewport.getHeight();
+            int cropLeft = clamp((int) Math.round(labelRect.right * scaleX) + 4, 0, fullImg.getWidth() - 1);
+            int cropTop = clamp((int) Math.round(labelRect.top * scaleY) - 8, 0, fullImg.getHeight() - 1);
+            int cropRight = fullImg.getWidth() - 1;
+            int cropBottom = clamp((int) Math.round(labelRect.bottom * scaleY) + 8, 0, fullImg.getHeight() - 1);
+            int maxBand = (int) Math.round(Math.max(labelRect.height() * scaleY * 2, 48 * scaleY));
+            if (cropBottom - cropTop > maxBand) {
+                cropBottom = Math.min(fullImg.getHeight() - 1, cropTop + maxBand);
+            }
+            if (cropRight - cropLeft < 8 || cropBottom - cropTop < 8) {
+                return null;
+            }
+            BufferedImage row = fullImg.getSubimage(cropLeft, cropTop, cropRight - cropLeft, cropBottom - cropTop);
+            String raw = runDirectionOcr(enlargeForDirectionOcr(row));
+            String direction = directionTokenFromOcr(raw);
+            if (direction != null) {
+                logInfo("Found Direction from row image: " + direction);
+            } else {
+                logWarn("Direction row image did not contain a single BUY or SELL: " + raw);
+            }
+            return direction;
+        } catch (Exception | LinkageError e) {
+            logWarn("Could not read Direction from row image: " + e.getMessage());
+            return null;
+        } finally {
+            if (screenshot != null && !screenshot.delete()) {
+                logWarn("Could not delete Direction row screenshot: " + screenshot.getAbsolutePath());
+            }
+        }
+    }
+
+    private BufferedImage enlargeForDirectionOcr(BufferedImage input) {
+        int width = Math.max(1, input.getWidth() * 3);
+        int height = Math.max(1, input.getHeight() * 3);
+        BufferedImage enlarged = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+        Graphics2D graphics = enlarged.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        graphics.drawImage(input, 0, 0, width, height, null);
+        graphics.dispose();
+        return enlarged;
+    }
+
+    private String runDirectionOcr(BufferedImage image) {
+        String datapath = bundledTessDataPath();
+        if (datapath == null) {
+            return null;
+        }
+        Tesseract tesseract = new Tesseract();
+        tesseract.setDatapath(datapath);
+        tesseract.setLanguage("eng");
+        tesseract.setPageSegMode(7);
+        tesseract.setOcrEngineMode(1);
+        try {
+            return tesseract.doOCR(image);
+        } catch (TesseractException e) {
+            logWarn("Direction OCR failed: " + e.getMessage());
+            return null;
+        }
+    }
+
+    // Tesseract 5 opens datapath + "eng.traineddata". Point it at the extracted tessdata directory.
+    private String bundledTessDataPath() {
+        String cached = bundledTessDataPath;
+        if (cached != null) {
+            return cached;
+        }
+        synchronized (GetPageElement.class) {
+            if (bundledTessDataPath != null) {
+                return bundledTessDataPath;
+            }
+            File tessdata = LoadLibs.extractTessResources("tessdata");
+            File trained = new File(tessdata, "eng.traineddata");
+            if (!trained.isFile()) {
+                logWarn("Bundled English tessdata was not extracted");
+                return null;
+            }
+            bundledTessDataPath = tessdata.getAbsolutePath();
+            logInfo("Using bundled tessdata: " + bundledTessDataPath);
+            return bundledTessDataPath;
+        }
+    }
+
+    private String directionTokenFromOcr(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String upper = raw.toUpperCase(Locale.ROOT);
+        boolean sell = upper.contains("SELL");
+        boolean buy = upper.contains("BUY");
+        if (sell == buy) {
+            return null;
+        }
+        return sell ? "SELL" : "BUY";
+    }
+
+    private int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(value, max));
     }
 
     private boolean isElementDisplayed(WebElement element) {

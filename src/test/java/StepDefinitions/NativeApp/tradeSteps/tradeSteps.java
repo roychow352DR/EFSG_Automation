@@ -58,7 +58,7 @@ public class tradeSteps extends BaseTest {
 
     @And("the user fills in the text field {string} with direction {string} on the instrument details page")
     public void the_user_fills_in_the_text_field_on_the_app_trade_view(String textFieldName, String direction) throws InterruptedException {
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), 25);
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField(textFieldName, direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol), 10);
     }
 
     @And("the user taps button {string} on the instrument details page")

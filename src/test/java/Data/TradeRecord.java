@@ -139,11 +139,11 @@ public class TradeRecord {
     }
 
     public void fillStopLossPrice(String direction,TradeSymbolConfig tradeSymbolConfig){
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField("Stop Loss", direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),25);
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField("Stop Loss", direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),10);
     }
 
     public void fillTakeProfitPrice(String direction,TradeSymbolConfig tradeSymbolConfig){
-        appPoManager.getAppInstrumentDetailsPage().fillInTextField("Take Profit", direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),25);
+        appPoManager.getAppInstrumentDetailsPage().fillInTextField("Take Profit", direction, tradeSymbolConfig.getDecimalPlace(AppMarketsPage.tradeSymbol),10);
     }
 
     public void switchStopLossOn() throws InterruptedException {
